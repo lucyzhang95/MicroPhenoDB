@@ -1,10 +1,11 @@
 import csv
+
 import requests
 
 
 def read_txt_file(in_file):
     with open(in_file) as in_f:
-        reader = csv.reader(in_f, delimiter='\t')
+        reader = csv.reader(in_f, delimiter="\t")
         for line in reader:
             yield line
 
@@ -34,16 +35,12 @@ def ncit2taxid(ncit_code: list) -> dict:
 
         response = requests.get(url, params=params)
         if response.status_code == requests.codes.ok:
-            terms =  response.json().get("_embedded").get("terms")[0]
+            terms = response.json().get("_embedded").get("terms")[0]
             taxid = terms.get("annotation").get("NCBI_Taxon_ID")[0]
             name = terms.get("label")
             for desc in terms.get("description"):
                 if taxid:
-                    ncit2taxid[name] = {
-                        "taxid": int(taxid),
-                        "ncit": code,
-                        "description": desc
-                    }
+                    ncit2taxid[name] = {"taxid": int(taxid), "ncit": code, "description": desc}
                 else:
                     print(f"No NCBI Taxonomy ID found for NCIT:{ncit_code}")
         else:
@@ -51,7 +48,7 @@ def ncit2taxid(ncit_code: list) -> dict:
     return ncit2taxid
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     NCTI = ["C111133", "C111204", "C112407"]
     taxids = ncit2taxid(NCTI)
     print(taxids)
