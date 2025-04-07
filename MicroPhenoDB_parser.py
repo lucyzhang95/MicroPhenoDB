@@ -1,6 +1,6 @@
 import requests
 
-
+# TODO: add get_ncit_code fn (need to have description, original source have null for NCIT_code, keep name)
 def ncit2taxid(ncit_code: list) -> dict[str, int]:
     """Convert NCIT code to NCBI taxid
 
