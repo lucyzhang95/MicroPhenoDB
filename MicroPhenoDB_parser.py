@@ -22,7 +22,7 @@ def get_ncit_code(in_file) -> list:
     return ncit_codes
 
 
-def ncit2taxid(ncit_code: list) -> dict:
+def ncit2taxid(ncit_code: list) -> [dict, dict]:
     """Convert NCIT code to NCBI taxid
 
     :param ncit_code: a list of NCIT codes
@@ -30,6 +30,7 @@ def ncit2taxid(ncit_code: list) -> dict:
     """
     ncit_code = set(ncit_code)
     ncit2taxid = {}
+    failed_ncit = {}
     for code in ncit_code:
         iri = f"http://purl.obolibrary.org/obo/NCIT_{code}"
         url = "https://www.ebi.ac.uk/ols4/api/ontologies/ncit/terms"
@@ -52,7 +53,7 @@ def ncit2taxid(ncit_code: list) -> dict:
         taxid_list = annot.get("NCBI_Taxon_ID", [])
 
         if not taxid_list:
-            print(f"No NCBI Taxonomy ID found for NCIT: {code}")
+            failed_ncit[terms.get("label")] = code
             continue
         taxid = taxid_list[0]
         name = terms.get("label", "Unknown")
@@ -63,15 +64,16 @@ def ncit2taxid(ncit_code: list) -> dict:
             "ncit": code,
             "description": description,
         }
-    return ncit2taxid
+    return ncit2taxid, failed_ncit
 
 
 if __name__ == "__main__":
     filename = os.path.join("downloads", "NCIT.txt")
-    NCIT = get_ncit_code(filename)
-    # NCIT = ["C85924", "C83526"]
-    taxids = ncit2taxid(NCIT)
-    print(taxids)
+    # NCIT = get_ncit_code(filename)
+    NCIT = ["C85924", "C83526"]
+    taxids, notfound = ncit2taxid(NCIT)
+    print(notfound)
     # mismatch for C111133 from the original database, so need to manually change the taxid to 357276
-    # taxids["C111133"] = 357276
+    # "C111133" = 357276
+    # "C85924" = 884684
     # print(taxids)
