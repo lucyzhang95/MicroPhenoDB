@@ -86,9 +86,23 @@ async def ncit2taxid(ncit_codes):
 
 
 def hard_code_ncit2taxid(ncit_codes):
+    """Manual map leftover NCIT identifiers to taxids
+    There are a total of 15 NCIT identifiers need to be manually mapped
+    2 key-values are removed due to non-microorganism property
+
+    :param ncit_codes: a list of NCIT codes
+    :return: a dictionary mapping NCIT codes to taxids
+    {'Trypanosoma brucei gambiense': {'ncit': 'C125975', 'description': 'A species of parasitic flagellate protozoa...'}}
+    """
     ncit2taxids, notfound_ncit = asyncio.run(ncit2taxid(ncit_codes))
-    notfound_ncit["Aspergillus oryzae"]["description"] = "A fungus used in East Asia to saccharify rice, sweet potato, and barley in the making of alcoholic beverages such as sake and shōchū, and also to ferment soybeans for making soy sauce and miso. It is one of the different koji molds used for food fermentation. Wikipedia"
-    notfound_ncit["Japanese encephalitis Virus Strain Nakayama-NIH Antigen (Formaldehyde Inactivated)"]["description"] = "A virus from the family Flaviviridae, part of the Japanese encephalitis serocomplex of nine genetically and antigenically related viruses, some of which are particularly severe in horses, and four of which, including West Nile virus, are known to infect humans.[13] The enveloped virus is closely related to the West Nile virus and the St. Louis encephalitis virus. The positive sense single-stranded RNA genome is packaged in the capsid which is formed by the capsid protein. Wikipedia"
+    notfound_ncit["Aspergillus oryzae"][
+        "description"
+    ] = "A fungus used in East Asia to saccharify rice, sweet potato, and barley in the making of alcoholic beverages such as sake and shōchū, and also to ferment soybeans for making soy sauce and miso. It is one of the different koji molds used for food fermentation. Wikipedia"
+    notfound_ncit[
+        "Japanese encephalitis Virus Strain Nakayama-NIH Antigen (Formaldehyde Inactivated)"
+    ][
+        "description"
+    ] = "A virus from the family Flaviviridae, part of the Japanese encephalitis serocomplex of nine genetically and antigenically related viruses, some of which are particularly severe in horses, and four of which, including West Nile virus, are known to infect humans.[13] The enveloped virus is closely related to the West Nile virus and the St. Louis encephalitis virus. The positive sense single-stranded RNA genome is packaged in the capsid which is formed by the capsid protein. Wikipedia"
     # 2 keys are excluded: Growth Hormone-Releasing Hormone Analogue and Metastatic Breast Carcinoma
     manual_taxid_map = {
         "Powassan Virus": 11083,
@@ -111,10 +125,11 @@ def hard_code_ncit2taxid(ncit_codes):
             notfound_ncit[name].update({"taxid": taxid})
 
     ncit2taxids.update(notfound_ncit)
+    # manual change the taxid of Bacteroides dorei, since the src mapping is wrong
+    ncit2taxids["Bacteroides dorei"]["taxid"] = 357276
+    # TODO: need to doublecheck if the name is "Clostridiales XI" or "Clostridiales xi"
+    ncit2taxids["Clostridiales XI"]["taxid"] = 884684
     return ncit2taxids
-
-
-
 
 
 if __name__ == "__main__":
@@ -122,8 +137,9 @@ if __name__ == "__main__":
     NCIT, _ = get_ncit_code(filename)
     # NCIT = ["C85924", "C83526"]
     taxids, notfound = asyncio.run(ncit2taxid(NCIT))
-    print(notfound)
+    print(len(taxids))
+    new_taxids = hard_code_ncit2taxid(NCIT)
+    print(len(new_taxids))
     # print(len(notfound))
-    # 15 organisms NCIT cannot map to taxid
     # mismatch for C111133 from the original database, so need to manually change the taxid to 357276
     # Need to hard-coded for {"C111133": 357276, "C85924": 884684}
