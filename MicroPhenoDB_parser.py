@@ -144,6 +144,6 @@ if __name__ == "__main__":
     # mismatch for C111133 from the original database, so need to manually change the taxid to 357276
     # Need to hard-coded for {"C111133": 357276, "C85924": 884684}
     # Only 512 taxon are shared between NCIT.txt (580) and core_table.txt (1774)
-    # There are 450 shared diseases between core_table.txt (500) and EFO.txt (480)
-    # In EFO file, there are
-    # TODO: find shared disease name in core_table.txt and EFO.txt to make sure there is >80% overlap
+    # There are 450 shared diseases between core_table.txt (500) and EFO.txt (515)
+    # Unique disease prefix: {'Orphanet', 'DOID', 'EFO', 'HP'}
+    # Diseases do not have ids: 49
