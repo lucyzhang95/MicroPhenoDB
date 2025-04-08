@@ -142,7 +142,7 @@ if __name__ == "__main__":
     print(len(new_taxids))
     # print(len(notfound))
     # mismatch for C111133 from the original database, so need to manually change the taxid to 357276
-    # Need to hard-coded for {"C111133": 357276, "C85924": 884684}
+    # Need to hard-code for {"C111133": 357276, "C85924": 884684}
     # Only 512 taxon are shared between NCIT.txt (580) and core_table.txt (1774)
     # There are 450 shared diseases between core_table.txt (500) and EFO.txt (515)
     # Unique disease prefix: {'Orphanet', 'DOID', 'EFO', 'HP'}
