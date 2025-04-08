@@ -51,7 +51,7 @@ async def fetch_ncit_taxid(session, ncit_code, notfound_ncit):
                 return name, {
                     "taxid": int(taxid),
                     "ncit": ncit_code,
-                    "description": f"{description} [NCIT]", # add description src
+                    "description": f"{description} [NCIT]",  # add description src
                 }
             else:
                 notfound_ncit[name] = {"ncit": ncit_code, "description": description}
@@ -136,9 +136,9 @@ if __name__ == "__main__":
     filename = os.path.join("downloads", "NCIT.txt")
     NCIT, _ = get_ncit_code(filename)
     # NCIT = ["C85924", "C83526"]
-    taxids, notfound = asyncio.run(ncit2taxid(NCIT)) # 567 records in mapped
+    taxids, notfound = asyncio.run(ncit2taxid(NCIT))  # 567 records in mapped
     print(len(taxids))
-    new_taxids = hard_code_ncit2taxid(NCIT) # 582 records after manual mapping
+    new_taxids = hard_code_ncit2taxid(NCIT)  # 582 records after manual mapping
     print(len(new_taxids))
     # print(len(notfound))
     # mismatch for C111133 from the original database, so need to manually change the taxid to 357276
