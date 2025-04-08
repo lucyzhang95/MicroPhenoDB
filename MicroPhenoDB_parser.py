@@ -3,18 +3,33 @@ import csv
 import os
 
 import aiohttp
+import chardet
 import requests
 
 
-def read_txt_file(in_file):
-    with open(in_file) as in_f:
-        reader = csv.reader(in_f, delimiter="\t")
-        for line in reader:
-            yield line
+def detect_encoding(in_file):
+    with open(in_file, "rb") as f:
+        raw = f.read(5000)
+    return chardet.detect(raw)["encoding"]
+
+
+def read_file(in_file, has_header=True):
+    encoding = detect_encoding(in_file)
+    if encoding == "ascii":
+        encoding = "utf-8"
+    try:
+        with open(in_file, "r", encoding=encoding) as in_f:
+            reader = csv.reader(in_f, delimiter="\t")
+            if has_header:
+                next(reader)
+            for line in reader:
+                yield line
+    except UnicodeDecodeError as e:
+        print(f"Unicode error with {encoding} on file {in_file}: {e}")
 
 
 def get_ncit_code(in_file) -> [list, list]:
-    obj = read_txt_file(in_file)
+    obj = read_file(in_file)
     ncit_codes = []
     names = []
     # 80 entries do not have ncit code, 582 unique ncit codes (755 with redundancy)
