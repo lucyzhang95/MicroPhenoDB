@@ -27,16 +27,18 @@ def read_file(in_file, has_header=True):
     except UnicodeDecodeError as e:
         print(f"Unicode error with {encoding} on file {in_file}: {e}")
 
-# TODO: should I use yield for single ncit code? or a list of ncit codes?
+
 def get_ncit_code(in_file):
-    obj = read_file(in_file)
-    ncit_codes = []
+    obj = read_file(in_file, has_header=False)
+    seen = set()
     # 80 entries do not have ncit code, 582 unique ncit codes (755 with redundancy)
     # 80 + 755 = 835 which matches the source
     for line in obj:
         if len(line) > 2 and "NCIT" in line[2]:
-            ncit_codes.append(line[2].split("_")[1])
-    yield ncit_codes
+            ncit_code = line[2].split("_")[1]
+            if ncit_code not in seen:
+                seen.add(ncit_code)
+                yield ncit_code
 
 
 async def fetch_ncit_taxid(session, ncit_code, notfound_ncit):
@@ -82,7 +84,7 @@ async def ncit2taxid(ncit_codes):
     :return notfound_ncit: a dictionary with NCIT codes failed to map taxid
     {'Trypanosoma brucei gambiense': {'ncit': 'C125975', 'description': 'A species of parasitic flagellate protozoa...'}}
     """
-    ncit_codes = set(ncit_codes)
+    ncit_codes = [ncit_code for ncit_code in get_ncit_code(in_file)]
     ncit2taxids = {}
     notfound_ncit = {}
 
@@ -146,9 +148,9 @@ def hard_code_ncit2taxid(ncit_codes):
 
 if __name__ == "__main__":
     filename = os.path.join("downloads", "NCIT.txt")
-    ncit_gen = get_ncit_code(filename)
-    for NCIT in ncit_gen:
-        print(NCIT)
+    NCIT = [ncit for ncit in get_ncit_code(filename)]
+    print(len(NCIT))
+
 
 
     # NCIT = ["C85924", "C83526"]
