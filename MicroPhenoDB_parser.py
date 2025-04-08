@@ -51,7 +51,7 @@ async def fetch_ncit_taxid(session, ncit_code, notfound_ncit):
                 return name, {
                     "taxid": int(taxid),
                     "ncit": ncit_code,
-                    "description": description,
+                    "description": f"{description} [NCIT]", # add description src
                 }
             else:
                 notfound_ncit[name] = {"ncit": ncit_code, "description": description}
@@ -95,15 +95,15 @@ def hard_code_ncit2taxid(ncit_codes):
     {'Trypanosoma brucei gambiense': {'ncit': 'C125975', 'description': 'A species of parasitic flagellate protozoa...'}}
     """
     ncit2taxids, notfound_ncit = asyncio.run(ncit2taxid(ncit_codes))
-    notfound_ncit["Aspergillus oryzae"][
+    notfound_ncit["Alpha-Amylase (Aspergillus oryzae)"][
         "description"
-    ] = "A fungus used in East Asia to saccharify rice, sweet potato, and barley in the making of alcoholic beverages such as sake and shōchū, and also to ferment soybeans for making soy sauce and miso. It is one of the different koji molds used for food fermentation. Wikipedia"
+    ] = "A fungus used in East Asia to saccharify rice, sweet potato, and barley in the making of alcoholic beverages such as sake and shōchū, and also to ferment soybeans for making soy sauce and miso. It is one of the different koji molds used for food fermentation. [Wikipedia]"
     notfound_ncit[
         "Japanese encephalitis Virus Strain Nakayama-NIH Antigen (Formaldehyde Inactivated)"
     ][
         "description"
-    ] = "A virus from the family Flaviviridae, part of the Japanese encephalitis serocomplex of nine genetically and antigenically related viruses, some of which are particularly severe in horses, and four of which, including West Nile virus, are known to infect humans.[13] The enveloped virus is closely related to the West Nile virus and the St. Louis encephalitis virus. The positive sense single-stranded RNA genome is packaged in the capsid which is formed by the capsid protein. Wikipedia"
-    # 2 keys are excluded: Growth Hormone-Releasing Hormone Analogue and Metastatic Breast Carcinoma
+    ] = "A virus from the family Flaviviridae, part of the Japanese encephalitis serocomplex of nine genetically and antigenically related viruses, some of which are particularly severe in horses, and four of which, including West Nile virus, are known to infect humans.[13] The enveloped virus is closely related to the West Nile virus and the St. Louis encephalitis virus. The positive sense single-stranded RNA genome is packaged in the capsid which is formed by the capsid protein. [Wikipedia]"
+    # 2 keys do not have taxids nor descriptions: Growth Hormone-Releasing Hormone Analogue and Metastatic Breast Carcinoma
     manual_taxid_map = {
         "Powassan Virus": 11083,
         "Alpha-Amylase (Aspergillus oryzae)": 5062,
@@ -136,12 +136,14 @@ if __name__ == "__main__":
     filename = os.path.join("downloads", "NCIT.txt")
     NCIT, _ = get_ncit_code(filename)
     # NCIT = ["C85924", "C83526"]
-    taxids, notfound = asyncio.run(ncit2taxid(NCIT))
+    taxids, notfound = asyncio.run(ncit2taxid(NCIT)) # 567 records in mapped
     print(len(taxids))
-    new_taxids = hard_code_ncit2taxid(NCIT)
+    new_taxids = hard_code_ncit2taxid(NCIT) # 582 records after manual mapping
     print(len(new_taxids))
     # print(len(notfound))
     # mismatch for C111133 from the original database, so need to manually change the taxid to 357276
     # Need to hard-coded for {"C111133": 357276, "C85924": 884684}
-    # TODO: Need to compare microorganism name in core_table.txt and NCIT.txt
-    #  as well as disease name in core_table.txt and EFO.txt to make sure there is >80% overlap
+    # Only 512 taxon are shared between NCIT.txt (580) and core_table.txt (1774)
+    # There are 450 shared diseases between core_table.txt (500) and EFO.txt (480)
+    # In EFO file, there are
+    # TODO: find shared disease name in core_table.txt and EFO.txt to make sure there is >80% overlap
