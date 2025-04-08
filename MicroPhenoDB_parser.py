@@ -143,3 +143,5 @@ if __name__ == "__main__":
     # print(len(notfound))
     # mismatch for C111133 from the original database, so need to manually change the taxid to 357276
     # Need to hard-coded for {"C111133": 357276, "C85924": 884684}
+    # TODO: Need to compare microorganism name in core_table.txt and NCIT.txt
+    #  as well as disease name in core_table.txt and EFO.txt to make sure there is >80% overlap
