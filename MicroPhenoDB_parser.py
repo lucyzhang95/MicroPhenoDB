@@ -62,9 +62,9 @@ async def fetch_ncit_taxid(session, ncit_code, notfound_ncit):
 
 
 async def ncit2taxid(ncit_codes):
-    """
+    """Map NCIT identifiers to NCBI Taxids using EBI API
 
-    :param ncit_codes:
+    :param ncit_codes: a list of NCIT codes e.g., ["C85924", "C83526", ...]
     :return ncit2taxid: a dictionary mapping NCIT codes to taxids
     {'Trichostrongylus colubriformis': {'taxid': 6319, 'ncit': 'C125969', 'description': 'A species of parasitic...'}}
     :return notfound_ncit: a dictionary with NCIT codes failed to map taxid
@@ -85,8 +85,36 @@ async def ncit2taxid(ncit_codes):
     return ncit2taxids, notfound_ncit
 
 
-def hard_code_ncit2taxid():
-    ncit2taxids, notfound_ncit = asyncio.run(ncit2taxid(NCIT))
+def hard_code_ncit2taxid(ncit_codes):
+    ncit2taxids, notfound_ncit = asyncio.run(ncit2taxid(ncit_codes))
+    notfound_ncit["Aspergillus oryzae"]["description"] = "A fungus used in East Asia to saccharify rice, sweet potato, and barley in the making of alcoholic beverages such as sake and shōchū, and also to ferment soybeans for making soy sauce and miso. It is one of the different koji molds used for food fermentation. Wikipedia"
+    notfound_ncit["Japanese encephalitis Virus Strain Nakayama-NIH Antigen (Formaldehyde Inactivated)"]["description"] = "A virus from the family Flaviviridae, part of the Japanese encephalitis serocomplex of nine genetically and antigenically related viruses, some of which are particularly severe in horses, and four of which, including West Nile virus, are known to infect humans.[13] The enveloped virus is closely related to the West Nile virus and the St. Louis encephalitis virus. The positive sense single-stranded RNA genome is packaged in the capsid which is formed by the capsid protein. Wikipedia"
+    # 2 keys are excluded: Growth Hormone-Releasing Hormone Analogue and Metastatic Breast Carcinoma
+    manual_taxid_map = {
+        "Powassan Virus": 11083,
+        "Alpha-Amylase (Aspergillus oryzae)": 5062,
+        "Clostridiales XI": 189325,
+        "Trichoderma": 5543,
+        "Malassezia furfur": 55194,
+        "Clostridium Cluster XVI": 543347,
+        "Trypanosoma brucei gambiense": 31285,
+        "Clostridium Cluster IV": 1689151,
+        "Japanese encephalitis Virus Strain Nakayama-NIH Antigen (Formaldehyde Inactivated)": 11076,
+        "Trichomonas vaginalis": 5722,
+        "Clostridiales XIII": 189325,
+        "Human Parainfluenza Virus": 336871,
+        "Mycobacterium xenopi": 1789,
+    }
+
+    for name, taxid in manual_taxid_map.items():
+        if name in notfound_ncit:
+            notfound_ncit[name].update({"taxid": taxid})
+
+    ncit2taxids.update(notfound_ncit)
+    return ncit2taxids
+
+
+
 
 
 if __name__ == "__main__":
