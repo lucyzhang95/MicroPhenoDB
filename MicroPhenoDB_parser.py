@@ -27,19 +27,16 @@ def read_file(in_file, has_header=True):
     except UnicodeDecodeError as e:
         print(f"Unicode error with {encoding} on file {in_file}: {e}")
 
-
-def get_ncit_code(in_file) -> [list, list]:
+# TODO: should I use yield for single ncit code? or a list of ncit codes?
+def get_ncit_code(in_file):
     obj = read_file(in_file)
     ncit_codes = []
-    names = []
     # 80 entries do not have ncit code, 582 unique ncit codes (755 with redundancy)
     # 80 + 755 = 835 which matches the source
     for line in obj:
         if len(line) > 2 and "NCIT" in line[2]:
             ncit_codes.append(line[2].split("_")[1])
-        else:
-            names.append(line[0])
-    return ncit_codes, names
+    yield ncit_codes
 
 
 async def fetch_ncit_taxid(session, ncit_code, notfound_ncit):
@@ -149,12 +146,16 @@ def hard_code_ncit2taxid(ncit_codes):
 
 if __name__ == "__main__":
     filename = os.path.join("downloads", "NCIT.txt")
-    NCIT, _ = get_ncit_code(filename)
+    ncit_gen = get_ncit_code(filename)
+    for NCIT in ncit_gen:
+        print(NCIT)
+
+
     # NCIT = ["C85924", "C83526"]
-    taxids, notfound = asyncio.run(ncit2taxid(NCIT))  # 567 records in mapped
-    print(len(taxids))
-    new_taxids = hard_code_ncit2taxid(NCIT)  # 582 records after manual mapping
-    print(len(new_taxids))
+    # taxids, notfound = asyncio.run(ncit2taxid(NCIT))  # 567 records in mapped
+    # print(len(taxids))
+    # new_taxids = hard_code_ncit2taxid(NCIT)  # 582 records after manual mapping
+    # print(len(new_taxids))
     # print(len(notfound))
     # mismatch for C111133 from the original database, so need to manually change the taxid to 357276
     # Need to hard-code for {"C111133": 357276, "C85924": 884684}
