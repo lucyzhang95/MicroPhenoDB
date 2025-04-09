@@ -281,4 +281,4 @@ if __name__ == "__main__":
     # name2taxid = name2taxid(name_query)
     # print(name2taxid)
 
-    # use Entrez to map the 166 notfound names,  mapped,  no hit
+    # use Entrez to map the 166 notfound names, 57 mapped, 109 no hit
