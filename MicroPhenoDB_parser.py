@@ -5,6 +5,7 @@ import os
 import aiohttp
 import chardet
 import requests
+import biothings_client as bt
 
 
 def detect_encoding(in_file):
@@ -108,29 +109,29 @@ def hard_code_ncit2taxid(ncit_codes):
     {'Trypanosoma brucei gambiense': {'ncit': 'C125975', 'description': 'A species of parasitic flagellate protozoa...'}}
     """
     ncit2taxids, notfound_ncit = asyncio.run(ncit2taxid(ncit_codes))
-    notfound_ncit["Alpha-Amylase (Aspergillus oryzae)"][
+    notfound_ncit["alpha-amylase (aspergillus oryzae)"][
         "description"
     ] = "A fungus used in East Asia to saccharify rice, sweet potato, and barley in the making of alcoholic beverages such as sake and shōchū, and also to ferment soybeans for making soy sauce and miso. It is one of the different koji molds used for food fermentation. [Wikipedia]"
     notfound_ncit[
-        "Japanese encephalitis Virus Strain Nakayama-NIH Antigen (Formaldehyde Inactivated)"
+        "japanese encephalitis virus strain nakayama-nih antigen (formaldehyde inactivated)"
     ][
         "description"
     ] = "A virus from the family Flaviviridae, part of the Japanese encephalitis serocomplex of nine genetically and antigenically related viruses, some of which are particularly severe in horses, and four of which, including West Nile virus, are known to infect humans.[13] The enveloped virus is closely related to the West Nile virus and the St. Louis encephalitis virus. The positive sense single-stranded RNA genome is packaged in the capsid which is formed by the capsid protein. [Wikipedia]"
     # 2 keys do not have taxids nor descriptions: Growth Hormone-Releasing Hormone Analogue and Metastatic Breast Carcinoma
     manual_taxid_map = {
-        "Powassan Virus": 11083,
-        "Alpha-Amylase (Aspergillus oryzae)": 5062,
-        "Clostridiales XI": 189325,
-        "Trichoderma": 5543,
-        "Malassezia furfur": 55194,
-        "Clostridium Cluster XVI": 543347,
-        "Trypanosoma brucei gambiense": 31285,
-        "Clostridium Cluster IV": 1689151,
-        "Japanese encephalitis Virus Strain Nakayama-NIH Antigen (Formaldehyde Inactivated)": 11076,
-        "Trichomonas vaginalis": 5722,
-        "Clostridiales XIII": 189325,
-        "Human Parainfluenza Virus": 336871,
-        "Mycobacterium xenopi": 1789,
+        "powassan virus": 11083,
+        "alpha-amylase (aspergillus oryzae)": 5062,
+        "clostridiales xi": 189325,
+        "trichoderma": 5543,
+        "malassezia furfur": 55194,
+        "clostridium cluster xvi": 543347,
+        "trypanosoma brucei gambiense": 31285,
+        "clostridium cluster iv": 1689151,
+        "japanese encephalitis virus strain nakayama-nih antigen (formaldehyde inactivated)": 11076,
+        "trichomonas vaginalis": 5722,
+        "clostridiales xiii": 189325,
+        "human parainfluenza Virus": 336871,
+        "mycobacterium xenopi": 1789,
     }
 
     for name, taxid in manual_taxid_map.items():
@@ -139,26 +140,29 @@ def hard_code_ncit2taxid(ncit_codes):
 
     ncit2taxids.update(notfound_ncit)
     # manual change the taxid of Bacteroides dorei, since the src mapping is wrong
-    ncit2taxids["Bacteroides dorei"]["taxid"] = 357276
-    # TODO: need to doublecheck if the name is "Clostridiales XI" or "Clostridiales xi"
-    ncit2taxids["Clostridiales XI"]["taxid"] = 884684
+    ncit2taxids["bacteroides dorei"]["taxid"] = 357276
+    ncit2taxids["clostridiales xi"]["taxid"] = 884684
     return ncit2taxids
 
 
-if __name__ == "__main__":
-    filename = os.path.join("downloads", "NCIT.txt")
-    NCIT = [ncit for ncit in get_ncit_code(filename)]
-    print(len(NCIT))
+def get_taxon_names(in_file):
+    obj =
 
-    # NCIT = ["C85924", "C83526"]
+
+
+
+if __name__ == "__main__":
+    # in_f_ncit = os.path.join("downloads", "NCIT.txt")
+    # NCIT = [ncit for ncit in get_ncit_code(in_f_ncit)]
+    # print(len(NCIT))
+    #
+    # # NCIT = ["C85924", "C83526"]
     # taxids, notfound = asyncio.run(ncit2taxid(NCIT))  # 567 records in mapped
+    # print(taxids)
     # print(len(taxids))
     # new_taxids = hard_code_ncit2taxid(NCIT)  # 582 records after manual mapping
     # print(len(new_taxids))
     # print(len(notfound))
-    # mismatch for C111133 from the original database, so need to manually change the taxid to 357276
-    # Need to hard-code for {"C111133": 357276, "C85924": 884684}
-    # Only 512 taxon are shared between NCIT.txt (580) and core_table.txt (1774)
-    # There are 450 shared diseases between core_table.txt (500) and EFO.txt (515)
-    # Unique disease prefix: {'Orphanet', 'DOID', 'EFO', 'HP'}
-    # Diseases do not have ids: 49
+
+    in_f_core = os.path.join("downloads", "core_table.txt")
+
