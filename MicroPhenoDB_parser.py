@@ -57,7 +57,7 @@ async def fetch_ncit_taxid(session, ncit_code, notfound_ncit):
                 print(f"Failed to find terms for NCIT:{ncit_code}")
             terms = terms_list[0]
             annot = terms.get("annotation")
-            name = terms.get("label")
+            name = terms.get("label").lower()
             description = next(iter(terms.get("description")), "")
             if "NCBI_Taxon_ID" in annot:
                 taxid_list = annot.get("NCBI_Taxon_ID")
@@ -84,7 +84,6 @@ async def ncit2taxid(ncit_codes):
     :return notfound_ncit: a dictionary with NCIT codes failed to map taxid
     {'Trypanosoma brucei gambiense': {'ncit': 'C125975', 'description': 'A species of parasitic flagellate protozoa...'}}
     """
-    ncit_codes = [ncit_code for ncit_code in get_ncit_code(in_file)]
     ncit2taxids = {}
     notfound_ncit = {}
 
@@ -150,8 +149,6 @@ if __name__ == "__main__":
     filename = os.path.join("downloads", "NCIT.txt")
     NCIT = [ncit for ncit in get_ncit_code(filename)]
     print(len(NCIT))
-
-
 
     # NCIT = ["C85924", "C83526"]
     # taxids, notfound = asyncio.run(ncit2taxid(NCIT))  # 567 records in mapped
