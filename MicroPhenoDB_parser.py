@@ -1,11 +1,13 @@
 import asyncio
 import csv
 import os
+import re
 
 import aiohttp
 import biothings_client as bt
 import chardet
 import requests
+from ete3 import NCBITaxa
 
 
 def detect_encoding(in_file):
@@ -153,19 +155,59 @@ def get_taxon_names(in_file, ncit_codes):
     for line in obj:
         names = line[1].lower()
         if names not in mapped_taxids:
-            trimmed_names = names.split("(")[0].strip()
-            trimmed_names = trimmed_names.split(",")[0].strip()
-            trimmed_names = trimmed_names.split("/")[0].strip()
-            revised_names = trimmed_names.replace("??", "").replace("?", "")
-            names4map.append(revised_names)
+            names4map.append(names)
     return names4map
 
 
-def name2taxid(names4map):
-    names4map = set(names4map)
+def preprocess_taxon_name(names):
+    name_map = {}
+    manual = {
+        "butyrate-producing bacterium ssc/2": "anaerostipes hadrus",
+        "neisseria weaverii": "neisseria weaveri",
+        "lcm virus": "mammarenavirus choriomeningitidis",
+        "erysipelatoclostridium ramosum": "thomasclavelia ramosa",
+    }
+
+    for old_name in set(names):
+        if old_name in manual:
+            name_map[old_name] = manual[old_name]
+            continue
+
+        name = old_name.lower().strip()
+        name = re.split(r"[(/,]| and | namely | such as ", name)[0].strip()
+        name = re.sub(r"\bsensu lato\b", "", name)
+        name = re.sub(r"\bcomplex\b", "", name)
+        name = re.sub(r"\bcluster\b.*", "", name)
+        name = re.sub(r"\bgroup\b.*", "", name)
+        name = re.sub(r"\bsubgroup\b.*", "", name).strip()
+        name = re.sub(r"\bclade\b", "", name)
+        name = re.sub(r"\bincertae sedis\b", "", name)
+        name = re.sub(r"\btypes? \d+[a-zA-Z]*\b", "", name)
+        name = re.sub(r"\bserovars? \w+\b", "", name)
+        name = re.sub(r"\bsubsp(ecies)? \w+\b", "", name)
+        name = re.sub(r"\bserogroup? \w+\b", "", name)
+        name = re.sub(r"\bstrain\b", "", name)
+        name = re.sub(r"\bspp\b.*", "", name).strip()
+        name = name.replace("??", "").replace("?", "").replace(":", "")
+        name = re.sub(r"\bb\.\s*", "", name)
+        name = re.sub(r"\be\.\s*", "entamoeba ", name)
+        name = re.sub(r"\bhsv[-\s]*\d*", "herpes simplex virus", name)
+        name = re.sub(r"\bhpv[-\s]*\d*", "human papillomavirus", name)
+        name = re.sub(r"\bhmpv\b", "human metapneumovirus", name)
+        name = re.sub(r"\bebv\b", "epstein-barr virus", name)
+        name = re.sub(r"\bp\.\s*", "pasteurella multocida", name)
+        name = re.sub(r"\s+", " ", name).strip()
+
+        name_map[old_name] = name
+
+    return name_map
+
+
+def name2taxid(names):
+    names = set(names)
     get_taxon = bt.get_client("taxon")
     taxon_info = get_taxon.querymany(
-        names4map,
+        names,
         scopes="scientific_name",
         fields=["_id", "scientific_name", "lineage", "parent_taxid", "rank"],
     )
@@ -193,6 +235,20 @@ if __name__ == "__main__":
     names4map = get_taxon_names(in_f_core, NCIT)
     # print(names4map)
     # print(len(set(names4map)))  # 1259 names need to use biothings to map, 515 names mapped
-    # 222 found unique hits, 717 has dup hits, and 320 has no hit
-    name2taxid = name2taxid(names4map)
+
+    processed_name_map = preprocess_taxon_name(names4map)
+    # print(processed_name_map)
+
+    name_query = [new_name for old_name, new_name in processed_name_map.items()]
+    ncbi = NCBITaxa()
+    ete3_name2taxid = ncbi.get_name_translator(
+        name_query
+    )  # ete3 successfully mapped 1003 taxon, 256 no hit
+    # print(ete3_name2taxid)
+    # print(len(ete3_name2taxid))
+
+    # 264 found unique hits, 792 has dup hits, and 203 has no hit
+    name2taxid = name2taxid(name_query)
     print(name2taxid)
+
+    # use entrez to map the 264 notfound names, 127 mapped, 137 no hit
