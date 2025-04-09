@@ -166,6 +166,19 @@ def preprocess_taxon_name(names):
         "neisseria weaverii": "neisseria weaveri",
         "lcm virus": "mammarenavirus choriomeningitidis",
         "erysipelatoclostridium ramosum": "thomasclavelia ramosa",
+        "coxsackie a virus": "coxsackievirus",
+        "prevotella multisaccharivorax": "hallella multisaccharivorax",
+        "actinomyces meyerii": "schaalia meyeri",
+        "coxsackie": "coxsackievirus",
+        "escherichia vulneris": "pseudescherichia vulneris",
+        "clostridium glycolicum": "terrisporobacter glycolicus",
+        "clostrdium disporicum": "clostridium disporicum",
+        "spirochaeta miyamotoi": "borrelia miyamotoi",
+        "clostridium diffcile": "clostridioides difficile",
+        "clostridium sordellii": "paraclostridium sordellii",
+        "bk polyoma virus": "betapolyomavirus hominis",
+        "group a, b, c, and g streptococci": "streptococcus",
+        "group b streptococci": "streptococcus",
     }
 
     for old_name in set(names):
@@ -173,22 +186,26 @@ def preprocess_taxon_name(names):
             name_map[old_name] = manual[old_name]
             continue
 
-        name = old_name.lower().strip()
+        name = old_name.strip()
         name = re.split(r"[(/,]| and | namely | such as ", name)[0].strip()
         name = re.sub(r"\bsensu lato\b", "", name)
         name = re.sub(r"\bcomplex\b", "", name)
         name = re.sub(r"\bcluster\b.*", "", name)
-        name = re.sub(r"\bgroup\b.*", "", name)
         name = re.sub(r"\bsubgroup\b.*", "", name).strip()
         name = re.sub(r"\bclade\b", "", name)
         name = re.sub(r"\bincertae sedis\b", "", name)
         name = re.sub(r"\btypes? \d+[a-zA-Z]*\b", "", name)
+        name = re.sub(r"\btype? \d+[a-zA-Z]*\b", "", name)
         name = re.sub(r"\bserovars? \w+\b", "", name)
         name = re.sub(r"\bsubsp(ecies)? \w+\b", "", name)
         name = re.sub(r"\bserogroup? \w+\b", "", name)
-        name = re.sub(r"\bstrain\b", "", name)
+        name = re.sub(r"\bstrain\b.*", "", name)
         name = re.sub(r"\bspp\b.*", "", name).strip()
+        name = re.sub(r"(virus)[-\s]?m\b", r"\1", name).strip()  # remove m following virus
         name = name.replace("??", "").replace("?", "").replace(":", "")
+        name = re.sub(
+            r"\bspirochaeta\b", "borrelia", name
+        )  # replace all spirochaeta to borreliella
         name = re.sub(r"\bb\.\s*", "", name)
         name = re.sub(r"\be\.\s*", "entamoeba ", name)
         name = re.sub(r"\bhsv[-\s]*\d*", "herpes simplex virus", name)
@@ -196,6 +213,10 @@ def preprocess_taxon_name(names):
         name = re.sub(r"\bhmpv\b", "human metapneumovirus", name)
         name = re.sub(r"\bebv\b", "epstein-barr virus", name)
         name = re.sub(r"\bp\.\s*", "pasteurella multocida", name)
+        name = re.sub(r"\bhemolytic\b", "", name)
+        name = re.sub(r"\bgroup[s]?[ a-z]*\b", "", name)
+        name = re.sub(r"\bstreptococci\b", "streptococcus", name)
+        name = re.sub(r"\bpiv\b", "orthorubulavirus hominis", name)
         name = re.sub(r"\s+", " ", name).strip()
 
         name_map[old_name] = name
@@ -203,6 +224,7 @@ def preprocess_taxon_name(names):
     return name_map
 
 
+# TODO: change it to ete3 for mapping
 def name2taxid(names):
     names = set(names)
     get_taxon = bt.get_client("taxon")
@@ -223,7 +245,7 @@ if __name__ == "__main__":
     NCIT = [ncit for ncit in get_ncit_code(in_f_ncit)]
     # print(len(NCIT))
     #
-    # # NCIT = ["C85924", "C83526"]
+    # NCIT = ["C85924", "C83526"]
     # taxids, notfound = asyncio.run(ncit2taxid(NCIT))  # 567 records in mapped
     # print(taxids)
     # print(len(taxids))
@@ -234,21 +256,29 @@ if __name__ == "__main__":
     in_f_core = os.path.join("downloads", "core_table.txt")
     names4map = get_taxon_names(in_f_core, NCIT)
     # print(names4map)
-    # print(len(set(names4map)))  # 1259 names need to use biothings to map, 515 names mapped
+    print(len(set(names4map)))  # 1259 names need to use biothings to map, 515 names mapped
 
     processed_name_map = preprocess_taxon_name(names4map)
+    print(f"Unique processed name map: {len(processed_name_map)}")
     # print(processed_name_map)
 
+    # the processed name can be the same for different pre-processed names
+    # need to save the old name so that I can map these back
     name_query = [new_name for old_name, new_name in processed_name_map.items()]
+    print(f"Unique Names for query: {len(set(name_query))}")  # 1182 new name after preprocessing
+
     ncbi = NCBITaxa()
     ete3_name2taxid = ncbi.get_name_translator(
         name_query
-    )  # ete3 successfully mapped 1003 taxon, 256 no hit
-    # print(ete3_name2taxid)
-    # print(len(ete3_name2taxid))
+    )  # ete3 successfully mapped 1016 taxon, 166 no hit
+    ete3_mapped = {name: taxid[0] for name, taxid in ete3_name2taxid.items() if taxid}
+    print(f"ete3 mapped: {len(ete3_mapped)}")
+    name4entrez = [name for name in name_query if name not in ete3_mapped]
+    # print(set(name4entrez))
+    print(len(set(name4entrez)))  # 166 no hit
 
-    # 264 found unique hits, 792 has dup hits, and 203 has no hit
-    name2taxid = name2taxid(name_query)
-    print(name2taxid)
+    # 206 found unique hits, 799 has dup hits, and 177 has no hit
+    # name2taxid = name2taxid(name_query)
+    # print(name2taxid)
 
-    # use entrez to map the 264 notfound names, 127 mapped, 137 no hit
+    # use Entrez to map the 166 notfound names,  mapped,  no hit
