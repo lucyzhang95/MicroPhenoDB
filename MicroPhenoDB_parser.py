@@ -3,9 +3,9 @@ import csv
 import os
 
 import aiohttp
+import biothings_client as bt
 import chardet
 import requests
-import biothings_client as bt
 
 
 def detect_encoding(in_file):
@@ -145,15 +145,40 @@ def hard_code_ncit2taxid(ncit_codes):
     return ncit2taxids
 
 
-def get_taxon_names(in_file):
-    obj =
+def get_taxon_names(in_file, ncit_codes):
+    obj = read_file(in_file)
+    mapped_taxids = hard_code_ncit2taxid(ncit_codes)
+    names4map = []
+
+    for line in obj:
+        names = line[1].lower()
+        if names not in mapped_taxids:
+            trimmed_names = names.split("(")[0].strip()
+            trimmed_names = trimmed_names.split(",")[0].strip()
+            trimmed_names = trimmed_names.split("/")[0].strip()
+            revised_names = trimmed_names.replace("??", "").replace("?", "")
+            names4map.append(revised_names)
+    return names4map
 
 
+def name2taxid(names4map):
+    names4map = set(names4map)
+    get_taxon = bt.get_client("taxon")
+    taxon_info = get_taxon.querymany(
+        names4map,
+        scopes="scientific_name",
+        fields=["_id", "scientific_name", "lineage", "parent_taxid", "rank"],
+    )
+    notfound = []
+    for d in taxon_info:
+        if "notfound" in d:
+            notfound.append(d["query"])
+    return notfound
 
 
 if __name__ == "__main__":
-    # in_f_ncit = os.path.join("downloads", "NCIT.txt")
-    # NCIT = [ncit for ncit in get_ncit_code(in_f_ncit)]
+    in_f_ncit = os.path.join("downloads", "NCIT.txt")
+    NCIT = [ncit for ncit in get_ncit_code(in_f_ncit)]
     # print(len(NCIT))
     #
     # # NCIT = ["C85924", "C83526"]
@@ -165,4 +190,9 @@ if __name__ == "__main__":
     # print(len(notfound))
 
     in_f_core = os.path.join("downloads", "core_table.txt")
-
+    names4map = get_taxon_names(in_f_core, NCIT)
+    # print(names4map)
+    # print(len(set(names4map)))  # 1259 names need to use biothings to map, 515 names mapped
+    # 222 found unique hits, 717 has dup hits, and 320 has no hit
+    name2taxid = name2taxid(names4map)
+    print(name2taxid)
