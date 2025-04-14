@@ -106,7 +106,7 @@ def hard_code_ncit2taxid(ncit_codes):
     There are a total of 15 NCIT identifiers need to be manually mapped
     2 key-values are removed due to non-microorganism property
 
-    :param ncit_codes: a list of NCIT codes
+    :param ncit_codes: a list of NCIT codes derived from NCIT.txt file
     :return: a dictionary mapping NCIT codes to taxids
     {'Trypanosoma brucei gambiense': {'ncit': 'C125975', 'description': 'A species of parasitic flagellate protozoa...'}}
     """
@@ -158,7 +158,7 @@ def get_taxon_names(in_file, ncit_codes):
             names4map.append(names)
     return names4map
 
-
+# TODO: reorganize the rules (do not exlcude "/" for now due to strain specificity)
 def preprocess_taxon_name(names):
     name_map = {}
     manual = {
@@ -179,6 +179,8 @@ def preprocess_taxon_name(names):
         "bk polyoma virus": "betapolyomavirus hominis",
         "group a, b, c, and g streptococci": "streptococcus",
         "group b streptococci": "streptococcus",
+        "human papillomavirus-53": "alphapapillomavirus 6",
+        "bacterium mpn-isolate 19": "bacterium mpn-isolate group 19"
     }
 
     for old_name in set(names):
@@ -187,7 +189,9 @@ def preprocess_taxon_name(names):
             continue
 
         name = old_name.strip()
-        name = re.split(r"[(/,]| and | namely | such as ", name)[0].strip()
+        name = re.split(r"[(/,]| and | namely | such as ", name)[0].strip() # remove weird formatting including filler words
+        name = re.sub(r"\b(ss|sl|sr|sm|m|art|mpn)[-_]?\d+\b", "", name) # remove the post fix for strains e.g., butyrate-producing bacterium sl6 -> butyrate-producing bacterium
+        name = re.sub(r"(human papillomavirus)[- ]?\d+[a-z]*", r"\1", name)
         name = re.sub(r"\bsensu lato\b", "", name)
         name = re.sub(r"\bcomplex\b", "", name)
         name = re.sub(r"\bcluster\b.*", "", name)
@@ -224,7 +228,7 @@ def preprocess_taxon_name(names):
     return name_map
 
 
-# TODO: change it to ete3 for mapping
+# TODO: Taxon name resolver (ete3 first, entrez second, then name preprocess, lastly using biothings?)
 def name2taxid(names):
     names = set(names)
     get_taxon = bt.get_client("taxon")
@@ -257,6 +261,7 @@ if __name__ == "__main__":
     names4map = get_taxon_names(in_f_core, NCIT)
     # print(names4map)
     print(len(set(names4map)))  # 1259 names need to use biothings to map, 515 names mapped
+    # (1196 names need to be mapped if I want to get 95% retrieval rate)
 
     processed_name_map = preprocess_taxon_name(names4map)
     print(f"Unique processed name map: {len(processed_name_map)}")
@@ -278,7 +283,9 @@ if __name__ == "__main__":
     print(len(set(name4entrez)))  # 166 no hit
 
     # 206 found unique hits, 799 has dup hits, and 177 has no hit
-    # name2taxid = name2taxid(name_query)
-    # print(name2taxid)
+    name2taxid = name2taxid(name_query)
+    print(name2taxid)
 
     # use Entrez to map the 166 notfound names, 57 mapped, 109 no hit
+    # biothings: 40 with 1 hit, 34 found dup hits, and 92 no hit (out of 166 names)
+    # Currently mapped 1184 names ~ 94% of the retrieval rate
