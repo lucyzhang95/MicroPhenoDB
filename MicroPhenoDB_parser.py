@@ -108,7 +108,10 @@ def hard_code_ncit2taxid(ncit_codes):
 
     :param ncit_codes: a list of NCIT codes derived from NCIT.txt file
     :return: a dictionary mapping NCIT codes to taxids
-    {'Trypanosoma brucei gambiense': {'ncit': 'C125975', 'description': 'A species of parasitic flagellate protozoa...'}}
+    {'trypanosoma brucei gambiense': {
+    'ncit': 'C125975',
+    'description': 'A species of parasitic flagellate protozoa in the order Kinetoplastida. T. b. gambiense is transmitted by the tsetse fly and causes West African trypanosomiasis. Humans are the main reservoir for T. b. gambiense, but this species can also be found in animals.',
+    'taxid': 31285}}
     """
     ncit2taxids, notfound_ncit = asyncio.run(ncit2taxid(ncit_codes))
     notfound_ncit["alpha-amylase (aspergillus oryzae)"][
@@ -119,7 +122,7 @@ def hard_code_ncit2taxid(ncit_codes):
     ][
         "description"
     ] = "A virus from the family Flaviviridae, part of the Japanese encephalitis serocomplex of nine genetically and antigenically related viruses, some of which are particularly severe in horses, and four of which, including West Nile virus, are known to infect humans.[13] The enveloped virus is closely related to the West Nile virus and the St. Louis encephalitis virus. The positive sense single-stranded RNA genome is packaged in the capsid which is formed by the capsid protein. [Wikipedia]"
-    # 2 keys do not have taxids nor descriptions: Growth Hormone-Releasing Hormone Analogue and Metastatic Breast Carcinoma
+    # Only 2 keys do not have taxids nor descriptions: Growth Hormone-Releasing Hormone Analogue and Metastatic Breast Carcinoma
     manual_taxid_map = {
         "powassan virus": 11083,
         "alpha-amylase (aspergillus oryzae)": 5062,
@@ -250,13 +253,15 @@ if __name__ == "__main__":
     # print(len(NCIT))
     #
     # NCIT = ["C85924", "C83526"]
-    # taxids, notfound = asyncio.run(ncit2taxid(NCIT))  # 567 records in mapped
+    taxids, notfound = asyncio.run(ncit2taxid(NCIT))  # 567 records in mapped
     # print(taxids)
     # print(len(taxids))
-    # new_taxids = hard_code_ncit2taxid(NCIT)  # 582 records after manual mapping
+    new_taxids = hard_code_ncit2taxid(NCIT)  # 582 records after manual mapping
+    print(new_taxids)
     # print(len(new_taxids))
     # print(len(notfound))
 
+"""
     in_f_core = os.path.join("downloads", "core_table.txt")
     names4map = get_taxon_names(in_f_core, NCIT)
     # print(names4map)
@@ -289,3 +294,6 @@ if __name__ == "__main__":
     # use Entrez to map the 166 notfound names, 57 mapped, 109 no hit
     # biothings: 40 with 1 hit, 34 found dup hits, and 92 no hit (out of 166 names)
     # Currently mapped 1184 names ~ 94% of the retrieval rate
+"""
+
+
