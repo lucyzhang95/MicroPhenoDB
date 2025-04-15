@@ -162,6 +162,11 @@ def get_taxon_names(in_file, ncit_codes) -> list:
     return names4map
 
 
+def remove_colon4name(name):
+    name = re.sub(r":", " ", name)
+    return name
+
+
 def remove_dot4name_except_in_sp(name):
     name = re.sub(r"\b(sp|spp)\.", r"\1dot", name)
     name = name.replace(".", "")
@@ -184,10 +189,11 @@ def preprocess_taxon_name(names):
     name_map = {}
     for old_name in names:
         new_name = old_name.strip()
-        new_name = re.sub(r"[\":'?!#*&+\\]", "", new_name) # remove listed special characters
+        new_name = re.sub(r"[\"'?!#*&+]", "", new_name) # remove listed special characters
+        new_name = remove_colon4name(new_name)
         new_name = remove_dot4name_except_in_sp(new_name)
         new_name = remove_hyphen4name(new_name)
-        new_name = split_name_by_slash(new_name)
+        new_name = split_name_by_slash(new_name) # TODO: for yeasts (candida/cryptococcus spp) -> yeasts (candida
 
 
 
