@@ -44,7 +44,7 @@ def get_ncit_code(in_file):
                 yield ncit_code
 
 
-async def fetch_ncit_taxid(session, ncit_code, notfound_ncit):
+async def fetch_ncit_taxid(session, ncit_code, notfound_ncit) -> [dict]:
     iri = f"http://purl.obolibrary.org/obo/NCIT_{ncit_code}"
     url = "https://www.ebi.ac.uk/ols4/api/ontologies/ncit/terms"
     params = {"iri": iri}
@@ -78,7 +78,7 @@ async def fetch_ncit_taxid(session, ncit_code, notfound_ncit):
         print(f"Failed to connect ebi API: {e}")
 
 
-async def ncit2taxid(ncit_codes):
+async def ncit2taxid(ncit_codes) -> [dict | dict]:
     """Map NCIT identifiers to NCBI Taxids using EBI API
 
     :param ncit_codes: a list of NCIT codes e.g., ["C85924", "C83526", ...]
@@ -101,7 +101,7 @@ async def ncit2taxid(ncit_codes):
     return ncit2taxids, notfound_ncit
 
 
-def hard_code_ncit2taxid(ncit_codes):
+def hard_code_ncit2taxid(ncit_codes) -> dict:
     """Manual map leftover NCIT identifiers to taxids
     There are a total of 15 NCIT identifiers need to be manually mapped
     2 key-values are removed due to non-microorganism property
@@ -150,7 +150,7 @@ def hard_code_ncit2taxid(ncit_codes):
     return ncit2taxids
 
 
-def get_taxon_names(in_file, ncit_codes):
+def get_taxon_names(in_file, ncit_codes) -> list:
     obj = read_file(in_file)
     mapped_taxids = hard_code_ncit2taxid(ncit_codes)
     names4map = []
