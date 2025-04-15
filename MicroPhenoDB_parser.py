@@ -168,20 +168,26 @@ def remove_colon4name(name):
 
 
 def remove_dot4name_except_in_sp(name):
-    name = re.sub(r"\b(sp|spp)\.", r"\1dot", name)
-    name = name.replace(".", "")
-    name = name.replace("dot", ".")
+    name = re.sub(r'\b(sp|spp)\.', r'\1__dot__', name)
+    numeric_matches = re.findall(r'\d+(?:\.\d+)+', name)
+    for match in numeric_matches:
+        protected = match.replace('.', '__dot__')
+        name = name.replace(match, protected)
+    name = name.replace('.', '')
+    name = name.replace('__dot__', '.')
     return name.strip()
 
 
 def remove_hyphen4name(name):
-    name = re.sub(r"(?<=[a-z])-(?=\d)", " ", name)
+    name = name.replace("butyrate-producing", "BUTYRATEPRODUCING")
+    name = re.sub(r"(?<=[a-z])-(?=\d)", " ", name) # letter-digit
     name = re.sub(r"(?<=[a-z])-(?=(like|associated|related|positive|negative|)\b)", " ", name)
+    name = name.replace("BUTYRATEPRODUCING", "butyrate-producing")
     return name.strip()
 
 
 def split_name_by_slash(name):
-    name = re.split(r"(?<=[a-zA-Z])/(?=[a-zA-Z])", name)[0].strip()
+    name = re.split(r"(?<=[a-zA-Z])/\s*(?=[a-zA-Z])", name)[0].strip()
     return name
 
 
