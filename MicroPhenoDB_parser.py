@@ -161,77 +161,45 @@ def get_taxon_names(in_file, ncit_codes):
             names4map.append(names)
     return names4map
 
-# TODO: reorganize the rules (do not exlcude "/" for now due to strain specificity)
+
+def remove_dot4name_except_in_sp(name):
+    name = re.sub(r"\b(sp|spp)\.", r"\1dot", name)
+    name = name.replace(".", "")
+    name = name.replace("dot", ".")
+    return name.strip()
+
+
+def remove_hyphen4name(name):
+    name = re.sub(r"(?<=[a-z])-(?=\d)", " ", name)
+    name = re.sub(r"(?<=[a-z])-(?=(like|associated|related|positive|negative|)\b)", " ", name)
+    return name.strip()
+
+
+def split_name_by_slash(name):
+    name = re.split(r"(?<=[a-zA-Z])/(?=[a-zA-Z])", name)[0].strip()
+    return name
+
+
 def preprocess_taxon_name(names):
     name_map = {}
-    manual = {
-        "butyrate-producing bacterium ssc/2": "anaerostipes hadrus",
-        "neisseria weaverii": "neisseria weaveri",
-        "lcm virus": "mammarenavirus choriomeningitidis",
-        "erysipelatoclostridium ramosum": "thomasclavelia ramosa",
-        "coxsackie a virus": "coxsackievirus",
-        "prevotella multisaccharivorax": "hallella multisaccharivorax",
-        "actinomyces meyerii": "schaalia meyeri",
-        "coxsackie": "coxsackievirus",
-        "escherichia vulneris": "pseudescherichia vulneris",
-        "clostridium glycolicum": "terrisporobacter glycolicus",
-        "clostrdium disporicum": "clostridium disporicum",
-        "spirochaeta miyamotoi": "borrelia miyamotoi",
-        "clostridium diffcile": "clostridioides difficile",
-        "clostridium sordellii": "paraclostridium sordellii",
-        "bk polyoma virus": "betapolyomavirus hominis",
-        "group a, b, c, and g streptococci": "streptococcus",
-        "group b streptococci": "streptococcus",
-        "human papillomavirus-53": "alphapapillomavirus 6",
-        "bacterium mpn-isolate 19": "bacterium mpn-isolate group 19"
-    }
+    for old_name in names:
+        new_name = old_name.strip()
+        new_name = re.sub(r"[\":'?!#*&+\\]", "", new_name) # remove listed special characters
+        new_name = remove_dot4name_except_in_sp(new_name)
+        new_name = remove_hyphen4name(new_name)
+        new_name = split_name_by_slash(new_name)
 
-    for old_name in set(names):
-        if old_name in manual:
-            name_map[old_name] = manual[old_name]
-            continue
 
-        name = old_name.strip()
-        name = re.split(r"[(/,]| and | namely | such as ", name)[0].strip() # remove weird formatting including filler words
-        name = re.sub(r"\b(ss|sl|sr|sm|m|art|mpn)[-_]?\d+\b", "", name) # remove the post fix for strains e.g., butyrate-producing bacterium sl6 -> butyrate-producing bacterium
-        name = re.sub(r"(human papillomavirus)[- ]?\d+[a-z]*", r"\1", name)
-        name = re.sub(r"\bsensu lato\b", "", name)
-        name = re.sub(r"\bcomplex\b", "", name)
-        name = re.sub(r"\bcluster\b.*", "", name)
-        name = re.sub(r"\bsubgroup\b.*", "", name).strip()
-        name = re.sub(r"\bclade\b", "", name)
-        name = re.sub(r"\bincertae sedis\b", "", name)
-        name = re.sub(r"\btypes? \d+[a-zA-Z]*\b", "", name)
-        name = re.sub(r"\btype? \d+[a-zA-Z]*\b", "", name)
-        name = re.sub(r"\bserovars? \w+\b", "", name)
-        name = re.sub(r"\bsubsp(ecies)? \w+\b", "", name)
-        name = re.sub(r"\bserogroup? \w+\b", "", name)
-        name = re.sub(r"\bstrain\b.*", "", name)
-        name = re.sub(r"\bspp\b.*", "", name).strip()
-        name = re.sub(r"(virus)[-\s]?m\b", r"\1", name).strip()  # remove m following virus
-        name = name.replace("??", "").replace("?", "").replace(":", "")
-        name = re.sub(
-            r"\bspirochaeta\b", "borrelia", name
-        )  # replace all spirochaeta to borreliella
-        name = re.sub(r"\bb\.\s*", "", name)
-        name = re.sub(r"\be\.\s*", "entamoeba ", name)
-        name = re.sub(r"\bhsv[-\s]*\d*", "herpes simplex virus", name)
-        name = re.sub(r"\bhpv[-\s]*\d*", "human papillomavirus", name)
-        name = re.sub(r"\bhmpv\b", "human metapneumovirus", name)
-        name = re.sub(r"\bebv\b", "epstein-barr virus", name)
-        name = re.sub(r"\bp\.\s*", "pasteurella multocida", name)
-        name = re.sub(r"\bhemolytic\b", "", name)
-        name = re.sub(r"\bgroup[s]?[ a-z]*\b", "", name)
-        name = re.sub(r"\bstreptococci\b", "streptococcus", name)
-        name = re.sub(r"\bpiv\b", "orthorubulavirus hominis", name)
-        name = re.sub(r"\s+", " ", name).strip()
 
-        name_map[old_name] = name
 
+        name_map[old_name] = new_name
     return name_map
 
 
-# TODO: Taxon name resolver (ete3 first, entrez second, then name preprocess, lastly using biothings?)
+
+
+
+# TODO: Taxon name resolver (ete3 first, entrez second, then name preprocess, lastly using biothings...)
 def name2taxid(names):
     names = set(names)
     get_taxon = bt.get_client("taxon")
@@ -257,7 +225,7 @@ if __name__ == "__main__":
     # print(taxids)
     # print(len(taxids))
     new_taxids = hard_code_ncit2taxid(NCIT)  # 582 records after manual mapping
-    print(new_taxids)
+    # print(new_taxids)
     # print(len(new_taxids))
     # print(len(notfound))
 
