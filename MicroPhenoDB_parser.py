@@ -191,6 +191,22 @@ def split_name_by_slash(name):
     return name
 
 
+def remove_parentheses(name):
+    name = re.sub(r"\s*\(.+\)", "", name)
+    return name
+
+
+def process_comma(name):
+    name = re.sub(r",\s*(and\s+)?[a-z]{1,3}\b", "", name)
+    name = name.split(",")[0].strip()
+    return name.strip()
+
+
+def remove_and_in_name(name):
+    name = name.split("and")[0].strip()
+    return name
+
+
 def preprocess_taxon_name(names):
     name_map = {}
     for old_name in names:
@@ -199,7 +215,10 @@ def preprocess_taxon_name(names):
         new_name = remove_colon4name(new_name)
         new_name = remove_dot4name_except_in_sp(new_name)
         new_name = remove_hyphen4name(new_name)
-        new_name = split_name_by_slash(new_name) # TODO: for yeasts (candida/cryptococcus spp) -> yeasts (candida
+        new_name = remove_parentheses(new_name)
+        new_name = split_name_by_slash(new_name)
+        new_name = process_comma(new_name)
+        new_name = remove_and_in_name(new_name)
 
 
 
