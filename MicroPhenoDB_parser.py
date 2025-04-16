@@ -68,7 +68,7 @@ async def fetch_ncit_taxid(session, ncit_code, notfound_ncit) -> [dict]:
                 return name, {
                     "taxid": int(taxid),
                     "ncit": ncit_code,
-                    "description": f"{description} [NCIT]",  # add description src
+                    "description": f"{description}[NCIT]",  # add description src
                 }
             else:
                 notfound_ncit[name] = {"ncit": ncit_code, "description": description}
@@ -116,12 +116,12 @@ def hard_code_ncit2taxid(ncit_codes) -> dict:
     ncit2taxids, notfound_ncit = asyncio.run(ncit2taxid(ncit_codes))
     notfound_ncit["alpha-amylase (aspergillus oryzae)"][
         "description"
-    ] = "A fungus used in East Asia to saccharify rice, sweet potato, and barley in the making of alcoholic beverages such as sake and shōchū, and also to ferment soybeans for making soy sauce and miso. It is one of the different koji molds used for food fermentation. [Wikipedia]"
+    ] = "A fungus used in East Asia to saccharify rice, sweet potato, and barley in the making of alcoholic beverages such as sake and shochu, and also to ferment soybeans for making soy sauce and miso. It is one of the different koji molds used for food fermentation.[Wikipedia]"
     notfound_ncit[
         "japanese encephalitis virus strain nakayama-nih antigen (formaldehyde inactivated)"
     ][
         "description"
-    ] = "A virus from the family Flaviviridae, part of the Japanese encephalitis serocomplex of nine genetically and antigenically related viruses, some of which are particularly severe in horses, and four of which, including West Nile virus, are known to infect humans.[13] The enveloped virus is closely related to the West Nile virus and the St. Louis encephalitis virus. The positive sense single-stranded RNA genome is packaged in the capsid which is formed by the capsid protein. [Wikipedia]"
+    ] = "A virus from the family Flaviviridae, part of the Japanese encephalitis serocomplex of nine genetically and antigenically related viruses, some of which are particularly severe in horses, and four of which, including West Nile virus, are known to infect humans. The enveloped virus is closely related to the West Nile virus and the St. Louis encephalitis virus. The positive sense single-stranded RNA genome is packaged in the capsid which is formed by the capsid protein.[Wikipedia]"
     # Only 2 keys do not have taxids nor descriptions: Growth Hormone-Releasing Hormone Analogue and Metastatic Breast Carcinoma
     manual_taxid_map = {
         "powassan virus": 11083,
@@ -162,8 +162,13 @@ def get_taxon_names(in_file, ncit_codes) -> list:
     return names4map
 
 
+def remove_special_char(name):
+    name = re.sub(r"[?!#*&+]", "", name).strip()
+    return name
+
+
 def remove_colon4name(name):
-    name = re.sub(r":", " ", name)
+    name = re.sub(r":", " ", name).strip()
     return name
 
 
@@ -192,7 +197,7 @@ def split_name_by_slash(name):
 
 
 def remove_parentheses(name):
-    name = re.sub(r"\s*\(.+\)", "", name)
+    name = re.sub(r"\s*\(.+\)", "", name).strip()
     return name
 
 
@@ -211,7 +216,7 @@ def preprocess_taxon_name(names):
     name_map = {}
     for old_name in names:
         new_name = old_name.strip()
-        new_name = re.sub(r"[\"'?!#*&+]", "", new_name) # remove listed special characters
+        new_name = remove_special_char(new_name)
         new_name = remove_colon4name(new_name)
         new_name = remove_dot4name_except_in_sp(new_name)
         new_name = remove_hyphen4name(new_name)
@@ -219,7 +224,6 @@ def preprocess_taxon_name(names):
         new_name = split_name_by_slash(new_name)
         new_name = process_comma(new_name)
         new_name = remove_and_in_name(new_name)
-
         name_map[old_name] = new_name
     return name_map
 
