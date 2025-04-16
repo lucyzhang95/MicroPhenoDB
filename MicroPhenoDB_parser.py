@@ -220,9 +220,6 @@ def preprocess_taxon_name(names):
         new_name = process_comma(new_name)
         new_name = remove_and_in_name(new_name)
 
-
-
-
         name_map[old_name] = new_name
     return name_map
 
