@@ -228,10 +228,7 @@ def preprocess_taxon_name(names):
     return name_map
 
 
-
-
-
-# TODO: Taxon name resolver (ete3 first, entrez second, then name preprocess, lastly using biothings...)
+# TODO: Taxon name resolver (preprocess with special character only, ete3 first, entrez second, then detailed name preprocess, lastly using biothings...)
 def name2taxid(names):
     names = set(names)
     get_taxon = bt.get_client("taxon")
