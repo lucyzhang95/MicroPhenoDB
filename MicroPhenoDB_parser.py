@@ -264,11 +264,14 @@ def ete3_taxon_name2taxid(taxon_names):
     :return: a dictionary mapping taxon names to taxid numbers
     {'human papillomavirus 11': 10580, 'veillonella sp.': 1926307, ...}
     """
+    ete3_mapped = {}
     taxon_names = set(taxon_names)
 
     ncbi = NCBITaxa()
     ete3_name2taxid = ncbi.get_name_translator(taxon_names)
-    ete3_mapped = {name: taxid[0] for name, taxid in ete3_name2taxid.items() if taxid}
+    for name, taxid in ete3_name2taxid.items():
+        if taxid:
+            ete3_mapped[name] = {name: taxid[0]}
     return ete3_mapped
 
 
@@ -277,6 +280,8 @@ def cached_ete3_taxon_name2taxid(taxon_names, cache_file="ete3_name2taxid.pkl"):
     if cached:
         return cached
     result = ete3_taxon_name2taxid(taxon_names)
+    for name in result:
+        result[name]["mapping_source"] = "ete3"
     save_pickle(result, cache_file)
     return result
 
@@ -344,18 +349,23 @@ if __name__ == "__main__":
     in_f_core = os.path.join("downloads", "core_table.txt")
     taxon_names = get_taxon_names2map(in_f_core, ncit_codes)
     # print(taxon_names)
-    print(len(taxon_names))
-    print(len(set(taxon_names)))  # 1229 unique names (1259 redundant names) need to be mapped
+    print(len(taxon_names)) # 1259 redundant names
+    print(len(set(taxon_names)))  # 1229 unique names need to be mapped
     # # (1196 names need to be mapped if I want to get 95% retrieval rate)
 
     preprocessed_names = preprocess_taxon_name(taxon_names)
     preprocessed_names2map = [new_name for old_name, new_name in preprocessed_names.items()]
 
-    # # previously with a different name preprocess function, ete3 successfully mapped 1016 taxon, 166 no hit
-    ete3_mapped = cached_ete3_taxon_name2taxid(preprocessed_names2map)
-    print(f"ete3 mapped: {len(ete3_mapped)}")
-    #
-    #
+    # previously with a different name preprocess function, ete3 successfully mapped 1016 taxon, 166 no hit
+    # Now ete3 has 957 hit, 272 unique names need to map
+    # ete3_mapped = ete3_taxon_name2taxid(preprocessed_names2map)
+    cached_ete3_mapped = cached_ete3_taxon_name2taxid(preprocessed_names2map)
+    print(cached_ete3_mapped)
+    print(f"cached ete3 mapped: {len(cached_ete3_mapped)}")
+
+    names4entrez = [new_name for old_name, new_name in preprocessed_names.items() if new_name not in ete3_mapped]
+    print(f"Names to map for entrez: {len(set(names4entrez))}")
+
     # name4entrez = [name for name in name_query if name not in ete3_mapped]
     # # print(set(name4entrez))
     # print(len(set(name4entrez)))  # 166 no hit
