@@ -302,17 +302,17 @@ def entrez_taxon_name2taxid(taxon_name):
 
 
 def entrez_batch_name2taxid(taxon_names, sleep=0.34):
-    mapping = {}
+    mapped = {}
     failed = []
 
     for name in taxon_names:
         result, failure = entrez_taxon_name2taxid(name)
-        mapping.update(result)
+        mapped.update(result)
         if failure:
             failed.append(failure)
         time.sleep(sleep)
 
-    return mapping, failed
+    return mapped, failed
 
 
 # TODO: Taxon name resolver (preprocess with special character only, ete3 first, entrez second, then detailed name preprocess, lastly using biothings...)
