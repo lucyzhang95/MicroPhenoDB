@@ -257,6 +257,11 @@ def preprocess_taxon_name(names):
     return name_map
 
 
+def remove_spp_in_name(name):
+    name = re.sub(r"\b(spp)\.", "", name).strip()
+    return name
+
+
 def ete3_taxon_name2taxid(taxon_names):
     """Use ete3 to map taxonomy names to NCBI taxonomy ids
     ete3 is good at mapping exact taxonomy names and fast without accessing API
