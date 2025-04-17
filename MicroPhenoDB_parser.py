@@ -7,13 +7,27 @@ import aiohttp
 import biothings_client as bt
 import chardet
 import requests
-import ring
 from ete3 import NCBITaxa
 from Bio import Entrez
 import time
+import pickle
 
 
-CACHE_FOLDER = os.path.join(".", "ring_cache")
+CACHE_DIR = os.path.join(os.getcwd(), "cache")
+os.makedirs(CACHE_DIR, exist_ok=True)
+
+
+def save_pickle(obj, f_name):
+    f_path = os.path.join(CACHE_DIR, f_name)
+    with open(f_path, "wb") as f:
+        pickle.dump(obj, f)
+
+
+def load_pickle(f_name):
+    f_path = os.path.join(CACHE_DIR, f_name)
+    if os.path.exists(f_path):
+        with open(f_path, "rb") as f:
+            return pickle.load(f)
 
 
 def detect_encoding(in_file):
@@ -43,11 +57,6 @@ def get_ncit_code(in_file):
     ncit_data = read_file(in_file, has_header=False)
     ncit_codes = [line[2].split("_")[1] for line in ncit_data if "NCIT" in line[2]]
     return ncit_codes
-
-
-@ring.disk(CACHE_FOLDER)
-def cached_hard_code_ncit2taxid(ncit_codes) -> dict:
-    return hard_code_ncit2taxid(ncit_codes)
 
 
 async def fetch_ncit_taxid(session, ncit_code, notfound_ncit) -> [dict]:
@@ -154,6 +163,17 @@ def hard_code_ncit2taxid(ncit_codes) -> dict:
     ncit2taxids["bacteroides dorei"]["taxid"] = 357276
     ncit2taxids["clostridiales xi"]["taxid"] = 884684
     return ncit2taxids
+
+
+def cached_hard_code_ncit2taxids(ncit_codes, cache_file="ncit2taxids.pkl"):
+    cached = load_pickle(cache_file)
+    if cached:
+        return cached
+    result = hard_code_ncit2taxid(ncit_codes)
+    for name in result:
+        result[name]["mapping_source"] = "obo"
+    save_pickle(result, cache_file)
+    return result
 
 
 def get_taxon_names(in_file, ncit_codes) -> list:
@@ -303,9 +323,10 @@ if __name__ == "__main__":
     # NCIT = ["C85924", "C83526"]
     # 567 records in mapped
     # print(taxids)
-    new_taxids = hard_code_ncit2taxid(NCIT)  # 582 records after manual mapping
+    new_taxids = cached_hard_code_ncit2taxids(NCIT)  # 582 records after manual mapping
     # print(new_taxids)
-    print(len(new_taxids))
+    # print(new_taxids)
+    print(f"Mapped NCIT taxon: {len(new_taxids)}")
     # """
 
 """
