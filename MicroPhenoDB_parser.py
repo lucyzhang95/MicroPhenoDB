@@ -341,31 +341,33 @@ if __name__ == "__main__":
     # print(new_taxids)
     # print(f"Mapped NCIT taxon: {len(new_taxids)}")
 
-
     in_f_core = os.path.join("downloads", "core_table.txt")
     taxon_names = get_taxon_names2map(in_f_core, ncit_codes)
     # print(taxon_names)
-    print(len(taxon_names)) # 1259 redundant names
-    print(len(set(taxon_names)))  # 1229 unique names need to be mapped
-    # # (1196 names need to be mapped if I want to get 95% retrieval rate)
+    print(len(taxon_names))  # 1259 redundant names
+    print(len(set(taxon_names)))  # 1244 unique names need to be mapped
+    # # (1182 names need to be mapped if I want to get 95% retrieval rate)
 
     preprocessed_names = preprocess_taxon_name(taxon_names)
     preprocessed_names2map = [new_name for old_name, new_name in preprocessed_names.items()]
 
     # previously with a different name preprocess function, ete3 successfully mapped 1016 taxon, 166 no hit
-    # Now ete3 has 957 hit, 272 unique names need to map
-    # ete3_mapped = ete3_taxon_name2taxid(preprocessed_names2map)
+    # Now ete3 has 969 hit, 275 unique names need to map
+    ete3_mapped = ete3_taxon_name2taxid(preprocessed_names2map)
     cached_ete3_mapped = cached_ete3_taxon_name2taxid(preprocessed_names2map)
     # print(cached_ete3_mapped)
     print(f"cached ete3 mapped: {len(cached_ete3_mapped)}")
 
     # previously, entrez has 166 no hit, 57 mapped, 109 no hit
-    names4entrez = [new_name for old_name, new_name in preprocessed_names.items() if new_name not in cached_ete3_mapped]
+    names4entrez = [
+        new_name
+        for old_name, new_name in preprocessed_names.items()
+        if new_name not in cached_ete3_mapped
+    ]
     print(f"Names to map for entrez: {len(set(names4entrez))}")
     Entrez.email = "bazhang@scripps.edu"
     entrez_mapped = entrez_batch_name2taxid(names4entrez)
     print(entrez_mapped)
-
 
     # biothings: 40 with 1 hit, 34 found dup hits, and 92 no hit (out of 166 names)
     # Currently mapped 1184 names ~ 94% of the retrieval rate
