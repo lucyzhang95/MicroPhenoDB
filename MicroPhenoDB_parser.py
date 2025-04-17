@@ -378,7 +378,7 @@ if __name__ == "__main__":
     # ete3_mapped = ete3_taxon_name2taxid(preprocessed_names2map)
     cached_ete3_mapped = cached_ete3_taxon_name2taxid(preprocessed_names2map)
     # print(cached_ete3_mapped)
-    print(f"cached ete3 mapped: {len(cached_ete3_mapped)}")
+    # print(f"cached ete3 mapped: {len(cached_ete3_mapped)}")
 
     # Now entrez has 56/275 mapped, 219/275 no hit
     names4entrez = [
@@ -387,16 +387,20 @@ if __name__ == "__main__":
         if new_name not in cached_ete3_mapped
     ]
     print(f"Names to map for entrez: {len(set(names4entrez))}")
-    entrez_mapped = entrez_batch_name2taxid(names4entrez)
-    cached_entrez_mapped = cached_entrez_batch_name2taxid(entrez_mapped)
-    print(cached_entrez_mapped)
+    # entrez_mapped = entrez_batch_name2taxid(names4entrez)
+    cached_entrez_mapped = cached_entrez_batch_name2taxid(names4entrez)
+    # print(cached_entrez_mapped)
     print(f"cached entrez mapped: {len(set(cached_entrez_mapped))}")
 
-    # biothings: 54/275 with 1 hit, 22/275 found dup hits, and 199/275 no hit
+    # biothings: 2/219 with 1 hit, 22/219 found dup hits, and 195/219 no hit (24/219 mapped)
     names4bte = [
         new_name
         for old_name, new_name in preprocessed_names.items()
         if new_name not in cached_ete3_mapped and new_name not in cached_entrez_mapped
     ]
+    # bte_mapped = bte_name2taxid(names4bte)
+    cached_bte_mapped = cached_bte_name2taxid(names4bte)
+    print(cached_bte_mapped)
+    print(f"cached bte mapped: {len(cached_bte_mapped)}")
 
-    # Currently mapped 1184 names ~ 94% of the retrieval rate
+    # Currently mapped 1049/1244 names ~ 84% of the retrieval rate
