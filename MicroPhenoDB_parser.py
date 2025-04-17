@@ -88,7 +88,6 @@ async def fetch_ncit_taxid(session, ncit_code, notfound_ncit):
             else:
                 notfound_ncit[name] = {"ncit": ncit_code, "description": description}
                 # print(f"NO NCBI Taxonomy ID found for NCIT:{ncit_code}")
-                return notfound_ncit
 
     except requests.exceptions.RequestException as e:
         print(f"Failed to connect ebi API: {e}")
@@ -167,7 +166,7 @@ def hard_code_ncit2taxid(ncit_codes) -> dict:
     return ncit2taxids
 
 
-def cached_hard_code_ncit2taxids(ncit_codes, cache_file="ncit2taxids.pkl"):
+def cached_hard_code_ncit2taxid(ncit_codes, cache_file="ncit2taxid.pkl"):
     cached = load_pickle(cache_file)
     if cached:
         return cached
@@ -266,7 +265,7 @@ def ete3_taxon_name2taxid(taxon_names):
     return ete3_mapped
 
 
-def cached_ete_taxon_name2taxid(taxon_names, cache_file="ete_name2taxids.pkl"):
+def cached_ete_taxon_name2taxid(taxon_names, cache_file="ete_name2taxid.pkl"):
     cached = load_pickle(cache_file)
     if cached:
         return cached
@@ -321,40 +320,39 @@ def name2taxid(names):
 
 
 if __name__ == "__main__":
-    # """
-    in_f_ncit = os.path.join("downloads", "NCIT.txt")
-    NCIT = get_ncit_code(in_f_ncit)
+    # in_f_ncit = os.path.join("downloads", "NCIT.txt")
+    # NCIT = get_ncit_code(in_f_ncit)
     # print(NCIT)
     # print(len(NCIT))
 
     # 567 records in mapped
     # print(taxids)
-    new_taxids = cached_hard_code_ncit2taxids(NCIT)  # 582 records after manual mapping
-    print(new_taxids)
+    # ncit2taxids = hard_code_ncit2taxid(NCIT)
+    # print(ncit2taxids)
+    # new_taxids = cached_hard_code_ncit2taxid(NCIT)  # 582 records after manual mapping
+    # print(new_taxids)
     # print(f"Mapped NCIT taxon: {len(new_taxids)}")
-    # """
 
-"""
+
     in_f_core = os.path.join("downloads", "core_table.txt")
     names4map = get_all_taxon_names(in_f_core)
-    # print(names4map)
-    print(len(set(names4map)))  # 1229 unique names (1259 redundant names) need to be mapped
-    # (1196 names need to be mapped if I want to get 95% retrieval rate)
-
-    # previously with a different name preprocess, ete3 successfully mapped 1016 taxon, 166 no hit
-    ete3_mapped = {name: taxid[0] for name, taxid in ete3_name2taxid.items() if taxid}
-    print(f"ete3 mapped: {len(ete3_mapped)}")
-    
-    
-    name4entrez = [name for name in name_query if name not in ete3_mapped]
-    # print(set(name4entrez))
-    print(len(set(name4entrez)))  # 166 no hit
-
-    # 206 found unique hits, 799 has dup hits, and 177 has no hit
-    name2taxid = name2taxid(name_query)
-    print(name2taxid)
+    # # print(names4map)
+    # print(len(set(names4map)))  # 1229 unique names (1259 redundant names) need to be mapped
+    # # (1196 names need to be mapped if I want to get 95% retrieval rate)
+    #
+    # # previously with a different name preprocess, ete3 successfully mapped 1016 taxon, 166 no hit
+    # ete3_mapped = {name: taxid[0] for name, taxid in ete3_name2taxid.items() if taxid}
+    # print(f"ete3 mapped: {len(ete3_mapped)}")
+    #
+    #
+    # name4entrez = [name for name in name_query if name not in ete3_mapped]
+    # # print(set(name4entrez))
+    # print(len(set(name4entrez)))  # 166 no hit
+    #
+    # # 206 found unique hits, 799 has dup hits, and 177 has no hit
+    # name2taxid = name2taxid(name_query)
+    # print(name2taxid)
 
     # use Entrez to map the 166 notfound names, 57 mapped, 109 no hit
     # biothings: 40 with 1 hit, 34 found dup hits, and 92 no hit (out of 166 names)
     # Currently mapped 1184 names ~ 94% of the retrieval rate
-"""
