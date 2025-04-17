@@ -236,7 +236,8 @@ def process_comma(name):
 
 
 def remove_and_in_name(name):
-    name = name.split("and")[0].strip()
+    if " and " in name:
+        name = name.split("and")[0].strip()
     return name
 
 
@@ -293,26 +294,21 @@ def entrez_taxon_name2taxid(taxon_name):
         handle.close()
         if record["IdList"]:
             taxid = int(record["IdList"][0])
-            return {taxon_name: taxid}
-        else:
-            return {taxon_name: None}
+            return {taxon_name: {taxon_name: taxid}}
     except Exception as e:
         print(f"Entrez query failed for '{taxon_name}': {e}")
-        return None
 
 
 def entrez_batch_name2taxid(taxon_names, sleep=0.34):
     mapped = {}
-    failed = []
 
     for name in taxon_names:
-        result, failure = entrez_taxon_name2taxid(name)
+        result = entrez_taxon_name2taxid(name)
+        print(result)
         mapped.update(result)
-        if failure:
-            failed.append(failure)
         time.sleep(sleep)
 
-    return mapped, failed
+    return mapped
 
 
 # TODO: Taxon name resolver (preprocess with special character only, ete3 first, entrez second, then detailed name preprocess, lastly using biothings...)
@@ -360,20 +356,16 @@ if __name__ == "__main__":
     # Now ete3 has 957 hit, 272 unique names need to map
     # ete3_mapped = ete3_taxon_name2taxid(preprocessed_names2map)
     cached_ete3_mapped = cached_ete3_taxon_name2taxid(preprocessed_names2map)
-    print(cached_ete3_mapped)
+    # print(cached_ete3_mapped)
     print(f"cached ete3 mapped: {len(cached_ete3_mapped)}")
 
-    names4entrez = [new_name for old_name, new_name in preprocessed_names.items() if new_name not in ete3_mapped]
+    # previously, entrez has 166 no hit, 57 mapped, 109 no hit
+    names4entrez = [new_name for old_name, new_name in preprocessed_names.items() if new_name not in cached_ete3_mapped]
     print(f"Names to map for entrez: {len(set(names4entrez))}")
+    Entrez.email = "bazhang@scripps.edu"
+    entrez_mapped = entrez_batch_name2taxid(names4entrez)
+    print(entrez_mapped)
 
-    # name4entrez = [name for name in name_query if name not in ete3_mapped]
-    # # print(set(name4entrez))
-    # print(len(set(name4entrez)))  # 166 no hit
-    #
-    # # 206 found unique hits, 799 has dup hits, and 177 has no hit
-    # name2taxid = name2taxid(name_query)
-    # print(name2taxid)
 
-    # use Entrez to map the 166 notfound names, 57 mapped, 109 no hit
     # biothings: 40 with 1 hit, 34 found dup hits, and 92 no hit (out of 166 names)
     # Currently mapped 1184 names ~ 94% of the retrieval rate
