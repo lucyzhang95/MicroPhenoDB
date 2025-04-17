@@ -18,15 +18,16 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 
 def save_pickle(obj, f_name):
     f_path = os.path.join(CACHE_DIR, f_name)
-    with open(f_path, "wb") as f:
-        pickle.dump(obj, f)
+    with open(f_path, "wb") as in_f:
+        pickle.dump(obj, in_f)
 
 
 def load_pickle(f_name):
     f_path = os.path.join(CACHE_DIR, f_name)
     if os.path.exists(f_path):
-        with open(f_path, "rb") as f:
-            return pickle.load(f)
+        with open(f_path, "rb") as in_f:
+            return pickle.load(in_f)
+    return None
 
 
 def detect_encoding(in_file):
@@ -58,7 +59,7 @@ def get_ncit_code(in_file):
     return ncit_codes
 
 
-async def fetch_ncit_taxid(session, ncit_code, notfound_ncit) -> [dict]:
+async def fetch_ncit_taxid(session, ncit_code, notfound_ncit):
     iri = f"http://purl.obolibrary.org/obo/NCIT_{ncit_code}"
     url = "https://www.ebi.ac.uk/ols4/api/ontologies/ncit/terms"
     params = {"iri": iri}
@@ -87,12 +88,14 @@ async def fetch_ncit_taxid(session, ncit_code, notfound_ncit) -> [dict]:
             else:
                 notfound_ncit[name] = {"ncit": ncit_code, "description": description}
                 # print(f"NO NCBI Taxonomy ID found for NCIT:{ncit_code}")
+                return notfound_ncit
 
     except requests.exceptions.RequestException as e:
         print(f"Failed to connect ebi API: {e}")
+        return None
 
 
-async def ncit2taxid(ncit_codes) -> [dict | dict]:
+async def ncit2taxid(ncit_codes):
     """Map NCIT identifiers to NCBI Taxids using EBI API
 
     :param ncit_codes: a list of NCIT codes e.g., ["C85924", "C83526", ...]
@@ -280,8 +283,11 @@ def entrez_taxon_name2taxid(taxon_name):
         if record["IdList"]:
             taxid = int(record["IdList"][0])
             return {taxon_name: taxid}
+        else:
+            return {taxon_name: None}
     except Exception as e:
         print(f"Entrez query failed for '{taxon_name}': {e}")
+        return None
 
 
 def entrez_batch_name2taxid(taxon_names, sleep=0.34):
@@ -318,26 +324,24 @@ if __name__ == "__main__":
     # """
     in_f_ncit = os.path.join("downloads", "NCIT.txt")
     NCIT = get_ncit_code(in_f_ncit)
+    # print(NCIT)
     # print(len(NCIT))
 
     # 567 records in mapped
     # print(taxids)
-    # new_taxids = cached_hard_code_ncit2taxids(NCIT)  # 582 records after manual mapping
-    # print(new_taxids)
+    new_taxids = cached_hard_code_ncit2taxids(NCIT)  # 582 records after manual mapping
+    print(new_taxids)
     # print(f"Mapped NCIT taxon: {len(new_taxids)}")
     # """
 
-# """
+"""
     in_f_core = os.path.join("downloads", "core_table.txt")
-    names4map = get_taxon_names(in_f_core, NCIT)
+    names4map = get_all_taxon_names(in_f_core)
     # print(names4map)
     print(len(set(names4map)))  # 1229 unique names (1259 redundant names) need to be mapped
     # (1196 names need to be mapped if I want to get 95% retrieval rate)
 
-    ncbi = NCBITaxa()
-    ete3_name2taxid = ncbi.get_name_translator(
-        name_query
-    )  # previously with a different name preprocess, ete3 successfully mapped 1016 taxon, 166 no hit
+    # previously with a different name preprocess, ete3 successfully mapped 1016 taxon, 166 no hit
     ete3_mapped = {name: taxid[0] for name, taxid in ete3_name2taxid.items() if taxid}
     print(f"ete3 mapped: {len(ete3_mapped)}")
     
@@ -353,4 +357,4 @@ if __name__ == "__main__":
     # use Entrez to map the 166 notfound names, 57 mapped, 109 no hit
     # biothings: 40 with 1 hit, 34 found dup hits, and 92 no hit (out of 166 names)
     # Currently mapped 1184 names ~ 94% of the retrieval rate
-# """
+"""
