@@ -7,7 +7,13 @@ import aiohttp
 import biothings_client as bt
 import chardet
 import requests
+import ring
 from ete3 import NCBITaxa
+from Bio import Entrez
+import time
+
+
+CACHE_FOLDER = os.path.join(".", "ring_cache")
 
 
 def detect_encoding(in_file):
@@ -32,16 +38,16 @@ def read_file(in_file, has_header=True):
 
 
 def get_ncit_code(in_file):
-    obj = read_file(in_file, has_header=False)
-    seen = set()
     # 80 entries do not have ncit code, 582 unique ncit codes (755 with redundancy)
     # 80 + 755 = 835 which matches the source
-    for line in obj:
-        if len(line) > 2 and "NCIT" in line[2]:
-            ncit_code = line[2].split("_")[1]
-            if ncit_code not in seen:
-                seen.add(ncit_code)
-                yield ncit_code
+    ncit_data = read_file(in_file, has_header=False)
+    ncit_codes = [line[2].split("_")[1] for line in ncit_data if "NCIT" in line[2]]
+    return ncit_codes
+
+
+@ring.disk(CACHE_FOLDER)
+def cached_hard_code_ncit2taxid(ncit_codes) -> dict:
+    return hard_code_ncit2taxid(ncit_codes)
 
 
 async def fetch_ncit_taxid(session, ncit_code, notfound_ncit) -> [dict]:
@@ -228,6 +234,50 @@ def preprocess_taxon_name(names):
     return name_map
 
 
+def ete_taxon_name2taxid(taxon_names):
+    """Use ete3 to map taxonomy names to NCBI taxonomy ids
+    ete3 is good at mapping exact taxonomy names and fast without accessing API
+
+    :param taxon_names: a list of taxon names (the values of the output of preprocess_taxon_name)
+    :return: a dictionary mapping taxon names to taxid numbers
+    {'human papillomavirus 11': 10580, 'veillonella sp.': 1926307, ...}
+    """
+    taxon_names = set(taxon_names)
+
+    ncbi = NCBITaxa()
+    ete3_name2taxid = ncbi.get_name_translator(taxon_names)
+    ete3_mapped = {name: taxid[0] for name, taxid in ete3_name2taxid.items() if taxid}
+    return ete3_mapped
+
+
+def entrez_taxon_name2taxid(taxon_name):
+    try:
+        handle = Entrez.esearch(db="taxonomy", term=taxon_name, retmode="xml", retmax=1)
+        record = Entrez.read(handle)
+        handle.close()
+        if record["IdList"]:
+            taxid = int(record["IdList"][0])
+            return {taxon_name: taxid}
+    except Exception as e:
+        print(f"Entrez query failed for '{taxon_name}': {e}")
+
+
+def entrez_batch_name2taxid(taxon_names, sleep=0.34):
+    mapping = {}
+    failed = []
+
+    for name in taxon_names:
+        result, failure = entrez_taxon_name2taxid(name)
+        mapping.update(result)
+        if failure:
+            failed.append(failure)
+        time.sleep(sleep)
+
+    return mapping, failed
+
+
+
+
 # TODO: Taxon name resolver (preprocess with special character only, ete3 first, entrez second, then detailed name preprocess, lastly using biothings...)
 def name2taxid(names):
     names = set(names)
@@ -245,18 +295,18 @@ def name2taxid(names):
 
 
 if __name__ == "__main__":
+    # """
     in_f_ncit = os.path.join("downloads", "NCIT.txt")
-    NCIT = [ncit for ncit in get_ncit_code(in_f_ncit)]
+    NCIT = get_ncit_code(in_f_ncit)
     # print(len(NCIT))
-    #
+
     # NCIT = ["C85924", "C83526"]
-    taxids, notfound = asyncio.run(ncit2taxid(NCIT))  # 567 records in mapped
+    # 567 records in mapped
     # print(taxids)
-    # print(len(taxids))
     new_taxids = hard_code_ncit2taxid(NCIT)  # 582 records after manual mapping
     # print(new_taxids)
-    # print(len(new_taxids))
-    # print(len(notfound))
+    print(len(new_taxids))
+    # """
 
 """
     in_f_core = os.path.join("downloads", "core_table.txt")
