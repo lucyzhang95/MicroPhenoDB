@@ -250,7 +250,7 @@ def preprocess_taxon_name(names):
     return name_map
 
 
-def ete_taxon_name2taxid(taxon_names):
+def ete3_taxon_name2taxid(taxon_names):
     """Use ete3 to map taxonomy names to NCBI taxonomy ids
     ete3 is good at mapping exact taxonomy names and fast without accessing API
 
@@ -270,7 +270,7 @@ def cached_ete_taxon_name2taxid(taxon_names, cache_file="ete_name2taxids.pkl"):
     cached = load_pickle(cache_file)
     if cached:
         return cached
-    result = ete_taxon_name2taxid(taxon_names)
+    result = ete3_taxon_name2taxid(taxon_names)
     save_pickle(result, cache_file)
     return result
 
