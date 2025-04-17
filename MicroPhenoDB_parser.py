@@ -175,16 +175,10 @@ def cached_hard_code_ncit2taxids(ncit_codes, cache_file="ncit2taxids.pkl"):
     return result
 
 
-def get_taxon_names(in_file, ncit_codes) -> list:
-    obj = read_file(in_file)
-    mapped_taxids = hard_code_ncit2taxid(ncit_codes)
-    names4map = []
-
-    for line in obj:
-        names = line[1].lower()
-        if names not in mapped_taxids:
-            names4map.append(names)
-    return names4map
+def get_all_taxon_names(in_file) -> list:
+    core_data = read_file(in_file)
+    core_taxon_names = [line[1].lower() for line in core_data if line]
+    return core_taxon_names
 
 
 def remove_special_char(name):
@@ -269,6 +263,15 @@ def ete_taxon_name2taxid(taxon_names):
     return ete3_mapped
 
 
+def cached_ete_taxon_name2taxid(taxon_names, cache_file="ete_name2taxids.pkl"):
+    cached = load_pickle(cache_file)
+    if cached:
+        return cached
+    result = ete_taxon_name2taxid(taxon_names)
+    save_pickle(result, cache_file)
+    return result
+
+
 def entrez_taxon_name2taxid(taxon_name):
     try:
         handle = Entrez.esearch(db="taxonomy", term=taxon_name, retmode="xml", retmax=1)
@@ -312,40 +315,33 @@ def name2taxid(names):
 
 
 if __name__ == "__main__":
-    """
+    # """
     in_f_ncit = os.path.join("downloads", "NCIT.txt")
     NCIT = get_ncit_code(in_f_ncit)
     # print(len(NCIT))
 
     # 567 records in mapped
     # print(taxids)
-    new_taxids = cached_hard_code_ncit2taxids(NCIT)  # 582 records after manual mapping
+    # new_taxids = cached_hard_code_ncit2taxids(NCIT)  # 582 records after manual mapping
     # print(new_taxids)
-    print(f"Mapped NCIT taxon: {len(new_taxids)}")
-    """
+    # print(f"Mapped NCIT taxon: {len(new_taxids)}")
+    # """
 
-"""
+# """
     in_f_core = os.path.join("downloads", "core_table.txt")
     names4map = get_taxon_names(in_f_core, NCIT)
     # print(names4map)
-    print(len(set(names4map)))  # 1259 names need to use biothings to map, 515 names mapped
+    print(len(set(names4map)))  # 1229 unique names (1259 redundant names) need to be mapped
     # (1196 names need to be mapped if I want to get 95% retrieval rate)
-
-    processed_name_map = preprocess_taxon_name(names4map)
-    print(f"Unique processed name map: {len(processed_name_map)}")
-    # print(processed_name_map)
-
-    # the processed name can be the same for different pre-processed names
-    # need to save the old name so that I can map these back
-    name_query = [new_name for old_name, new_name in processed_name_map.items()]
-    print(f"Unique Names for query: {len(set(name_query))}")  # 1182 new name after preprocessing
 
     ncbi = NCBITaxa()
     ete3_name2taxid = ncbi.get_name_translator(
         name_query
-    )  # ete3 successfully mapped 1016 taxon, 166 no hit
+    )  # previously with a different name preprocess, ete3 successfully mapped 1016 taxon, 166 no hit
     ete3_mapped = {name: taxid[0] for name, taxid in ete3_name2taxid.items() if taxid}
     print(f"ete3 mapped: {len(ete3_mapped)}")
+    
+    
     name4entrez = [name for name in name_query if name not in ete3_mapped]
     # print(set(name4entrez))
     print(len(set(name4entrez)))  # 166 no hit
@@ -357,4 +353,4 @@ if __name__ == "__main__":
     # use Entrez to map the 166 notfound names, 57 mapped, 109 no hit
     # biothings: 40 with 1 hit, 34 found dup hits, and 92 no hit (out of 166 names)
     # Currently mapped 1184 names ~ 94% of the retrieval rate
-"""
+# """
