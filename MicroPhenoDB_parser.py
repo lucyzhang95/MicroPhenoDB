@@ -261,6 +261,8 @@ def remove_spp_in_name(name):
     name = re.sub(r"\b(spp)\.", "", name).strip()
     return name
 
+#TODO: write new fn to expand abbreviataions manually
+
 
 def ete3_taxon_name2taxid(taxon_names):
     """Use ete3 to map taxonomy names to NCBI taxonomy ids
