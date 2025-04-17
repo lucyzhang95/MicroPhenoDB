@@ -1,17 +1,16 @@
 import asyncio
 import csv
 import os
+import pickle
 import re
+import time
 
 import aiohttp
 import biothings_client as bt
 import chardet
 import requests
-from ete3 import NCBITaxa
 from Bio import Entrez
-import time
-import pickle
-
+from ete3 import NCBITaxa
 
 CACHE_DIR = os.path.join(os.getcwd(), "cache")
 os.makedirs(CACHE_DIR, exist_ok=True)
@@ -199,19 +198,19 @@ def remove_colon4name(name):
 
 
 def remove_dot4name_except_in_sp(name):
-    name = re.sub(r'\b(sp|spp)\.', r'\1__dot__', name)
-    numeric_matches = re.findall(r'\d+(?:\.\d+)+', name)
+    name = re.sub(r"\b(sp|spp)\.", r"\1__dot__", name)
+    numeric_matches = re.findall(r"\d+(?:\.\d+)+", name)
     for match in numeric_matches:
-        protected = match.replace('.', '__dot__')
+        protected = match.replace(".", "__dot__")
         name = name.replace(match, protected)
-    name = name.replace('.', '')
-    name = name.replace('__dot__', '.')
+    name = name.replace(".", "")
+    name = name.replace("__dot__", ".")
     return name.strip()
 
 
 def remove_hyphen4name(name):
     name = name.replace("butyrate-producing", "BUTYRATEPRODUCING")
-    name = re.sub(r"(?<=[a-z])-(?=\d)", " ", name) # letter-digit
+    name = re.sub(r"(?<=[a-z])-(?=\d)", " ", name)  # letter-digit
     name = re.sub(r"(?<=[a-z])-(?=(like|associated|related|positive|negative|)\b)", " ", name)
     name = name.replace("BUTYRATEPRODUCING", "butyrate-producing")
     return name.strip()
@@ -296,8 +295,6 @@ def entrez_batch_name2taxid(taxon_names, sleep=0.34):
     return mapping, failed
 
 
-
-
 # TODO: Taxon name resolver (preprocess with special character only, ete3 first, entrez second, then detailed name preprocess, lastly using biothings...)
 def name2taxid(names):
     names = set(names)
@@ -361,5 +358,3 @@ if __name__ == "__main__":
     # biothings: 40 with 1 hit, 34 found dup hits, and 92 no hit (out of 166 names)
     # Currently mapped 1184 names ~ 94% of the retrieval rate
 """
-
-
