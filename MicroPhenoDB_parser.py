@@ -159,7 +159,7 @@ def hard_code_ncit2taxid(ncit_codes) -> dict:
             notfound_ncit[name].update({"taxid": taxid})
 
     ncit2taxids.update(notfound_ncit)
-    # manual change the taxid of Bacteroides dorei, since the src mapping is wrong
+    # manual change the taxid of bacteroides dorei, since the src mapping is wrong
     ncit2taxids["bacteroides dorei"]["taxid"] = 357276
     ncit2taxids["clostridiales xi"]["taxid"] = 884684
     return ncit2taxids
@@ -315,19 +315,17 @@ def name2taxid(names):
 
 
 if __name__ == "__main__":
-    # """
+    """
     in_f_ncit = os.path.join("downloads", "NCIT.txt")
     NCIT = get_ncit_code(in_f_ncit)
     # print(len(NCIT))
 
-    # NCIT = ["C85924", "C83526"]
     # 567 records in mapped
     # print(taxids)
     new_taxids = cached_hard_code_ncit2taxids(NCIT)  # 582 records after manual mapping
     # print(new_taxids)
-    # print(new_taxids)
     print(f"Mapped NCIT taxon: {len(new_taxids)}")
-    # """
+    """
 
 """
     in_f_core = os.path.join("downloads", "core_table.txt")
