@@ -272,7 +272,7 @@ def ete3_taxon_name2taxid(taxon_names):
     ete3_name2taxid = ncbi.get_name_translator(taxon_names)
     for name, taxid in ete3_name2taxid.items():
         if taxid:
-            ete3_mapped[name] = {name: taxid[0]}
+            ete3_mapped[name] = {name: int(taxid[0])}
     return ete3_mapped
 
 
@@ -327,14 +327,16 @@ def bte_name2taxid(taxon_names):
     get_taxon = bt.get_client("taxon")
     taxon_info = get_taxon.querymany(
         taxon_names,
-        scopes="scientific_name",
-        fields=["_id", "scientific_name", "lineage", "parent_taxid", "rank"],
+        scopes=["scientific_name", "other_names"],
+        fields=["taxid"],
     )
-    notfound = []
+
+    bte_mapped = {}
     for d in taxon_info:
-        if "notfound" in d:
-            notfound.append(d["query"])
-    return notfound
+        if "notfound" not in d:
+            if d["query"] not in bte_mapped:
+                bte_mapped[d["query"]] = {d["query"]: int(d["taxid"])}
+    return bte_mapped
 
 
 if __name__ == "__main__":
@@ -361,15 +363,13 @@ if __name__ == "__main__":
     preprocessed_names = preprocess_taxon_name(taxon_names)
     preprocessed_names2map = [new_name for old_name, new_name in preprocessed_names.items()]
 
-    # previously with a different name preprocess function, ete3 successfully mapped 1016 taxon, 166 no hit
-    # Now ete3 has 969 hit, 275 unique names need to map
+    # Now ete3 has 969/1244 hit, 275/1244 unique names need to map
     # ete3_mapped = ete3_taxon_name2taxid(preprocessed_names2map)
     cached_ete3_mapped = cached_ete3_taxon_name2taxid(preprocessed_names2map)
     # print(cached_ete3_mapped)
     print(f"cached ete3 mapped: {len(cached_ete3_mapped)}")
 
-    # previously, entrez has 166 no hit, 57 mapped, 109 no hit
-    # Now entrez has
+    # Now entrez has 56/275 mapped, 219/275 no hit
     names4entrez = [
         new_name
         for old_name, new_name in preprocessed_names.items()
@@ -381,5 +381,10 @@ if __name__ == "__main__":
     print(cached_entrez_mapped)
     print(f"cached entrez mapped: {len(set(cached_entrez_mapped))}")
 
-    # biothings: 40 with 1 hit, 34 found dup hits, and 92 no hit (out of 166 names)
+    # biothings: 54/275 with 1 hit, 22/275 found dup hits, and 199/275 no hit
+    names4bte = [
+        new_name
+        for old_name, new_name in preprocessed_names.items()
+        if new_name not in cached_ete3_mapped and new_name not in cached_entrez_mapped
+    ]
     # Currently mapped 1184 names ~ 94% of the retrieval rate
