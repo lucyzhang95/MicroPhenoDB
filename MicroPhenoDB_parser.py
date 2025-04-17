@@ -339,6 +339,17 @@ def bte_name2taxid(taxon_names):
     return bte_mapped
 
 
+def cached_bte_name2taxid(taxon_names, cache_file="bte_name2taxid.pkl"):
+    cache = load_pickle(cache_file)
+    if cache:
+        return cache
+    result = bte_name2taxid(taxon_names)
+    for name in result:
+        result[name]["mapping_source"] = "bte"
+    save_pickle(result, cache_file)
+    return result
+
+
 if __name__ == "__main__":
     in_f_ncit = os.path.join("downloads", "NCIT.txt")
     ncit_codes = get_ncit_code(in_f_ncit)
@@ -387,4 +398,5 @@ if __name__ == "__main__":
         for old_name, new_name in preprocessed_names.items()
         if new_name not in cached_ete3_mapped and new_name not in cached_entrez_mapped
     ]
+
     # Currently mapped 1184 names ~ 94% of the retrieval rate
