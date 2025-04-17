@@ -288,6 +288,7 @@ def cached_ete3_taxon_name2taxid(taxon_names, cache_file="ete3_name2taxid.pkl"):
 
 
 def entrez_taxon_name2taxid(taxon_name):
+    Entrez.email = "bazhang@scripps.edu"
     try:
         handle = Entrez.esearch(db="taxonomy", term=taxon_name, retmode="xml", retmax=1)
         record = Entrez.read(handle)
@@ -300,23 +301,32 @@ def entrez_taxon_name2taxid(taxon_name):
 
 
 def entrez_batch_name2taxid(taxon_names, sleep=0.34):
-    mapped = {}
-
-    for name in taxon_names:
+    entrez_mapped = {}
+    for name in set(taxon_names):
         result = entrez_taxon_name2taxid(name)
-        print(result)
-        mapped.update(result)
+        if result:
+            entrez_mapped.update(result)
         time.sleep(sleep)
+    return entrez_mapped
 
-    return mapped
+
+def cached_entrez_batch_name2taxid(taxon_names, cache_file="entrez_name2taxid.pkl"):
+    cache = load_pickle(cache_file)
+    if cache:
+        return cache
+    result = entrez_batch_name2taxid(taxon_names)
+    for name in result:
+        result[name]["mapping_source"] = "entrez"
+    save_pickle(result, cache_file)
+    return result
 
 
 # TODO: Taxon name resolver (preprocess with special character only, ete3 first, entrez second, then detailed name preprocess, lastly using biothings...)
-def name2taxid(names):
-    names = set(names)
+def bte_name2taxid(taxon_names):
+    taxon_names = set(taxon_names)
     get_taxon = bt.get_client("taxon")
     taxon_info = get_taxon.querymany(
-        names,
+        taxon_names,
         scopes="scientific_name",
         fields=["_id", "scientific_name", "lineage", "parent_taxid", "rank"],
     )
@@ -353,21 +363,23 @@ if __name__ == "__main__":
 
     # previously with a different name preprocess function, ete3 successfully mapped 1016 taxon, 166 no hit
     # Now ete3 has 969 hit, 275 unique names need to map
-    ete3_mapped = ete3_taxon_name2taxid(preprocessed_names2map)
+    # ete3_mapped = ete3_taxon_name2taxid(preprocessed_names2map)
     cached_ete3_mapped = cached_ete3_taxon_name2taxid(preprocessed_names2map)
     # print(cached_ete3_mapped)
     print(f"cached ete3 mapped: {len(cached_ete3_mapped)}")
 
     # previously, entrez has 166 no hit, 57 mapped, 109 no hit
+    # Now entrez has
     names4entrez = [
         new_name
         for old_name, new_name in preprocessed_names.items()
         if new_name not in cached_ete3_mapped
     ]
     print(f"Names to map for entrez: {len(set(names4entrez))}")
-    Entrez.email = "bazhang@scripps.edu"
     entrez_mapped = entrez_batch_name2taxid(names4entrez)
-    print(entrez_mapped)
+    cached_entrez_mapped = cached_entrez_batch_name2taxid(entrez_mapped)
+    print(cached_entrez_mapped)
+    print(f"cached entrez mapped: {len(set(cached_entrez_mapped))}")
 
     # biothings: 40 with 1 hit, 34 found dup hits, and 92 no hit (out of 166 names)
     # Currently mapped 1184 names ~ 94% of the retrieval rate
