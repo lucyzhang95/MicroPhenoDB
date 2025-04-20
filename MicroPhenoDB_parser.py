@@ -312,6 +312,7 @@ def expand_taxon_name_abbrev(name):
 def preprocess_taxon_name(name):
     name = name.strip()
 
+    # character and structure cleaning
     name = remove_special_char(name)
     name = remove_colon4name(name)
     name = remove_dot4name_except_in_sp(name)
@@ -320,6 +321,7 @@ def preprocess_taxon_name(name):
     name = split_name_by_slash(name)
     name = process_comma(name)
 
+    # semantic cleaning
     name = remove_and_in_name(name)
     name = remove_strain_in_taxon_name(name)
     name = remove_type_in_taxon_name(name)
