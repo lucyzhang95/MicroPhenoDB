@@ -264,6 +264,7 @@ def remove_spp_in_name(name):
 
 def remove_strain_in_taxon_name(name):
     name = re.sub(r"\bstrains?\b", "", name).strip()
+    name = re.sub(r"\s{2,}", " ", name)
     return name
 
 
@@ -273,8 +274,10 @@ def remove_type_in_taxon_name(name):
 
 
 def remove_group_in_taxon_name(name):
-    name = re.sub(r"groups?\s+[a-z]|subgroup", "", name).strip()
-    return name
+    name = re.sub(r"\bgroups?\s+[a-z]\b", "", name) # group(s) [a-z]
+    name = re.sub(r"\b(groups?|subgroup)\b$", "", name) # sub/group(s) at the end
+    name = re.sub(r"\b(groups?|subgroup)\b(?=\s+[a-z])", "", name) # sub/group(s) in the middle
+    return name.strip()
 
 
 def remove_serovar_in_taxon_name(name):
@@ -283,22 +286,27 @@ def remove_serovar_in_taxon_name(name):
 
 
 def remove_pre_postfix_in_taxon_name(name):
+    name = re.sub(r"^\s*b\s+", "", name)
+    name = re.sub(r"\bstains?\b", "", name)
     name = re.sub(
-        r"\b(b|coagulase negative|non?hemolytic|hemolytic|sensu lato complexe|rapid growers|complex|incertae sedis)\b",
+        r"(coagulase negative|(?:non)?hemolytic|sensu lato complexe|rapid growers|complex(?:es)?|incertae sedis)",
         "",
-        name,
-    ).strip()
-    return name
+        name
+    )
+    name = re.sub(r"\s{2,}", " ", name)
+    return name.strip()
 
 
 def expand_taxon_name_abbrev(name):
-    name = re.sub(r"\be\s*", "entamoeba ", name)
-    name = re.sub(r"\bp\s*", "pasteurella multocida", name)
+    name = re.sub(r"\be histolytica\b", "entamoeba histolytica", name)
+    name = re.sub(r"\bp multocida\b", "pasteurella multocida", name)
     name = re.sub(r"\bhsv\b", "herpes simplex virus", name)
     name = re.sub(r"\bhpv\b", "human papillomavirus", name)
     name = re.sub(r"\bhiv\b", "human immunodeficiency virus", name)
     name = re.sub(r"\blcm\b", "lymphocytic choriomeningitis", name)
     name = re.sub(r"\bcluster\b", "family", name)
+    name = re.sub(r"\bspirochaeta\b", "borrelia", name)
+    name = re.sub(r"\s{2,}", " ", name)
     return name.strip()
 
 
