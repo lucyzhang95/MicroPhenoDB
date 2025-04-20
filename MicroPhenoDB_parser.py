@@ -274,9 +274,9 @@ def remove_type_in_taxon_name(name):
 
 
 def remove_group_in_taxon_name(name):
-    name = re.sub(r"\bgroups?\s+[a-z]\b", "", name) # group(s) [a-z]
-    name = re.sub(r"\b(groups?|subgroup)\b$", "", name) # sub/group(s) at the end
-    name = re.sub(r"\b(groups?|subgroup)\b(?=\s+[a-z])", "", name) # sub/group(s) in the middle
+    name = re.sub(r"\bgroups?\s+[a-z]\b", "", name)  # group(s) [a-z]
+    name = re.sub(r"\b(groups?|subgroup)\b$", "", name)  # sub/group(s) at the end
+    name = re.sub(r"\b(groups?|subgroup)\b(?=\s+[a-z])", "", name)  # sub/group(s) in the middle
     return name.strip()
 
 
@@ -291,7 +291,7 @@ def remove_pre_postfix_in_taxon_name(name):
     name = re.sub(
         r"(coagulase negative|(?:non)?hemolytic|sensu lato complexe|rapid growers|complex(?:es)?|incertae sedis)",
         "",
-        name
+        name,
     )
     name = re.sub(r"\s{2,}", " ", name)
     return name.strip()
