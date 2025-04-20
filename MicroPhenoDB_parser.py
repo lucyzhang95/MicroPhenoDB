@@ -345,8 +345,8 @@ def ete3_taxon_name2taxid(taxon_names):
 
 
 def cached_ete3_taxon_name2taxid(taxon_names, cache_file="ete3_name2taxid.pkl"):
-    cached = load_pickle(cache_file)
-    if cached is None:
+    cache = load_pickle(cache_file)
+    if cache is None:
         cache = {}
     names2query = [name for name in taxon_names if name in cache]
 
@@ -482,5 +482,14 @@ if __name__ == "__main__":
     cached_bte_mapped = cached_bte_name2taxid(names4bte)
     print(cached_bte_mapped)
     print(f"cached bte mapped: {len(cached_bte_mapped)}")
+
+    names4preprocess = [
+        new_name
+        for old_name, new_name in preprocessed_names.items()
+        if new_name not in cached_ete3_mapped and new_name not in cached_entrez_mapped and new_name not in cached_bte_mapped
+    ]
+    print(f"names to preprocess 2: {len(set(names4preprocess))}")
+
+    # after bte mapping, 195 no hit
 
     # Currently mapped 1049/1244 names ~ 84% of the retrieval rate
