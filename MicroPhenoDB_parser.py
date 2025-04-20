@@ -194,14 +194,14 @@ def cache_hard_code_ncit2taxid(ncit_codes, cache_file="ncit2taxid.pkl"):
 
 def get_all_taxon_names(in_file) -> list:
     core_data = read_file(in_file)
-    core_taxon_names = [line[1].lower() for line in core_data if line]
+    core_taxon_names = [line[1].lower().strip() for line in core_data if line]
     return core_taxon_names
 
 
 def get_taxon_names2map(in_file1, in_file2):
     core_taxon_names = get_all_taxon_names(in_file1)
     ncit_mapped_names = load_pickle(in_file2)
-    name2map = [name for name in core_taxon_names if name not in ncit_mapped_names]
+    name2map = [name.strip() for name in core_taxon_names if name not in ncit_mapped_names]
     return name2map
 
 
@@ -254,22 +254,6 @@ def remove_and_in_name(name):
     if " and " in name:
         name = name.split("and")[0].strip()
     return name
-
-
-def preprocess_taxon_name(names):
-    name_map = {}
-    for old_name in names:
-        new_name = old_name.strip()
-        new_name = remove_special_char(new_name)
-        new_name = remove_colon4name(new_name)
-        new_name = remove_dot4name_except_in_sp(new_name)
-        new_name = remove_hyphen4name(new_name)
-        new_name = remove_parentheses(new_name)
-        new_name = split_name_by_slash(new_name)
-        new_name = process_comma(new_name)
-        new_name = remove_and_in_name(new_name)
-        name_map[old_name] = new_name
-    return name_map
 
 
 def remove_spp_in_name(name):
@@ -325,19 +309,31 @@ def expand_taxon_name_abbrev(name):
     return name.strip()
 
 
-def preprocess_taxon_name_details(taxon_names):
-    name_map = {}
-    for old_name in taxon_names:
-        new_name = old_name.strip()
-        new_name = remove_strain_in_taxon_name(new_name)
-        new_name = remove_type_in_taxon_name(new_name)
-        new_name = remove_group_in_taxon_name(new_name)
-        new_name = remove_serovar_in_taxon_name(new_name)
-        new_name = remove_pre_postfix_in_taxon_name(new_name)
-        new_name = remove_spp_in_name(new_name)
-        new_name = expand_taxon_name_abbrev(new_name)
-        name_map[old_name] = new_name
-    return name_map
+def preprocess_taxon_name(name):
+    name = name.strip()
+
+    name = remove_special_char(name)
+    name = remove_colon4name(name)
+    name = remove_dot4name_except_in_sp(name)
+    name = remove_hyphen4name(name)
+    name = remove_parentheses(name)
+    name = split_name_by_slash(name)
+    name = process_comma(name)
+
+    name = remove_and_in_name(name)
+    name = remove_strain_in_taxon_name(name)
+    name = remove_type_in_taxon_name(name)
+    name = remove_group_in_taxon_name(name)
+    name = remove_serovar_in_taxon_name(name)
+    name = remove_pre_postfix_in_taxon_name(name)
+    name = remove_spp_in_name(name)
+    name = expand_taxon_name_abbrev(name)
+
+    return name.strip()
+
+
+def convert_preprocessed_name2dict(names):
+    return {original_name: preprocess_taxon_name(original_name) for original_name in names}
 
 
 def ete3_taxon_name2taxid(taxon_names):
