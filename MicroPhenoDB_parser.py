@@ -346,13 +346,17 @@ def ete3_taxon_name2taxid(taxon_names):
 
 def cached_ete3_taxon_name2taxid(taxon_names, cache_file="ete3_name2taxid.pkl"):
     cached = load_pickle(cache_file)
-    if cached:
-        return cached
-    result = ete3_taxon_name2taxid(taxon_names)
-    for name in result:
-        result[name]["mapping_source"] = "ete3"
-    save_pickle(result, cache_file)
-    return result
+    if cached is None:
+        cache = {}
+    names2query = [name for name in taxon_names if name in cache]
+
+    if names2query:
+        result = ete3_taxon_name2taxid(taxon_names)
+        for name in result:
+            result[name]["mapping_source"] = "ete3"
+        cache.update(result)
+        save_pickle(cache, cache_file)
+    return cache
 
 
 def entrez_taxon_name2taxid(taxon_name):
@@ -380,13 +384,17 @@ def entrez_batch_name2taxid(taxon_names, sleep=0.34):
 
 def cached_entrez_batch_name2taxid(taxon_names, cache_file="entrez_name2taxid.pkl"):
     cache = load_pickle(cache_file)
-    if cache:
-        return cache
-    result = entrez_batch_name2taxid(taxon_names)
-    for name in result:
-        result[name]["mapping_source"] = "entrez"
-    save_pickle(result, cache_file)
-    return result
+    if cache is None:
+        cache = {}
+
+    names2query = [name for name in taxon_names if name in cache]
+    if names2query:
+        result = entrez_batch_name2taxid(names2query)
+        for name in result:
+            result[name]["mapping_source"] = "entrez"
+        cache.update(result)
+        save_pickle(cache, cache_file)
+    return cache
 
 
 # TODO: Taxon name resolver (preprocess with special character only, ete3 first, entrez second, then detailed name preprocess, lastly using biothings...)
@@ -409,13 +417,17 @@ def bte_name2taxid(taxon_names):
 
 def cached_bte_name2taxid(taxon_names, cache_file="bte_name2taxid.pkl"):
     cache = load_pickle(cache_file)
-    if cache:
-        return cache
-    result = bte_name2taxid(taxon_names)
-    for name in result:
-        result[name]["mapping_source"] = "bte"
-    save_pickle(result, cache_file)
-    return result
+    if cache is None:
+        cache = {}
+
+    names2query = [name for name in taxon_names if name not in cache]
+    if names2query:
+        result = bte_name2taxid(names2query)
+        for name in result:
+            result[name]["mapping_source"] = "bte"
+        cache.update(result)
+        save_pickle(cache, cache_file)
+    return cache
 
 
 if __name__ == "__main__":
