@@ -11,6 +11,7 @@ import chardet
 import requests
 from Bio import Entrez
 from ete3 import NCBITaxa
+from rapidfuzz import fuzz, process
 
 CACHE_DIR = os.path.join(os.getcwd(), "cache")
 os.makedirs(CACHE_DIR, exist_ok=True)
@@ -499,6 +500,10 @@ if __name__ == "__main__":
         f"Unique names after preprocess1: {len(set(preprocessed_names4map))}"
     )  # 1244 unique names after preprocessing
 
+    # TODO: need to rerun cache and everything below after combine preprocess into one fn;
+    #  Need to add fuzz_match fn before rerun all mapping tools
+    #  or use the mapping tools first, then the no-hit names can be further processed using text2term to get taxid directly with cutoff score
+    #  or use the text2term directly to get taxid with cutoff score
     # Now ete3 has 969/1244 hit, 275/1259 unique names need to map
     # ete3_mapped = ete3_taxon_name2taxid(preprocessed_names2map)
     # cache_ete3_mapped = cache_ete3_taxon_name2taxid(preprocessed_names2map)
