@@ -258,10 +258,44 @@ def preprocess_taxon_name(names):
 
 
 def remove_spp_in_name(name):
-    name = re.sub(r"\b(spp)\.", "", name).strip()
+    name = re.sub(r"\bspps?\b.*", "", name).strip()
     return name
 
-#TODO: write new fn to expand abbreviataions manually
+
+def remove_strain_in_taxon_name(name):
+    name = re.sub(r"\bstrains?\b", "", name).strip()
+    return name
+
+
+def remove_type_in_taxon_name(name):
+    name = re.sub(r"\btypes?\b", "", name).strip()
+    return name
+
+
+def remove_group_in_taxon_name(name):
+    name = re.sub(r"groups?\s+[a-z]|subgroup", "", name).strip()
+    return name
+
+
+def remove_serovar_in_taxon_name(name):
+    name = re.sub(r"\bserovars?.*\b", "", name).strip()
+    return name
+
+
+def remove_pre_postfix_in_taxon_name(name):
+    name = re.sub("\b(b|coagulase negative|non?hemolytic|hemolytic|sensu lato complexe|rapid growers|complex|incertae sedis)\b", "", name).strip()
+    return name
+
+
+def expand_taxon_name_abbrev(name):
+    name = re.sub(r"\be\s*", "entamoeba ", name)
+    name = re.sub(r"\bp\s*", "pasteurella multocida", name)
+    name = re.sub(r"\bhsv\b", "herpes simplex virus", name)
+    name = re.sub(f"\bhpv\b", "human papillomavirus", name)
+    name = re.sub(r"\bhiv\b", "human immunodeficiency virus", name)
+    name = re.sub(r"\blcm\b", "lymphocytic choriomeningitis", name)
+    name = re.sub(r"\bcluster\b", "family", name)
+    return name.strip()
 
 
 def ete3_taxon_name2taxid(taxon_names):
@@ -355,6 +389,21 @@ def cached_bte_name2taxid(taxon_names, cache_file="bte_name2taxid.pkl"):
         result[name]["mapping_source"] = "bte"
     save_pickle(result, cache_file)
     return result
+
+
+def preprocess_taxon_name_details(taxon_names):
+    name_map = {}
+    for old_name in taxon_names:
+        new_name = old_name.strip()
+        new_name = remove_strain_in_taxon_name(new_name)
+        new_name = remove_type_in_taxon_name(new_name)
+        new_name = remove_group_in_taxon_name(new_name)
+        new_name = remove_serovar_in_taxon_name(new_name)
+        new_name = remove_pre_postfix_in_taxon_name(new_name)
+        new_name = remove_spp_in_name(new_name)
+        new_name = expand_taxon_name_abbrev(new_name)
+        name_map[old_name] = new_name
+    return name_map
 
 
 if __name__ == "__main__":
