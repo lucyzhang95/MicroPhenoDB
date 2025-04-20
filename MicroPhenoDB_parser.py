@@ -463,10 +463,10 @@ if __name__ == "__main__":
     taxon_names = get_taxon_names2map(in_f_core, "ncit2taxid.pkl")
     # print(taxon_names)
     print(
-        f"Total taxon names - NCIT covered to map with redundancy: {len(taxon_names)}"
+        f"Total taxon names exclude NCIT covered to map with redundancy: {len(taxon_names)}"
     )  # 2456 redundant names
     print(
-        f"Unique taxon names - NCIT covered to map: {len(set(taxon_names))}"
+        f"Unique taxon names exclude NCIT covered to map: {len(set(taxon_names))}"
     )  # 1259 unique names need to be mapped
     # # (1196 names need to be mapped if I want to get 95% retrieval rate)
 
@@ -520,4 +520,4 @@ if __name__ == "__main__":
     ]
     print(f"Taxon names to preprocess2: {len(set(names4preprocess))}")
 
-    # Currently mapped 1049/1244 names ~ 84% of the retrieval rate
+    # Currently mapped 1049/1259 names ~ 84% of the retrieval rate
