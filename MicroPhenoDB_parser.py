@@ -543,7 +543,9 @@ if __name__ == "__main__":
         and new_name not in entrez_mapped
         and new_name not in bte_mapped
     ]
-    print(f"Taxon names to preprocess2: {len(set(names4preprocess))}") # 195 names to map after preprocess2
+    print(
+        f"Taxon names to preprocess2: {len(set(names4preprocess))}"
+    )  # 195 names to map after preprocess2
 
     preprocessed_names2 = preprocess_taxon_name_details(names4preprocess)
     preprocessed_names2_4match = [new_name for old_name, new_name in preprocessed_names.items()]
