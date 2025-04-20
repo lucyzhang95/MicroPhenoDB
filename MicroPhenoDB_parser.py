@@ -283,7 +283,11 @@ def remove_serovar_in_taxon_name(name):
 
 
 def remove_pre_postfix_in_taxon_name(name):
-    name = re.sub("\b(b|coagulase negative|non?hemolytic|hemolytic|sensu lato complexe|rapid growers|complex|incertae sedis)\b", "", name).strip()
+    name = re.sub(
+        "\b(b|coagulase negative|non?hemolytic|hemolytic|sensu lato complexe|rapid growers|complex|incertae sedis)\b",
+        "",
+        name,
+    ).strip()
     return name
 
 
@@ -291,7 +295,7 @@ def expand_taxon_name_abbrev(name):
     name = re.sub(r"\be\s*", "entamoeba ", name)
     name = re.sub(r"\bp\s*", "pasteurella multocida", name)
     name = re.sub(r"\bhsv\b", "herpes simplex virus", name)
-    name = re.sub(f"\bhpv\b", "human papillomavirus", name)
+    name = re.sub(r"\bhpv\b", "human papillomavirus", name)
     name = re.sub(r"\bhiv\b", "human immunodeficiency virus", name)
     name = re.sub(r"\blcm\b", "lymphocytic choriomeningitis", name)
     name = re.sub(r"\bcluster\b", "family", name)
