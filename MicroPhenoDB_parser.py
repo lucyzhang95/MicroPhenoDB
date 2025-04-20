@@ -493,7 +493,7 @@ if __name__ == "__main__":
     )  # 1259 unique names need to be mapped
     # # (1196 names need to be mapped if I want to get 95% retrieval rate)
 
-    preprocessed_names = preprocess_taxon_name(taxon_names)
+    preprocessed_names = convert_preprocessed_name2dict(taxon_names)
     preprocessed_names4map = [new_name for old_name, new_name in preprocessed_names.items()]
     print(
         f"Unique names after preprocess1: {len(set(preprocessed_names4map))}"
