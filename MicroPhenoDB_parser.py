@@ -284,7 +284,7 @@ def remove_serovar_in_taxon_name(name):
 
 def remove_pre_postfix_in_taxon_name(name):
     name = re.sub(
-        "\b(b|coagulase negative|non?hemolytic|hemolytic|sensu lato complexe|rapid growers|complex|incertae sedis)\b",
+        r"\b(b|coagulase negative|non?hemolytic|hemolytic|sensu lato complexe|rapid growers|complex|incertae sedis)\b",
         "",
         name,
     ).strip()
