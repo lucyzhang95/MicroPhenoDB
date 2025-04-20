@@ -173,10 +173,14 @@ def hard_code_ncit2taxid(ncit_codes) -> dict:
 
 def cache_hard_code_ncit2taxid(ncit_codes, cache_file="ncit2taxid.pkl"):
     """
-    Can be used only once to cache ncit2taxid, or it will be overwritten every time
+    can be used only once to cache ncit2taxid, or it will be overwritten every time
     :param ncit_codes:
     :param cache_file:
-    :return:
+    :return: a dict with taxon names from the NCIT.txt file as keys and values as follows:
+    {'clostridium cluster iv': {'ncit': 'C129412',
+                               'description': 'A group of at least 8 bacterial species...
+                               'taxid': 1689151,
+                               'mapping_source': 'obo'}, ...}
     """
     cached = load_pickle(cache_file)
     if cached:
@@ -356,6 +360,13 @@ def ete3_taxon_name2taxid(taxon_names):
 
 
 def cache_ete3_taxon_name2taxid(taxon_names, cache_file="ete3_name2taxid.pkl"):
+    """
+
+    :param taxon_names:
+    :param cache_file:
+    :return: a dict with first preprocessed names as keys and values as follows:
+    {'varicella zoster virus': {'varicella zoster virus': 10335, 'mapping_source': 'ete3'},...}
+    """
     cache = load_pickle(cache_file)
     if cache is None:
         cache = {}
@@ -394,6 +405,13 @@ def entrez_batch_name2taxid(taxon_names, sleep=0.34):
 
 
 def cache_entrez_batch_name2taxid(taxon_names, cache_file="entrez_name2taxid.pkl"):
+    """
+
+    :param taxon_names:
+    :param cache_file:
+    :return: a dict with first preprocessed names as keys and values are as follows:
+    {'bacteriodes prevotella': {'bacteriodes prevotella': 838, 'mapping_source': 'entrez'},...}
+    """
     cache = load_pickle(cache_file)
     if cache is None:
         cache = {}
@@ -427,6 +445,13 @@ def bte_name2taxid(taxon_names):
 
 
 def cache_bte_name2taxid(taxon_names, cache_file="bte_name2taxid.pkl"):
+    """
+
+    :param taxon_names:
+    :param cache_file:
+    :return: a dict with first preprocessed names as keys and values are as follows:
+    {'herpes simplex virus': {'herpes simplex virus': 126283, 'mapping_source': 'bte'},...}
+    """
     cache = load_pickle(cache_file)
     if cache is None:
         cache = {}
@@ -471,10 +496,10 @@ if __name__ == "__main__":
     # # (1196 names need to be mapped if I want to get 95% retrieval rate)
 
     preprocessed_names = preprocess_taxon_name(taxon_names)
-    preprocessed_names2map = [new_name for old_name, new_name in preprocessed_names.items()]
+    preprocessed_names4map = [new_name for old_name, new_name in preprocessed_names.items()]
     print(
-        f"Unique names after preprocess1: {len(set(preprocessed_names2map))}"
-    )  # 1244 unique names after preprocess
+        f"Unique names after preprocess1: {len(set(preprocessed_names4map))}"
+    )  # 1244 unique names after preprocessing
 
     # Now ete3 has 969/1244 hit, 275/1259 unique names need to map
     # ete3_mapped = ete3_taxon_name2taxid(preprocessed_names2map)
@@ -518,6 +543,9 @@ if __name__ == "__main__":
         and new_name not in entrez_mapped
         and new_name not in bte_mapped
     ]
-    print(f"Taxon names to preprocess2: {len(set(names4preprocess))}")
+    print(f"Taxon names to preprocess2: {len(set(names4preprocess))}") # 195 names to map after preprocess2
+
+    preprocessed_names2 = preprocess_taxon_name_details(names4preprocess)
+    preprocessed_names2_4match = [new_name for old_name, new_name in preprocessed_names.items()]
 
     # Currently mapped 1049/1259 names ~ 84% of the retrieval rate
