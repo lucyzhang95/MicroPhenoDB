@@ -302,6 +302,21 @@ def expand_taxon_name_abbrev(name):
     return name.strip()
 
 
+def preprocess_taxon_name_details(taxon_names):
+    name_map = {}
+    for old_name in taxon_names:
+        new_name = old_name.strip()
+        new_name = remove_strain_in_taxon_name(new_name)
+        new_name = remove_type_in_taxon_name(new_name)
+        new_name = remove_group_in_taxon_name(new_name)
+        new_name = remove_serovar_in_taxon_name(new_name)
+        new_name = remove_pre_postfix_in_taxon_name(new_name)
+        new_name = remove_spp_in_name(new_name)
+        new_name = expand_taxon_name_abbrev(new_name)
+        name_map[old_name] = new_name
+    return name_map
+
+
 def ete3_taxon_name2taxid(taxon_names):
     """Use ete3 to map taxonomy names to NCBI taxonomy ids
     ete3 is good at mapping exact taxonomy names and fast without accessing API
@@ -393,21 +408,6 @@ def cached_bte_name2taxid(taxon_names, cache_file="bte_name2taxid.pkl"):
         result[name]["mapping_source"] = "bte"
     save_pickle(result, cache_file)
     return result
-
-
-def preprocess_taxon_name_details(taxon_names):
-    name_map = {}
-    for old_name in taxon_names:
-        new_name = old_name.strip()
-        new_name = remove_strain_in_taxon_name(new_name)
-        new_name = remove_type_in_taxon_name(new_name)
-        new_name = remove_group_in_taxon_name(new_name)
-        new_name = remove_serovar_in_taxon_name(new_name)
-        new_name = remove_pre_postfix_in_taxon_name(new_name)
-        new_name = remove_spp_in_name(new_name)
-        new_name = expand_taxon_name_abbrev(new_name)
-        name_map[old_name] = new_name
-    return name_map
 
 
 if __name__ == "__main__":
