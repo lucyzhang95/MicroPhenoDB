@@ -486,7 +486,9 @@ if __name__ == "__main__":
     names4preprocess = [
         new_name
         for old_name, new_name in preprocessed_names.items()
-        if new_name not in cached_ete3_mapped and new_name not in cached_entrez_mapped and new_name not in cached_bte_mapped
+        if new_name not in cached_ete3_mapped
+        and new_name not in cached_entrez_mapped
+        and new_name not in cached_bte_mapped
     ]
     print(f"names to preprocess 2: {len(set(names4preprocess))}")
 
