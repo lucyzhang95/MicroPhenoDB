@@ -499,6 +499,18 @@ def cache_bte_name2taxid(taxon_names, cache_file="bte_name2taxid.pkl"):
     return cache
 
 
+def fuzzy_match(
+    name_query: list, name_reference: list, scorer=fuzz.token_sort_ratio, score_cutoff=80
+) -> dict:
+    fuzzy_matched = {}
+    for name in name_query:
+        match = process.extractOne(name, name_reference, scorer=scorer, score_cutoff=score_cutoff)
+        if match:
+            matched_name, score, idx = match
+            fuzzy_matched[name] = {name: matched_name, "score": score, "mapping_tool": "rapidfuzz"}
+    return fuzzy_matched
+
+
 if __name__ == "__main__":
     in_f_ncit = os.path.join("downloads", "NCIT.txt")
     ncit_codes = get_ncit_code(in_f_ncit)
@@ -585,3 +597,8 @@ if __name__ == "__main__":
     )  # 195 names to map after preprocess2
 
     # Currently mapped 1049/1259 names ~ 84% of the retrieval rate
+
+    # tar_path = os.path.join(os.getcwd(), "taxdump.tar.gz")
+    # taxdump = parse_names_dmp_from_taxdump(tar_path)
+    # cache_taxdump = save_pickle(taxdump, "ncbi_taxdump.pkl")
+    cached_taxdump = load_pickle("ncbi_taxdump.pkl")
