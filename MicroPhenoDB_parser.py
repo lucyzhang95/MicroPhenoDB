@@ -3,6 +3,8 @@ import csv
 import os
 import pickle
 import re
+import ssl
+import tarfile
 import time
 
 import aiohttp
@@ -55,6 +57,38 @@ def read_file(in_file, has_header=True):
                 yield line
     except UnicodeDecodeError as e:
         print(f"Unicode error with {encoding} on file {in_file}: {e}")
+
+
+def download_ncbi_taxdump():
+    ssl._create_default_https_context = ssl._create_unverified_context
+    ncbi = NCBITaxa()
+    ncbi.update_taxonomy_database()
+
+
+def parse_names_dmp_from_taxdump(tar_path, f_name="names.dmp", keep_classes=None):
+    if keep_classes is None:
+        keep_classes = {
+            "scientific name",
+            "synonym",
+            "equivalent name",
+            "genbank synonym",
+            "genbank anamorph",
+        }
+
+    name2taxid = {}
+
+    with tarfile.open(tar_path, "r:gz") as tar_f:
+        member = tar_f.getmember(f_name)
+        with tar_f.extractfile(member) as in_f:
+            for line in in_f:
+                name_parts = [part.strip().decode("utf-8") for part in line.strip().split(b"|")]
+                if len(name_parts) < 4:
+                    continue
+
+                taxid, name_txt, _, name_class = name_parts[:4]
+                if name_class in keep_classes:
+                    name2taxid[name_txt.lower()] = int(taxid)
+    return name2taxid
 
 
 def get_ncit_code(in_file):
