@@ -500,7 +500,7 @@ def cache_bte_name2taxid(taxon_names, cache_file="bte_name2taxid.pkl"):
 
 
 def fuzzy_match(
-    name_query: list, name_reference: list, scorer=fuzz.token_sort_ratio, score_cutoff=80
+    name_query: list, name_reference: list, scorer=fuzz.token_sort_ratio, score_cutoff=None
 ) -> dict:
     fuzzy_matched = {}
     for name in name_query:
