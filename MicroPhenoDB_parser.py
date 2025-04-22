@@ -735,5 +735,3 @@ if __name__ == "__main__":
     print(f"Combined unique taxids: {len(set(taxids))}")
     taxon_info = get_taxon_info_from_bt(taxids)
     print(f"Taxon info: {len(taxon_info)}, {len(set(taxids)) - len(taxon_info)} less")
-
-
