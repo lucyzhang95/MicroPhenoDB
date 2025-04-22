@@ -427,6 +427,13 @@ def cache_ete3_taxon_name2taxid(taxon_names: list, cache_file="ete3_name2taxid.p
 
 
 def entrez_taxon_name2taxid(taxon_name: list) -> dict:
+    """Map taxonomy names to NCBI taxonomy ids using entrez API
+    Entrez is good at mapping reclassified taxonomy names that are outdated
+    but very slow due to no batch query allowed, so expensive to query
+
+    :param taxon_name:
+    :return:
+    """
     Entrez.email = "bazhang@scripps.edu"
     try:
         handle = Entrez.esearch(db="taxonomy", term=taxon_name, retmode="xml", retmax=1)
@@ -450,7 +457,7 @@ def entrez_batch_name2taxid(taxon_names: list, sleep=0.34) -> dict:
 
 
 def cache_entrez_batch_name2taxid(taxon_names: list, cache_file="entrez_name2taxid.pkl") -> dict:
-    """
+    """Manual function to batch query entrez API (1 at a time)
 
     :param taxon_names:
     :param cache_file:
@@ -473,6 +480,13 @@ def cache_entrez_batch_name2taxid(taxon_names: list, cache_file="entrez_name2tax
 
 # TODO: Taxon name resolver (preprocess with special character only, ete3 first, entrez second, then detailed name preprocess, lastly using biothings...)
 def bt_name2taxid(taxon_names: list) -> dict:
+    """Map taxonomy names to NCBI taxonomy ids using BioThings API
+    BioThings is good at mapping taxonomy names with abbreviations in the "other_names" scope field
+
+    :param taxon_names:
+    :return:
+    {{'herpes simplex virus': 126283, 'mapping_source': 'bt'},...}
+    """
     taxon_names = set(taxon_names)
     get_taxon = bt.get_client("taxon")
     taxon_info = get_taxon.querymany(
@@ -514,6 +528,16 @@ def cache_bt_name2taxid(taxon_names: list, cache_file="bt_name2taxid.pkl") -> di
 def fuzzy_match(
     name_query: list, name_reference: list, scorer=fuzz.token_sort_ratio, score_cutoff=None
 ) -> dict:
+    """Map messy taxonomy names to NCBI taxonomy names using RapidFuzz
+    Customizable with scorer options, cutoff score of 90 is used for MicroPhenoDB
+
+    :param name_query:
+    :param name_reference:
+    :param scorer:
+    :param score_cutoff:
+    :return:
+    {'calicivirusm': {'calicivirusm': 'calici virus', 'score': 91.66666666666666, 'mapping_tool': 'rapidfuzz'},...}
+    """
     fuzzy_matched = {}
     for name in name_query:
         match = process.extractOne(name, name_reference, scorer=scorer, score_cutoff=score_cutoff)
@@ -524,7 +548,7 @@ def fuzzy_match(
 
 
 def fuzzy_matched_name2taxid(fuzzy_matched_names: dict, ncbi_name_dmp: dict) -> dict:
-    """
+    """Map fuzzy matched taxonomy names to NCBI taxonomy ids using NCBI taxdump.tar.gz as reference
 
     :param fuzzy_matched_names:
     {'calicivirusm': {'calicivirusm': 'calici virus', 'score': 91.66666666666666, 'mapping_tool': 'rapidfuzz'},...}
@@ -556,7 +580,7 @@ if __name__ == "__main__":
     print(f"Total unique taxon names: {len(set(total_taxon_names))}")  # 1767 unique
 
     taxon_names = get_taxon_names2map(in_f_core, "ncit2taxid.pkl")
-    print(taxon_names)
+    # print(taxon_names)
     print(
         f"Total taxon names exclude NCIT covered to map with redundancy: {len(taxon_names)}"
     )  # 2450 redundant names
@@ -574,6 +598,7 @@ if __name__ == "__main__":
     # cache_ete3_mapped = cache_ete3_taxon_name2taxid(names4ete3)
     # print(f"Cached ete3 mapped: {len(cache_ete3_mapped)}")
     ete3_mapped = load_pickle("ete3_name2taxid.pkl")
+    # print(ete3_mapped)
     print(f"Cached ete3 mapped: {len(ete3_mapped)}")  # 1031 names mapped
 
     # Now entrez has 56/169 mapped, 113/169 no hit
@@ -585,6 +610,7 @@ if __name__ == "__main__":
     # print(cached_entrez_mapped)
     # print(f"Cached entrez mapped: {len(set(cache_entrez_mapped))}")
     entrez_mapped = load_pickle("entrez_name2taxid.pkl")
+    # print(entrez_mapped)
     print(f"Cached entrez mapped: {len(set(entrez_mapped))}")  # 56 names mapped
 
     # biothings: 22/113 with 1 hit, 91/113 no hit
@@ -598,6 +624,7 @@ if __name__ == "__main__":
     # print(cache_bt_mapped)
     # print(f"Cached bt mapped: {len(cache_bt_mapped)}")
     bt_mapped = load_pickle("bt_name2taxid.pkl")
+    # print(bt_mapped)
     print(f"Cached bt mapped: {len(bt_mapped)}")  # 22 names mapped
 
     # after bt mapping, 91 no hit
@@ -619,9 +646,11 @@ if __name__ == "__main__":
     ncbi_taxon_names = [name for name, taxon in ncbi_name_dmp.items()]
 
     # fuzzy matched names: 53 mapped > 90 score cutoff
-    fuzzy_matched = fuzzy_match(names4fuzz, ncbi_taxon_names, score_cutoff=90)
+    # cache_fuzzy_matched = fuzzy_match(names4fuzz, ncbi_taxon_names, score_cutoff=90)
+    # print(f"Fuzzy matched names with a cutoff score of 90: {len(cache_fuzzy_matched)}")
+    # save_pickle(cache_fuzzy_matched, "rapidfuzz_name2taxid.pkl")
+    fuzzy_matched = load_pickle("rapidfuzz_name2taxid.pkl")
     print(f"Fuzzy matched names with a cutoff score of 90: {len(fuzzy_matched)}")
-    save_pickle(fuzzy_matched, "rapidfuzz_name2taxid.pkl")
 
     # 38 no hit
     no_hit = [name for name in names4fuzz if name not in fuzzy_matched]
