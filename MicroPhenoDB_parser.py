@@ -664,6 +664,30 @@ def map_original_name2taxon_info(name_map: dict, preprocessed_name2taxon_info: d
     }
 
 
+def map_ncit2taxon_info(bt_taxon_info: dict, cached_ncit2taxid: dict) -> dict:
+    """
+
+    :param bt_taxon_info:
+    :param cached_ncit2taxid:
+    :return:
+    {'bacteroides dorei': {'taxid': 357276, 'description': 'A species of anaerobic, gram-negative, rod shaped bacteria assigned to the phylum Bacteroidetes. This specis is non-spore forming, non-motile, does not hydrolyze esculin, is indole negative and nitrate is not reduced.[NCIT]', 'scientific_name': 'phocaeicola dorei', 'parent_taxid': 909656, 'lineage': [357276, 909656, 815, 171549, 200643, 976, 68336, 1783270, 3379134, 2, 131567, 1], 'rank': 'species', 'xrefs': {'ncit': 'C111133'}}}
+    """
+    ncit2taxon_info = {}
+    for name, ncit2taxid in cached_ncit2taxid.items():
+        if "taxid" in ncit2taxid:
+            if str(ncit2taxid["taxid"]) in bt_taxon_info:
+                updated_ncit2taxid = ncit2taxid.copy()
+                updated_ncit2taxid.update(bt_taxon_info[str(ncit2taxid["taxid"])])
+                ncit2taxon_info[name] = updated_ncit2taxid
+
+    for name, taxon_info in ncit2taxon_info.items():
+        if "taxid" and "ncit" in taxon_info:
+            taxon_info["xrefs"] = {"ncit": taxon_info["ncit"]}
+            taxon_info.pop("ncit")
+            taxon_info.pop("mapping_tool")
+    return ncit2taxon_info
+
+
 if __name__ == "__main__":
     """
     in_f_ncit = os.path.join("downloads", "NCIT.txt")
@@ -791,3 +815,5 @@ if __name__ == "__main__":
     original_name_map = map_original_name2taxon_info(preprocessed_names, preprocessed_name_map)
     # print(original_name_map)
     # save_pickle(original_name_map, "original_name2taxon_info.pkl")
+
+    ncit_name_map = map_ncit2taxon_info(taxon_info, ncit_cached)
