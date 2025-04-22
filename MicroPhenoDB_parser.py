@@ -576,9 +576,9 @@ if __name__ == "__main__":
     # print(ncit_codes)
     # print(len(ncit_codes))
 
-    ncit2taxids = cache_hard_code_ncit2taxid(ncit_codes)  # 582 records after manual mapping
+    # ncit2taxids = cache_hard_code_ncit2taxid(ncit_codes)  # 582 records after manual mapping
     # print(ncit2taxids)
-    print(f"Mapped NCIT taxon: {len(ncit2taxids)}")
+    # print(f"Mapped NCIT taxon: {len(ncit2taxids)}")
 
     in_f_core = os.path.join("downloads", "core_table.txt")
     total_taxon_names = get_all_taxon_names(in_f_core)
