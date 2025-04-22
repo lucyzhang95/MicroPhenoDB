@@ -481,7 +481,9 @@ def cache_entrez_batch_name2taxid(taxon_names: list, cache_file="entrez_name2tax
 # TODO: Taxon name resolver (preprocess with special character only, ete3 first, entrez second, then detailed name preprocess, lastly using biothings...)
 def bt_name2taxid(taxon_names: list) -> dict:
     """Map taxonomy names to NCBI taxonomy ids using BioThings API
-    BioThings is good at mapping taxonomy names with abbreviations in the "other_names" scope field
+    BioThings is okay at mapping taxonomy names with abbreviations in the "other_names" scope field
+    However, some of the abbreviation mappings are wrong, e.g., "piv":{"taxid":204463,"mapping_source":"bt"}
+    {204463: Comamonadaceae bacterium PIV-3D}...
 
     :param taxon_names:
     :return:
@@ -572,7 +574,7 @@ def get_taxid_from_cache(cache_file):
     if os.path.exists(cache_file):
         cache_data = load_pickle(cache_file)
     for original_name, taxon_map_d in cache_data.items():
-        return {original_name: taxon_map_d["origial_name"]["taxid"]}
+        return {original_name: taxon_map_d[original_name]["taxid"]}
 
 
 if __name__ == "__main__":
