@@ -96,6 +96,7 @@ def get_ncit_code(in_file) -> list:
 
     :param in_file:
     :return:
+    ['C111133', 'C111204', 'C112407', 'C112408', 'C112409',...]
     """
     # 80 entries do not have ncit code, 582 unique ncit codes (755 with redundancy)
     # 80 + 755 = 835 which matches the source
@@ -237,6 +238,7 @@ def get_all_taxon_names(in_file) -> list:
 
     :param in_file:
     :return:
+    ['clostridiaceae bacterium sk061', 'mycobacterium spp-rapid growers', 'alicyclobacillus',...]
     """
     core_data = read_file(in_file)
     core_taxon_names = [line[1].lower().strip() for line in core_data if line]
@@ -551,53 +553,54 @@ if __name__ == "__main__":
     in_f_core = os.path.join("downloads", "core_table.txt")
     total_taxon_names = get_all_taxon_names(in_f_core)
     print(f"Total taxon names: {len(total_taxon_names)}")  # 5529 with redundancy
-    print(f"Total unique taxon names: {len(set(total_taxon_names))}")  # 1774 unique
+    print(f"Total unique taxon names: {len(set(total_taxon_names))}")  # 1767 unique
 
     taxon_names = get_taxon_names2map(in_f_core, "ncit2taxid.pkl")
-    # print(taxon_names)
+    print(taxon_names)
     print(
         f"Total taxon names exclude NCIT covered to map with redundancy: {len(taxon_names)}"
-    )  # 2456 redundant names
+    )  # 2450 redundant names
     print(
         f"Unique taxon names exclude NCIT covered to map: {len(set(taxon_names))}"
-    )  # 1259 unique names need to be mapped
-    # # (1196 names need to be mapped if I want to get 95% retrieval rate)
-    save_pickle(taxon_names, "MicrophenoDB_original_taxon_names.pkl")
+    )  # 1252 unique names need to be mapped
+
+    # save_pickle(taxon_names, "MicrophenoDB_original_taxon_names.pkl")
 
     preprocessed_names = convert_preprocessed_name2dict(taxon_names)
     names4ete3 = [new_name for old_name, new_name in preprocessed_names.items()]
+    print(f"Unique names for ete3 after preprocessing: {len(set(names4ete3))}")
 
-    # Now ete3 has /1244 hit, /1259 unique names need to map
-    cache_ete3_mapped = cache_ete3_taxon_name2taxid(names4ete3)
-    print(f"Cached ete3 mapped: {len(cache_ete3_mapped)}")
+    # Now ete3 has 1031/ hit, 221/ unique names need to map
+    # cache_ete3_mapped = cache_ete3_taxon_name2taxid(names4ete3)
+    # print(f"Cached ete3 mapped: {len(cache_ete3_mapped)}")
     ete3_mapped = load_pickle("ete3_name2taxid.pkl")
-    print(f"Cached ete3 mapped: {len(ete3_mapped)}")  #  names mapped
+    print(f"Cached ete3 mapped: {len(ete3_mapped)}")  # 1031 names mapped
 
-    # Now entrez has 56/275 mapped, 219/275 no hit
+    # Now entrez has 56/169 mapped, 113/169 no hit
     names4entrez = [
         new_name for old_name, new_name in preprocessed_names.items() if new_name not in ete3_mapped
     ]
-    print(f"Names to map for entrez: {len(set(names4entrez))}")  #  names to map for entrez
-    cache_entrez_mapped = cache_entrez_batch_name2taxid(names4entrez)
+    print(f"Names to map for entrez: {len(set(names4entrez))}")  # 169 names to map for entrez
+    # cache_entrez_mapped = cache_entrez_batch_name2taxid(names4entrez)
     # print(cached_entrez_mapped)
-    print(f"Cached entrez mapped: {len(set(cache_entrez_mapped))}")
+    # print(f"Cached entrez mapped: {len(set(cache_entrez_mapped))}")
     entrez_mapped = load_pickle("entrez_name2taxid.pkl")
-    print(f"Cached entrez mapped: {len(set(entrez_mapped))}")  #  names mapped
+    print(f"Cached entrez mapped: {len(set(entrez_mapped))}")  # 56 names mapped
 
-    # biothings: 2/219 with 1 hit, 22/219 found dup hits, and 195/219 no hit (24/219 mapped)
+    # biothings: 22/113 with 1 hit, 91/113 no hit
     names4bt = [
         new_name
         for old_name, new_name in preprocessed_names.items()
         if new_name not in ete3_mapped and new_name not in entrez_mapped
     ]
-    print(f"Names to map for bt: {len(set(names4bt))}")  #  names to map for bt
-    cache_bt_mapped = cache_bt_name2taxid(names4bt)
+    print(f"Names to map for bt: {len(set(names4bt))}")  # 113 names to map for bt
+    # cache_bt_mapped = cache_bt_name2taxid(names4bt)
     # print(cache_bt_mapped)
-    print(f"Cached bt mapped: {len(cache_bt_mapped)}")
+    # print(f"Cached bt mapped: {len(cache_bt_mapped)}")
     bt_mapped = load_pickle("bt_name2taxid.pkl")
-    print(f"Cached bt mapped: {len(bt_mapped)}")  #  names mapped
+    print(f"Cached bt mapped: {len(bt_mapped)}")  # 22 names mapped
 
-    # after bt mapping, 195 no hit
+    # after bt mapping, 91 no hit
     names4fuzz = [
         new_name
         for old_name, new_name in preprocessed_names.items()
@@ -605,9 +608,7 @@ if __name__ == "__main__":
         and new_name not in entrez_mapped
         and new_name not in bt_mapped
     ]
-    print(f"Taxon names to fuzzy match: {len(set(names4fuzz))}")  #  names for fuzzy match
-
-    # Currently mapped 1049/1259 names ~ 84% of the retrieval rate
+    print(f"Taxon names to fuzzy match: {len(set(names4fuzz))}")  # 91 names for fuzzy match
 
     if not os.path.exists("cache/ncbi_taxdump.pkl"):
         tar_path = os.path.join(os.getcwd(), "taxdump.tar.gz")
@@ -617,8 +618,11 @@ if __name__ == "__main__":
     ncbi_name_dmp = load_pickle("ncbi_taxdump.pkl")
     ncbi_taxon_names = [name for name, taxon in ncbi_name_dmp.items()]
 
+    # fuzzy matched names: 53 mapped > 90 score cutoff
     fuzzy_matched = fuzzy_match(names4fuzz, ncbi_taxon_names, score_cutoff=90)
     print(f"Fuzzy matched names with a cutoff score of 90: {len(fuzzy_matched)}")
+    save_pickle(fuzzy_matched, "rapidfuzz_name2taxid.pkl")
 
+    # 38 no hit
     no_hit = [name for name in names4fuzz if name not in fuzzy_matched]
     print(f"No hit after preprocess, ete3, entrez, bt, and fuzzy match: {len(set(no_hit))}")
