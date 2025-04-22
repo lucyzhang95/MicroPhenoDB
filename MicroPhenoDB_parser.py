@@ -410,7 +410,7 @@ def cache_ete3_taxon_name2taxid(taxon_names: list, cache_file="ete3_name2taxid.p
     :param taxon_names:
     :param cache_file:
     :return: a dict with first preprocessed names as keys and values as follows:
-    {'varicella zoster virus': {'varicella zoster virus': 10335, 'mapping_tool': 'ete3'},...}
+    {'varicella zoster virus': {'taxid': 10335, 'mapping_tool': 'ete3'},...}
     """
     cache = load_pickle(cache_file)
     if cache is None:
@@ -462,7 +462,7 @@ def cache_entrez_batch_name2taxid(taxon_names: list, cache_file="entrez_name2tax
     :param taxon_names:
     :param cache_file:
     :return: a dict with first preprocessed names as keys and values are as follows:
-    {'bacteriodes prevotella': {'bacteriodes prevotella': 838, 'mapping_tool': 'entrez'},...}
+    {'bacteriodes prevotella': {'taxid': 838, 'mapping_tool': 'entrez'},...}
     """
     cache = load_pickle(cache_file)
     if cache is None:
@@ -509,7 +509,7 @@ def cache_bt_name2taxid(taxon_names: list, cache_file="bt_name2taxid.pkl") -> di
     :param taxon_names:
     :param cache_file:
     :return: a dict with first preprocessed names as keys and values are as follows:
-    {'herpes simplex virus': {'herpes simplex virus': 126283, 'mapping_source': 'bt'},...}
+    {'herpes simplex virus': {'taxid': 126283, 'mapping_source': 'bt'},...}
     """
     cache = load_pickle(cache_file)
     if cache is None:
