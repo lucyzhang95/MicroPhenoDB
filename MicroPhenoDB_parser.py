@@ -563,13 +563,11 @@ def fuzzy_matched_name2taxid(fuzzy_matched_names: dict, ncbi_name_dmp: dict) -> 
             fuzz_name2taxid[name] = match
     return fuzz_name2taxid
 
+
 #
 # def get_taxid_from_cache(cache_file):
 #     if os.path.exists(cache_file):
 #         cache_data = load_pickle(cache_file)
-
-
-
 
 
 if __name__ == "__main__":
