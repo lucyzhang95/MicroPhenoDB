@@ -400,7 +400,7 @@ def ete3_taxon_name2taxid(taxon_names: list) -> dict:
     ete3_name2taxid = ncbi.get_name_translator(taxon_names)
     for name, taxid in ete3_name2taxid.items():
         if taxid:
-            ete3_mapped[name] = {name: int(taxid[0])}
+            ete3_mapped[name] = {"taxid": int(taxid[0])}
     return ete3_mapped
 
 
@@ -441,7 +441,7 @@ def entrez_taxon_name2taxid(taxon_name: list) -> dict:
         handle.close()
         if record["IdList"]:
             taxid = int(record["IdList"][0])
-            return {taxon_name: {taxon_name: taxid}}
+            return {taxon_name: {"taxid": taxid}}
     except Exception as e:
         print(f"Entrez query failed for '{taxon_name}': {e}")
 
@@ -499,7 +499,7 @@ def bt_name2taxid(taxon_names: list) -> dict:
     for d in taxon_info:
         if "notfound" not in d:
             if d["query"] not in bte_mapped:
-                bte_mapped[d["query"]] = {d["query"]: int(d["taxid"])}
+                bte_mapped[d["query"]] = {"taxid": int(d["taxid"])}
     return bte_mapped
 
 
@@ -564,10 +564,15 @@ def fuzzy_matched_name2taxid(fuzzy_matched_names: dict, ncbi_name_dmp: dict) -> 
     return fuzz_name2taxid
 
 
-#
-# def get_taxid_from_cache(cache_file):
-#     if os.path.exists(cache_file):
-#         cache_data = load_pickle(cache_file)
+def get_taxon_info_from_bt(taxids: list) -> dict:
+    taxids = set(taxids)
+
+
+def get_taxid_from_cache(cache_file):
+    if os.path.exists(cache_file):
+        cache_data = load_pickle(cache_file)
+    for original_name, taxon_map_d in cache_data.items():
+        return {original_name: taxon_map_d["origial_name"]["taxid"]}
 
 
 if __name__ == "__main__":
@@ -619,7 +624,7 @@ if __name__ == "__main__":
     # print(entrez_mapped)
     print(f"Cached entrez mapped: {len(set(entrez_mapped))}")  # 56 names mapped
 
-    # biothings: 22/113 with 1 hit, 91/113 no hit
+    # biothings: 1/113 with 1 hit, 21/113 with dup hits, 91/113 no hit
     names4bt = [
         new_name
         for old_name, new_name in preprocessed_names.items()
@@ -651,7 +656,7 @@ if __name__ == "__main__":
     ncbi_name_dmp = load_pickle("ncbi_taxdump.pkl")
     ncbi_taxon_names = [name for name, taxon in ncbi_name_dmp.items()]
 
-    # fuzzy matched names: 53 mapped > 90 score cutoff
+    # fuzzy-matched names: 53 mapped > 90 score cutoff
     # fuzzy_matched = fuzzy_match(names4fuzz, ncbi_taxon_names, score_cutoff=90)
     # print(f"Fuzzy matched names with a cutoff score of 90: {len(fuzzy_matched)}")
 
