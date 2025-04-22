@@ -566,18 +566,56 @@ def fuzzy_matched_name2taxid(fuzzy_matched_names: dict, ncbi_name_dmp: dict) -> 
     return fuzz_name2taxid
 
 
-def get_taxon_info_from_bt(taxids: list) -> dict:
-    taxids = set(taxids)
-
-
-def get_taxid_from_cache(cache_file):
-    if os.path.exists(cache_file):
-        cache_data = load_pickle(cache_file)
+def get_taxid_from_cache(cache_data):
+    taxid_map = {}
     for original_name, taxon_map_d in cache_data.items():
-        return {original_name: taxon_map_d[original_name]["taxid"]}
+        if "taxid" in taxon_map_d:
+            taxid_map[original_name] = taxon_map_d["taxid"]
+    return taxid_map
+
+
+def get_taxon_info_from_bt(taxids) -> dict:
+    """
+
+    :param taxids:
+    :return:
+    '36855': {'taxid': 36855,
+    'scientific_name': 'brucella canis',
+    'parent_taxid': 234,
+    'lineage': [36855,
+                234,
+                2826938,
+                118882,
+                356,
+                28211,
+                1224,
+                3379134,
+                2,
+                131567,
+                1],
+    'rank': 'species'},
+    """
+    taxids = set(taxids)
+    get_taxon = bt.get_client("taxon")
+    taxon_info = get_taxon.gettaxa(
+        taxids, fields=["scientific_name", "parent_taxid", "lineage", "rank"]
+    )
+
+    taxon = {}
+    for info in taxon_info:
+        if "notfound" not in info.keys():
+            taxon[info["query"]] = {
+                "taxid": int(info["_id"]),
+                "scientific_name": info["scientific_name"],
+                "parent_taxid": int(info["parent_taxid"]),
+                "lineage": info["lineage"],
+                "rank": info["rank"],
+            }
+    return taxon
 
 
 if __name__ == "__main__":
+    """
     in_f_ncit = os.path.join("downloads", "NCIT.txt")
     ncit_codes = get_ncit_code(in_f_ncit)
     # print(ncit_codes)
@@ -586,12 +624,14 @@ if __name__ == "__main__":
     # ncit2taxids = cache_hard_code_ncit2taxid(ncit_codes)  # 582 records after manual mapping
     # print(ncit2taxids)
     # print(f"Mapped NCIT taxon: {len(ncit2taxids)}")
+    """
 
     in_f_core = os.path.join("downloads", "core_table.txt")
     total_taxon_names = get_all_taxon_names(in_f_core)
     print(f"Total taxon names: {len(total_taxon_names)}")  # 5529 with redundancy
     print(f"Total unique taxon names: {len(set(total_taxon_names))}")  # 1767 unique
 
+    """
     taxon_names = get_taxon_names2map(in_f_core, "ncit2taxid.pkl")
     # print(taxon_names)
     print(
@@ -671,3 +711,21 @@ if __name__ == "__main__":
     # 38 no hit
     no_hit = [name for name in names4fuzz if name not in cache_fuzzy_matched_taxid]
     print(f"No hit after preprocess, ete3, entrez, bt, and fuzzy match: {len(set(no_hit))}")
+    """
+
+    # Start querying taxids using BT and get more taxon info
+    ncit_cached = load_pickle("ncit2taxid.pkl")
+    ete3_cached = load_pickle("ete3_name2taxid.pkl")
+    entrez_cached = load_pickle("entrez_name2taxid.pkl")
+    bt_cached = load_pickle("bt_name2taxid.pkl")
+    fuzz_cached = load_pickle("rapidfuzz_name2taxid.pkl")
+
+    ncit_taxid = get_taxid_from_cache(ncit_cached)
+    ete3_taxid = get_taxid_from_cache(ete3_cached)
+    entrez_taxid = get_taxid_from_cache(entrez_cached)
+    bt_taxid = get_taxid_from_cache(bt_cached)
+    fuzz_taxid = get_taxid_from_cache(fuzz_cached)
+
+    taxid_dicts = [ncit_taxid, ete3_taxid, entrez_taxid, bt_taxid, fuzz_taxid]
+    combined_taxids = {name: taxid for d in taxid_dicts for name, taxid in d.items()}
+    print(f"Combined taxids from all cache: {len(combined_taxids)}")
