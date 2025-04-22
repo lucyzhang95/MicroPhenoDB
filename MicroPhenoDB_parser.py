@@ -631,7 +631,6 @@ if __name__ == "__main__":
     print(f"Total taxon names: {len(total_taxon_names)}")  # 5529 with redundancy
     print(f"Total unique taxon names: {len(set(total_taxon_names))}")  # 1767 unique
 
-    """
     taxon_names = get_taxon_names2map(in_f_core, "ncit2taxid.pkl")
     # print(taxon_names)
     print(
@@ -644,6 +643,8 @@ if __name__ == "__main__":
     # save_pickle(taxon_names, "MicrophenoDB_original_taxon_names.pkl")
 
     preprocessed_names = convert_preprocessed_name2dict(taxon_names)
+
+    """
     names4ete3 = [new_name for old_name, new_name in preprocessed_names.items()]
     print(f"Unique names for ete3 after preprocessing: {len(set(names4ete3))}")
 
@@ -729,3 +730,10 @@ if __name__ == "__main__":
     taxid_dicts = [ncit_taxid, ete3_taxid, entrez_taxid, bt_taxid, fuzz_taxid]
     combined_taxids = {name: taxid for d in taxid_dicts for name, taxid in d.items()}
     print(f"Combined taxids from all cache: {len(combined_taxids)}")
+
+    taxids = [taxid for name, taxid in combined_taxids.items()]
+    print(f"Combined unique taxids: {len(set(taxids))}")
+    taxon_info = get_taxon_info_from_bt(taxids)
+    print(f"Taxon info: {len(taxon_info)}, {len(set(taxids)) - len(taxon_info)} less")
+
+
