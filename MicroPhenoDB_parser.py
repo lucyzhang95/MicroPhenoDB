@@ -593,7 +593,8 @@ def get_taxon_info_from_bt(taxids) -> dict:
                 2,
                 131567,
                 1],
-    'rank': 'species'},
+    'rank': 'species'}
+    }
     """
     taxids = set(taxids)
     get_taxon = bt.get_client("taxon")
@@ -612,6 +613,55 @@ def get_taxon_info_from_bt(taxids) -> dict:
                 "rank": info["rank"],
             }
     return taxon
+
+
+def map_preprocessed_name2taxon_info(taxid_dict: dict, bt_taxon_info: dict) -> dict:
+    """
+
+    :param taxid_dict:
+    {'gulbenkiania': 397456, 'gymnopilus': 86085, 'haemophilus quentini': 123834,...}
+    :param bt_taxon_info:
+    '36855': {'taxid': 36855,
+    'scientific_name': 'brucella canis',
+    'parent_taxid': 234,
+    'lineage': [36855,
+                234,
+                2826938,
+                118882,
+                356,
+                28211,
+                1224,
+                3379134,
+                2,
+                131567,
+                1],
+    'rank': 'species'}
+    }
+    :return:
+    {'brucella canis': {'taxid': 36855, 'scientific_name': 'brucella canis', 'parent_taxid': 234, 'lineage': [36855, 234, 2826938, 118882, 356, 28211, 1224, 3379134, 2, 131567, 1], 'rank': 'species'}}
+    """
+    return {
+        name: bt_taxon_info[str(taxid)]
+        for name, taxid in taxid_dict.items()
+        if str(taxid) in bt_taxon_info
+    }
+
+
+def map_original_name2taxon_info(name_map: dict, preprocessed_name2taxon_info: dict) -> dict:
+    """
+
+    :param name_map:
+    {'enterovirus (nonpolio)': 'enterovirus', 'haemophilus influenzae (nontypeable)': 'haemophilus influenzae', 'absidia': 'absidia',...}
+    :param preprocessed_name2taxon_info:
+    {'enterovirus': {'taxid': 12059, 'scientific_name': 'enterovirus', 'parent_taxid': 2946630, 'lineage': [12059, 2946630, 12058, 464095, 2732506, 2732408, 2732396, 2559587, 10239, 1], 'rank': 'genus'}}
+    :return:
+    {'enterovirus (nonpolio)': {'taxid': 12059, 'scientific_name': 'enterovirus', 'parent_taxid': 2946630, 'lineage': [12059, 2946630, 12058, 464095, 2732506, 2732408, 2732396, 2559587, 10239, 1], 'rank': 'genus'}}
+    """
+    return {
+        ori_name: preprocessed_name2taxon_info[pre_name]
+        for ori_name, pre_name in name_map.items()
+        if pre_name in preprocessed_name2taxon_info
+    }
 
 
 if __name__ == "__main__":
@@ -735,3 +785,9 @@ if __name__ == "__main__":
     print(f"Combined unique taxids: {len(set(taxids))}")
     taxon_info = get_taxon_info_from_bt(taxids)
     print(f"Taxon info: {len(taxon_info)}, {len(set(taxids)) - len(taxon_info)} less")
+
+    preprocessed_name_map = map_preprocessed_name2taxon_info(combined_taxids, taxon_info)
+    # print(preprocessed_name_map)
+    original_name_map = map_original_name2taxon_info(preprocessed_names, preprocessed_name_map)
+    # print(original_name_map)
+    # save_pickle(original_name_map, "original_name2taxon_info.pkl")
