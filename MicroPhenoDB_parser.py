@@ -563,10 +563,10 @@ def fuzzy_matched_name2taxid(fuzzy_matched_names: dict, ncbi_name_dmp: dict) -> 
             fuzz_name2taxid[name] = match
     return fuzz_name2taxid
 
-
-def get_taxid_from_cache(cache_file):
-    if os.path.exists(cache_file):
-        cache_data = load_pickle(cache_file)
+#
+# def get_taxid_from_cache(cache_file):
+#     if os.path.exists(cache_file):
+#         cache_data = load_pickle(cache_file)
 
 
 
@@ -654,12 +654,15 @@ if __name__ == "__main__":
     ncbi_taxon_names = [name for name, taxon in ncbi_name_dmp.items()]
 
     # fuzzy matched names: 53 mapped > 90 score cutoff
-    # cache_fuzzy_matched = fuzzy_match(names4fuzz, ncbi_taxon_names, score_cutoff=90)
-    # print(f"Fuzzy matched names with a cutoff score of 90: {len(cache_fuzzy_matched)}")
-    # save_pickle(cache_fuzzy_matched, "rapidfuzz_name2taxid.pkl")
-    fuzzy_matched = load_pickle("rapidfuzz_name2taxid.pkl")
-    print(f"Fuzzy matched names with a cutoff score of 90: {len(fuzzy_matched)}")
+    # fuzzy_matched = fuzzy_match(names4fuzz, ncbi_taxon_names, score_cutoff=90)
+    # print(f"Fuzzy matched names with a cutoff score of 90: {len(fuzzy_matched)}")
+
+    # fuzzy_matched_taxid = fuzzy_matched_name2taxid(fuzzy_matched, ncbi_name_dmp)
+    # print(fuzzy_matched_taxid)
+    # save_pickle(fuzzy_matched_taxid, "rapidfuzz_name2taxid.pkl")
+    cache_fuzzy_matched_taxid = load_pickle("rapidfuzz_name2taxid.pkl")
+    print(f"Fuzzy matched names with a cutoff score of 90: {len(cache_fuzzy_matched_taxid)}")
 
     # 38 no hit
-    no_hit = [name for name in names4fuzz if name not in fuzzy_matched]
+    no_hit = [name for name in names4fuzz if name not in cache_fuzzy_matched_taxid]
     print(f"No hit after preprocess, ete3, entrez, bt, and fuzzy match: {len(set(no_hit))}")
