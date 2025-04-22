@@ -91,7 +91,12 @@ def parse_names_dmp_from_taxdump(tar_path, f_name="names.dmp", keep_classes=None
     return name2taxid
 
 
-def get_ncit_code(in_file):
+def get_ncit_code(in_file) -> list:
+    """
+
+    :param in_file:
+    :return:
+    """
     # 80 entries do not have ncit code, 582 unique ncit codes (755 with redundancy)
     # 80 + 755 = 835 which matches the source
     ncit_data = read_file(in_file, has_header=False)
@@ -99,7 +104,7 @@ def get_ncit_code(in_file):
     return ncit_codes
 
 
-async def fetch_ncit_taxid(session, ncit_code, notfound_ncit):
+async def fetch_ncit_taxid(session, ncit_code: list, notfound_ncit: dict):
     iri = f"http://purl.obolibrary.org/obo/NCIT_{ncit_code}"
     url = "https://www.ebi.ac.uk/ols4/api/ontologies/ncit/terms"
     params = {"iri": iri}
@@ -134,7 +139,7 @@ async def fetch_ncit_taxid(session, ncit_code, notfound_ncit):
         return None
 
 
-async def ncit2taxid(ncit_codes):
+async def ncit2taxid(ncit_codes: list) -> [dict | dict]:
     """Map NCIT identifiers to NCBI Taxids using EBI API
 
     :param ncit_codes: a list of NCIT codes e.g., ["C85924", "C83526", ...]
@@ -157,7 +162,7 @@ async def ncit2taxid(ncit_codes):
     return ncit2taxids, notfound_ncit
 
 
-def hard_code_ncit2taxid(ncit_codes) -> dict:
+def hard_code_ncit2taxid(ncit_codes: list) -> dict:
     """Manual map leftover NCIT identifiers to taxids
     There are a total of 15 NCIT identifiers need to be manually mapped
     2 key-values are removed due to non-microorganism property
@@ -206,7 +211,7 @@ def hard_code_ncit2taxid(ncit_codes) -> dict:
     return ncit2taxids
 
 
-def cache_hard_code_ncit2taxid(ncit_codes, cache_file="ncit2taxid.pkl"):
+def cache_hard_code_ncit2taxid(ncit_codes: list, cache_file="ncit2taxid.pkl"):
     """
     can be used only once to cache ncit2taxid, or it will be overwritten every time
     :param ncit_codes:
@@ -228,29 +233,34 @@ def cache_hard_code_ncit2taxid(ncit_codes, cache_file="ncit2taxid.pkl"):
 
 
 def get_all_taxon_names(in_file) -> list:
+    """
+
+    :param in_file:
+    :return:
+    """
     core_data = read_file(in_file)
     core_taxon_names = [line[1].lower().strip() for line in core_data if line]
     return core_taxon_names
 
 
-def get_taxon_names2map(in_file1, in_file2):
+def get_taxon_names2map(in_file1, in_file2) -> dict:
     core_taxon_names = get_all_taxon_names(in_file1)
     ncit_mapped_names = load_pickle(in_file2)
     name2map = [name.strip() for name in core_taxon_names if name not in ncit_mapped_names]
     return name2map
 
 
-def remove_special_char(name):
+def remove_special_char(name: str) -> str:
     name = re.sub(r"[?!#*&+]", "", name).strip()
     return name
 
 
-def remove_colon4name(name):
+def remove_colon4name(name: str) -> str:
     name = re.sub(r":", " ", name).strip()
     return name
 
 
-def remove_dot4name_except_in_sp(name):
+def remove_dot4name_except_in_sp(name: str) -> str:
     name = re.sub(r"\b(sp|spp)\.", r"\1__dot__", name)
     numeric_matches = re.findall(r"\d+(?:\.\d+)+", name)
     for match in numeric_matches:
@@ -261,7 +271,7 @@ def remove_dot4name_except_in_sp(name):
     return name.strip()
 
 
-def remove_hyphen4name(name):
+def remove_hyphen4name(name: str) -> str:
     name = name.replace("butyrate-producing", "BUTYRATEPRODUCING")
     name = re.sub(r"(?<=[a-z])-(?=\d)", " ", name)  # letter-digit
     name = re.sub(r"(?<=[a-z])-(?=(like|associated|related|positive|negative|)\b)", " ", name)
@@ -269,57 +279,57 @@ def remove_hyphen4name(name):
     return name.strip()
 
 
-def split_name_by_slash(name):
+def split_name_by_slash(name: str) -> str:
     name = re.split(r"(?<=[a-zA-Z])/\s*(?=[a-zA-Z])", name)[0].strip()
     return name
 
 
-def remove_parentheses(name):
+def remove_parentheses(name: str) -> str:
     name = re.sub(r"\s*\(.+\)", "", name).strip()
     return name
 
 
-def process_comma(name):
+def process_comma(name: str) -> str:
     name = re.sub(r",\s*(and\s+)?[a-z]{1,3}\b", "", name)
     name = name.split(",")[0].strip()
     return name.strip()
 
 
-def remove_and_in_name(name):
+def remove_and_in_name(name: str) -> str:
     if " and " in name:
         name = name.split("and")[0].strip()
     return name
 
 
-def remove_spp_in_name(name):
+def remove_spp_in_name(name: str) -> str:
     name = re.sub(r"\bspps?\b.*", "", name).strip()
     return name
 
 
-def remove_strain_in_taxon_name(name):
+def remove_strain_in_taxon_name(name: str) -> str:
     name = re.sub(r"\bstrains?\b", "", name).strip()
     name = re.sub(r"\s{2,}", " ", name)
     return name
 
 
-def remove_type_in_taxon_name(name):
+def remove_type_in_taxon_name(name: str) -> str:
     name = re.sub(r"\btypes?\b", "", name).strip()
     return name
 
 
-def remove_group_in_taxon_name(name):
+def remove_group_in_taxon_name(name: str) -> str:
     name = re.sub(r"\bgroups?\s+[a-z]\b", "", name)  # group(s) [a-z]
     name = re.sub(r"\b(groups?|subgroup)\b$", "", name)  # sub/group(s) at the end
     name = re.sub(r"\b(groups?|subgroup)\b(?=\s+[a-z])", "", name)  # sub/group(s) in the middle
     return name.strip()
 
 
-def remove_serovar_in_taxon_name(name):
+def remove_serovar_in_taxon_name(name: str) -> str:
     name = re.sub(r"\bserovars?.*\b", "", name).strip()
     return name
 
 
-def remove_pre_postfix_in_taxon_name(name):
+def remove_pre_postfix_in_taxon_name(name: str) -> str:
     name = re.sub(r"^\s*b\s+", "", name)
     name = re.sub(r"\bstains?\b", "", name)
     name = re.sub(
@@ -331,7 +341,7 @@ def remove_pre_postfix_in_taxon_name(name):
     return name.strip()
 
 
-def expand_taxon_name_abbrev(name):
+def expand_taxon_name_abbrev(name: str) -> str:
     name = re.sub(r"\be histolytica\b", "entamoeba histolytica", name)
     name = re.sub(r"\bp multocida\b", "pasteurella multocida", name)
     name = re.sub(r"\bhsv\b", "herpes simplex virus", name)
@@ -344,7 +354,7 @@ def expand_taxon_name_abbrev(name):
     return name.strip()
 
 
-def preprocess_taxon_name(name):
+def preprocess_taxon_name(name: str) -> str:
     name = name.strip()
 
     # character and structure cleaning
@@ -369,11 +379,11 @@ def preprocess_taxon_name(name):
     return name.strip()
 
 
-def convert_preprocessed_name2dict(names):
+def convert_preprocessed_name2dict(names: list) -> dict:
     return {original_name: preprocess_taxon_name(original_name) for original_name in names}
 
 
-def ete3_taxon_name2taxid(taxon_names):
+def ete3_taxon_name2taxid(taxon_names: list) -> dict:
     """Use ete3 to map taxonomy names to NCBI taxonomy ids
     ete3 is good at mapping exact taxonomy names and fast without accessing API
 
@@ -392,7 +402,7 @@ def ete3_taxon_name2taxid(taxon_names):
     return ete3_mapped
 
 
-def cache_ete3_taxon_name2taxid(taxon_names, cache_file="ete3_name2taxid.pkl"):
+def cache_ete3_taxon_name2taxid(taxon_names: list, cache_file="ete3_name2taxid.pkl") -> dict:
     """
 
     :param taxon_names:
@@ -414,7 +424,7 @@ def cache_ete3_taxon_name2taxid(taxon_names, cache_file="ete3_name2taxid.pkl"):
     return cache
 
 
-def entrez_taxon_name2taxid(taxon_name):
+def entrez_taxon_name2taxid(taxon_name: list) -> dict:
     Entrez.email = "bazhang@scripps.edu"
     try:
         handle = Entrez.esearch(db="taxonomy", term=taxon_name, retmode="xml", retmax=1)
@@ -427,7 +437,7 @@ def entrez_taxon_name2taxid(taxon_name):
         print(f"Entrez query failed for '{taxon_name}': {e}")
 
 
-def entrez_batch_name2taxid(taxon_names, sleep=0.34):
+def entrez_batch_name2taxid(taxon_names: list, sleep=0.34) -> dict:
     entrez_mapped = {}
     for name in set(taxon_names):
         result = entrez_taxon_name2taxid(name)
@@ -437,7 +447,7 @@ def entrez_batch_name2taxid(taxon_names, sleep=0.34):
     return entrez_mapped
 
 
-def cache_entrez_batch_name2taxid(taxon_names, cache_file="entrez_name2taxid.pkl"):
+def cache_entrez_batch_name2taxid(taxon_names: list, cache_file="entrez_name2taxid.pkl") -> dict:
     """
 
     :param taxon_names:
@@ -460,7 +470,7 @@ def cache_entrez_batch_name2taxid(taxon_names, cache_file="entrez_name2taxid.pkl
 
 
 # TODO: Taxon name resolver (preprocess with special character only, ete3 first, entrez second, then detailed name preprocess, lastly using biothings...)
-def bt_name2taxid(taxon_names):
+def bt_name2taxid(taxon_names: list) -> dict:
     taxon_names = set(taxon_names)
     get_taxon = bt.get_client("taxon")
     taxon_info = get_taxon.querymany(
@@ -477,7 +487,7 @@ def bt_name2taxid(taxon_names):
     return bte_mapped
 
 
-def cache_bt_name2taxid(taxon_names, cache_file="bt_name2taxid.pkl"):
+def cache_bt_name2taxid(taxon_names: list, cache_file="bt_name2taxid.pkl") -> dict:
     """
 
     :param taxon_names:
@@ -534,10 +544,6 @@ if __name__ == "__main__":
     # print(ncit_codes)
     # print(len(ncit_codes))
 
-    # 567 records in mapped
-    # print(taxids)
-    # ncit2taxids = hard_code_ncit2taxid(ncit_codes)
-    # print(ncit2taxids)
     ncit2taxids = cache_hard_code_ncit2taxid(ncit_codes)  # 582 records after manual mapping
     # print(ncit2taxids)
     print(f"Mapped NCIT taxon: {len(ncit2taxids)}")
