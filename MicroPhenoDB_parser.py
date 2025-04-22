@@ -132,7 +132,7 @@ async def fetch_ncit_taxid(session, ncit_code: list, notfound_ncit: dict):
                     "description": f"{description}[NCIT]",  # add description src
                 }
             else:
-                notfound_ncit[name] = {"ncit": ncit_code, "description": description}
+                notfound_ncit[name] = {"ncit": ncit_code, "description": f"{description}[NCIT]"}
                 # print(f"NO NCBI Taxonomy ID found for NCIT:{ncit_code}")
 
     except requests.exceptions.RequestException as e:
@@ -562,6 +562,14 @@ def fuzzy_matched_name2taxid(fuzzy_matched_names: dict, ncbi_name_dmp: dict) -> 
             match["taxid"] = int(ncbi_name_dmp[match[name]])
             fuzz_name2taxid[name] = match
     return fuzz_name2taxid
+
+
+def get_taxid_from_cache(cache_file):
+    if os.path.exists(cache_file):
+        cache_data = load_pickle(cache_file)
+
+
+
 
 
 if __name__ == "__main__":
