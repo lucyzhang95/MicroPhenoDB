@@ -814,8 +814,10 @@ if __name__ == "__main__":
     preprocessed_name_map = map_preprocessed_name2taxon_info(combined_taxids, taxon_info)
     # print(preprocessed_name_map)
     original_name_map = map_original_name2taxon_info(preprocessed_names, preprocessed_name_map)
-    # print(original_name_map)
-    # save_pickle(original_name_map, "original_name2taxon_info.pkl")
-
+    print(f"Original name mapped taxon: {len(original_name_map)}")
     ncit_name_map = map_ncit2taxon_info(taxon_info, ncit_cached)
-    print(ncit_name_map)
+    print(f"NCIT mapped taxon: {len(ncit_name_map)}")
+
+    original_name_map.update(ncit_name_map)
+    print(f"Combined name taxon map: {len(original_name_map)}")
+    # save_pickle(original_name_map, "original_name2taxon_info.pkl")
