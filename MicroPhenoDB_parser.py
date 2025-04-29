@@ -698,7 +698,7 @@ def get_efo_disease_info(efo_path):
     """
     efo_data = read_file(efo_path)
     efo_disease_map = {}
-    no_disease_id = []
+    efo_no_disease_id = []
     for line in efo_data:
         sci_di_name = line[1].lower().strip()
         _id = line[2].lower().strip()
@@ -713,8 +713,8 @@ def get_efo_disease_info(efo_path):
                 "type": "biolink:Disease",
             }
         else:
-            no_disease_id.append(sci_di_name)
-    return efo_disease_map, no_disease_id
+            efo_no_disease_id.append(sci_di_name)
+    return efo_disease_map, efo_no_disease_id
 
 
 if __name__ == "__main__":
