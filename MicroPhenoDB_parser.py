@@ -689,6 +689,34 @@ def map_ncit2taxon_info(bt_taxon_info: dict, cached_ncit2taxid: dict) -> dict:
     return ncit2taxon_info
 
 
+def get_efo_disease_info(efo_path):
+    """
+
+    :param efo_path:
+    :return:
+    {'colon cancer': {'id': 'EFO:1001950', 'efo': '1001950', 'name': 'colon cancer', 'description': 'A malignant epithelial neoplasm that arises from the colon and invades through the muscularis mucosa into the submucosa. The vast majority are adenocarcinomas.[EFO]', 'type': 'biolink:Disease'}}
+    """
+    efo_data = read_file(efo_path)
+    efo_disease_map = {}
+    no_disease_id = []
+    for line in efo_data:
+        sci_di_name = line[1].lower().strip()
+        _id = line[2].lower().strip()
+        if "_" in _id:
+            id_prefix = _id.split("_")[0].strip()
+            _id = str(_id.split("_")[1].strip())
+            efo_disease_map[sci_di_name] = {
+                "id": f"{id_prefix.upper() if id_prefix != 'orphanet' else id_prefix}:{_id}",
+                id_prefix: _id,
+                "name": sci_di_name,
+                "description": f"{line[3].strip()}[EFO]",
+                "type": "biolink:Disease",
+            }
+        else:
+            no_disease_id.append(sci_di_name)
+    return efo_disease_map, no_disease_id
+
+
 if __name__ == "__main__":
     """
     in_f_ncit = os.path.join("downloads", "NCIT.txt")
