@@ -314,6 +314,30 @@ def remove_in_and_one_word_after(name):
     return name.strip()
 
 
+def split_on_conjunction(name, keywords=("with", "and", "among"), prefer="left"):
+    """Split a string on the first matched keyword (e.g., 'with', 'and', 'among').
+
+    :param name: the disease string to split
+    :param keywords: a tuple of keywords to split on
+    :param prefer: which side to return ('left', 'right', or 'both')
+    :return: string (left or right), or list of parts (both)
+    """
+    pattern = r'\b(' + '|'.join(re.escape(k) for k in keywords) + r')\b'
+    parts = re.split(pattern, name, maxsplit=1)
+    parts = [p.strip() for p in parts if p.strip() and p.lower() not in keywords]
+
+    if not parts:
+        return name.strip()
+    if prefer == "left":
+        return parts[0]
+    elif prefer == "right":
+        return parts[1] if len(parts) > 1 else parts[0]
+    elif prefer == "both":
+        return parts
+    else:
+        raise ValueError("Invalid 'prefer' argument. Choose from 'left', 'right', 'both'.")
+
+
 def remove_spp_in_name(name: str) -> str:
     name = re.sub(r"\bspps?\b.*", "", name).strip()
     return name
