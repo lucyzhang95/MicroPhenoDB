@@ -802,6 +802,14 @@ def get_efo_disease_info(efo_path):
 def text2term_name2id(
     disease_names, ontology="MONDO", ontology_url="http://purl.obolibrary.org/obo/mondo.owl"
 ):
+    """
+
+    :param disease_names:
+    :param ontology:
+    :param ontology_url:
+    {"EFO": "http://www.ebi.ac.uk/efo/efo.owl", "NCIT": "http://purl.obolibrary.org/obo/ncit.owl"}
+    :return:
+    """
     if not text2term.cache_exists(ontology):
         text2term.cache_ontology(ontology_url=ontology_url, ontology_acronym=ontology)
 
