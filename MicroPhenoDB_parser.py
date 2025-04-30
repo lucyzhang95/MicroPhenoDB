@@ -320,7 +320,7 @@ def remove_in_and_one_word_after_in_name(name):
     return name.strip()
 
 
-def split_on_conjunction_in_name(name, keyword, prefer="left"):
+def split_on_conjunction_in_name(name, keyword, prefer):
     """Split a string on a specific keyword.
 
     :param name: input string to split
