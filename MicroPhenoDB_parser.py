@@ -799,15 +799,15 @@ def get_efo_disease_info(efo_path):
     return efo_disease_map, efo_no_disease_id
 
 
-def text2term_name2mondo(disease_names):
-    if not text2term.cache_exists("MONDO"):
-        text2term.cache_ontology(
-            ontology_url="http://purl.obolibrary.org/obo/mondo.owl", ontology_acronym="MONDO"
-        )
+def text2term_name2id(
+    disease_names, ontology="MONDO", ontology_url="http://purl.obolibrary.org/obo/mondo.owl"
+):
+    if not text2term.cache_exists(ontology):
+        text2term.cache_ontology(ontology_url=ontology_url, ontology_acronym=ontology)
 
     core_disease_map_df = text2term.map_terms(
         source_terms=list(set(disease_names)),
-        target_ontology="MONDO",
+        target_ontology=ontology,
         use_cache=True,
         min_score=0.8,
         max_mappings=1,
