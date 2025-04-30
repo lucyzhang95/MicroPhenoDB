@@ -307,6 +307,12 @@ def remove_and_in_name(name: str) -> str:
     return name
 
 
+def remove_in_and_one_word_after(name):
+    name = re.sub(r'\bin\b\s+\w+\b', '', name)
+    name = re.sub(r'\s{2,}', ' ', name)
+    return name.strip()
+
+
 def remove_spp_in_name(name: str) -> str:
     name = re.sub(r"\bspps?\b.*", "", name).strip()
     return name
@@ -693,10 +699,12 @@ def map_ncit2taxon_info(bt_taxon_info: dict, cached_ncit2taxid: dict) -> dict:
 
 
 def get_efo_disease_info(efo_path):
-    """
+    """Map the disease name with identifiers from EFO.txt file
+    Identifiers include EFO, HP, Orphanet, and DOID.
 
-    :param efo_path:
-    :return:
+    :param efo_path: downloads/EFO.txt
+    Header: Disease	Scientific_disease_name	EFO_name	Disease_annotation
+    :return: a dictionary with scientific disease name line[1]
     {'colon cancer': {'id': 'EFO:1001950', 'efo': '1001950', 'name': 'colon cancer', 'description': 'A malignant epithelial neoplasm that arises from the colon and invades through the muscularis mucosa into the submucosa. The vast majority are adenocarcinomas.[EFO]', 'type': 'biolink:Disease'}}
     """
     efo_data = read_file(efo_path)
