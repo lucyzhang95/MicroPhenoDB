@@ -453,9 +453,12 @@ def preprocess_disease_name(name):
 
     # semantic cleaning
     name = remove_in_and_one_word_after_in_name(name)
-    name = split_on_conjunction_in_name(name, prefer=)
+    name = split_on_conjunction_in_name(name, "with", "right")
+    name = split_on_conjunction_in_name(name, "and", "right")
+    name = split_on_conjunction_in_name(name, "among", "left")
+    name = remove_leading_non_in_name(name)
 
-
+    return name.strip()
 
 
 def convert_preprocessed_name2dict(names: list) -> dict:
