@@ -298,8 +298,8 @@ def process_comma(name: str) -> str:
     return name.strip()
 
 
-def remove_non_english_chars_in_name(text):
-    return re.sub(r"[^\x00-\x7F]+", "", text)
+def remove_non_english_chars_in_name(name):
+    return re.sub(r"[^\x00-\x7F]+", "", name)
 
 
 def remove_and_in_name(name: str) -> str:
@@ -443,6 +443,14 @@ def preprocess_taxon_name(name: str) -> str:
     name = expand_taxon_name_abbrev(name)
 
     return name.strip()
+
+
+def preprocess_disease_name(name):
+    name = name.strip()
+
+    # character cleaning
+    name = remove_non_english_chars_in_name(name)
+
 
 
 def convert_preprocessed_name2dict(names: list) -> dict:
