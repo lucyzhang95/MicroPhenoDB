@@ -322,7 +322,7 @@ def split_on_conjunction(name, keywords=("with", "and", "among"), prefer="left")
     :param prefer: which side to return ('left', 'right', or 'both')
     :return: string (left or right), or list of parts (both)
     """
-    pattern = r'\b(' + '|'.join(re.escape(k) for k in keywords) + r')\b'
+    pattern = r"\b(" + "|".join(re.escape(k) for k in keywords) + r")\b"
     parts = re.split(pattern, name, maxsplit=1)
     parts = [p.strip() for p in parts if p.strip() and p.lower() not in keywords]
 
