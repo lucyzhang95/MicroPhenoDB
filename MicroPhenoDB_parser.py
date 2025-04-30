@@ -482,7 +482,6 @@ def cache_entrez_batch_name2taxid(taxon_names: list, cache_file="entrez_name2tax
     return cache
 
 
-# TODO: Taxon name resolver (preprocess with special character only, ete3 first, entrez second, then detailed name preprocess, lastly using biothings...)
 def bt_name2taxid(taxon_names: list) -> dict:
     """Map taxonomy names to NCBI taxonomy ids using BioThings API
     BioThings is okay at mapping taxonomy names with abbreviations in the "other_names" scope field
