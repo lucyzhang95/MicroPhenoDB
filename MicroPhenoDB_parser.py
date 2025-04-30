@@ -11,6 +11,7 @@ import aiohttp
 import biothings_client as bt
 import chardet
 import requests
+import text2term
 from Bio import Entrez
 from ete3 import NCBITaxa
 from rapidfuzz import fuzz, process
@@ -308,8 +309,8 @@ def remove_and_in_name(name: str) -> str:
 
 
 def remove_in_and_one_word_after(name):
-    name = re.sub(r'\bin\b\s+\w+\b', '', name)
-    name = re.sub(r'\s{2,}', ' ', name)
+    name = re.sub(r"\bin\b\s+\w+\b", "", name)
+    name = re.sub(r"\s{2,}", " ", name)
     return name.strip()
 
 
@@ -726,6 +727,26 @@ def get_efo_disease_info(efo_path):
         else:
             efo_no_disease_id.append(sci_di_name)
     return efo_disease_map, efo_no_disease_id
+
+
+def text2term_name2id(disease_names):
+    if not text2term.cache_exists("EFO"):
+        efo = text2term.cache_ontology(
+            ontology_url="http://www.ebi.ac.uk/efo/efo.owl", ontology_acronym="EFO"
+        )
+
+    core_disease_map_df = text2term.map_terms(
+        source_terms=list(set(disease_names)),
+        target_ontology="EFO",
+        use_cache=True,
+        min_score=0.8,
+        max_mappings=1,
+    )
+
+    text2term_mapped = dict(
+        zip(core_disease_map_df["Source Term"], core_disease_map_df["Mapped Term CURIE"])
+    )
+    return text2term_mapped
 
 
 if __name__ == "__main__":
