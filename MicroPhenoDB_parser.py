@@ -320,19 +320,19 @@ def remove_in_and_one_word_after_in_name(name):
     return name.strip()
 
 
-def split_on_conjunction_in_name(name, keywords=("with", "and", "among"), prefer="left"):
-    """Split a string on the first matched keyword (e.g., 'with', 'and', 'among').
+def split_on_conjunction_in_name(name, keyword, prefer="left"):
+    """Split a string on a specific keyword.
 
-    :param name: the disease string to split
-    :param keywords: a tuple of keywords to split on
-    :param prefer: which side to return ('left', 'right', or 'both')
-    :return: string (left or right), or list of parts (both)
+    :param name: input string to split
+    :param keyword: the keyword to split on (e.g., "with", "and", "among")
+    :param prefer: which part to return: 'left', 'right', or 'both'
+    :return: selected part of the split
     e.g., in children with genital lesions -> genital lesions
           renal transplant recipients and hemorrhagic cystiti -> hemorrhagic cystiti
     """
-    pattern = r"\b(" + "|".join(re.escape(k) for k in keywords) + r")\b"
+    pattern = r"\b" + re.escape(keyword) + r"\b"
     parts = re.split(pattern, name, maxsplit=1)
-    parts = [p.strip() for p in parts if p.strip() and p.lower() not in keywords]
+    parts = [p.strip() for p in parts if p.strip()]
 
     if not parts:
         return name.strip()
@@ -343,7 +343,7 @@ def split_on_conjunction_in_name(name, keywords=("with", "and", "among"), prefer
     elif prefer == "both":
         return parts
     else:
-        raise ValueError("Invalid 'prefer' argument. Choose from 'left', 'right', 'both'.")
+        raise ValueError("Invalid 'prefer' argument. Choose from 'left', 'right', or 'both'.")
 
 
 def remove_word_related_in_name(name):
@@ -450,6 +450,11 @@ def preprocess_disease_name(name):
 
     # character cleaning
     name = remove_non_english_chars_in_name(name)
+
+    # semantic cleaning
+    name = remove_in_and_one_word_after_in_name(name)
+    name = split_on_conjunction_in_name(name, prefer=)
+
 
 
 
