@@ -445,7 +445,7 @@ def preprocess_taxon_name(name: str) -> str:
     return name.strip()
 
 
-def preprocess_disease_name(name):
+def preprocess_disease_name(name: str) -> str:
     name = name.strip()
 
     # character cleaning
@@ -456,6 +456,7 @@ def preprocess_disease_name(name):
     name = split_on_conjunction_in_name(name, "with", "right")
     name = split_on_conjunction_in_name(name, "and", "right")
     name = split_on_conjunction_in_name(name, "among", "left")
+    name = remove_word_related_in_name(name)
     name = remove_leading_non_in_name(name)
 
     return name.strip()
