@@ -800,14 +800,14 @@ def get_efo_disease_info(efo_path):
 
 
 def text2term_name2id(disease_names):
-    if not text2term.cache_exists("EFO"):
-        efo = text2term.cache_ontology(
-            ontology_url="http://www.ebi.ac.uk/efo/efo.owl", ontology_acronym="EFO"
+    if not text2term.cache_exists("MONDO"):
+        text2term.cache_ontology(
+            ontology_url="http://purl.obolibrary.org/obo/mondo.owl", ontology_acronym="MONDO"
         )
 
     core_disease_map_df = text2term.map_terms(
         source_terms=list(set(disease_names)),
-        target_ontology="EFO",
+        target_ontology="MONDO",
         use_cache=True,
         min_score=0.8,
         max_mappings=1,
@@ -815,9 +815,11 @@ def text2term_name2id(disease_names):
 
     if core_disease_map_df is None or core_disease_map_df.empty:
         return {}
-    return dict(
-        zip(core_disease_map_df.get("Source Term"), core_disease_map_df.get("Mapped Term CURIE"))
-    )
+
+    filtered_map_df = core_disease_map_df[
+        ~core_disease_map_df["Mapped Term CURIE"].astype(str).str.contains("NCBITAXON", na=False)
+    ]
+    return dict(zip(filtered_map_df["Source Term"], filtered_map_df["Mapped Term CURIE"]))
 
 
 if __name__ == "__main__":
