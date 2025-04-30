@@ -799,7 +799,7 @@ def get_efo_disease_info(efo_path):
     return efo_disease_map, efo_no_disease_id
 
 
-def text2term_name2id(disease_names):
+def text2term_name2mondo(disease_names):
     if not text2term.cache_exists("MONDO"):
         text2term.cache_ontology(
             ontology_url="http://purl.obolibrary.org/obo/mondo.owl", ontology_acronym="MONDO"
