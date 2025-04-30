@@ -297,6 +297,10 @@ def process_comma(name: str) -> str:
     return name.strip()
 
 
+def remove_non_english_chars(text):
+    return re.sub(r"[^\x00-\x7F]+", "", text)
+
+
 def remove_and_in_name(name: str) -> str:
     if " and " in name:
         name = name.split("and")[0].strip()
