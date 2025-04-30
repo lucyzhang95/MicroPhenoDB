@@ -743,10 +743,11 @@ def text2term_name2id(disease_names):
         max_mappings=1,
     )
 
-    text2term_mapped = dict(
-        zip(core_disease_map_df["Source Term"], core_disease_map_df["Mapped Term CURIE"])
+    if core_disease_map_df is None or core_disease_map_df.empty:
+        return {}
+    return dict(
+        zip(core_disease_map_df.get("Source Term"), core_disease_map_df.get("Mapped Term CURIE"))
     )
-    return text2term_mapped
 
 
 if __name__ == "__main__":
