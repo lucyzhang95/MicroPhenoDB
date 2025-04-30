@@ -298,7 +298,7 @@ def process_comma(name: str) -> str:
     return name.strip()
 
 
-def remove_non_english_chars(text):
+def remove_non_english_chars_in_name(text):
     return re.sub(r"[^\x00-\x7F]+", "", text)
 
 
@@ -308,19 +308,27 @@ def remove_and_in_name(name: str) -> str:
     return name
 
 
-def remove_in_and_one_word_after(name):
+def remove_in_and_one_word_after_in_name(name):
+    """
+
+    :param name:
+    :return:
+    e.g., nonchlamydial nongonococcal urethritis in males -> nonchlamydial nongonococcal urethritis
+    """
     name = re.sub(r"\bin\b\s+\w+\b", "", name)
     name = re.sub(r"\s{2,}", " ", name)
     return name.strip()
 
 
-def split_on_conjunction(name, keywords=("with", "and", "among"), prefer="left"):
+def split_on_conjunction_in_name(name, keywords=("with", "and", "among"), prefer="left"):
     """Split a string on the first matched keyword (e.g., 'with', 'and', 'among').
 
     :param name: the disease string to split
     :param keywords: a tuple of keywords to split on
     :param prefer: which side to return ('left', 'right', or 'both')
     :return: string (left or right), or list of parts (both)
+    e.g., in children with genital lesions -> genital lesions
+          renal transplant recipients and hemorrhagic cystiti -> hemorrhagic cystiti
     """
     pattern = r"\b(" + "|".join(re.escape(k) for k in keywords) + r")\b"
     parts = re.split(pattern, name, maxsplit=1)
@@ -336,6 +344,27 @@ def split_on_conjunction(name, keywords=("with", "and", "among"), prefer="left")
         return parts
     else:
         raise ValueError("Invalid 'prefer' argument. Choose from 'left', 'right', 'both'.")
+
+
+def remove_word_related_in_name(name):
+    """
+
+    :param name:
+    :return:
+    e.g., enthesitis-related arthritis -> arthritis
+    """
+    return re.sub(r"\b\w+-related\s*", "", name).strip()
+
+
+def remove_leading_non_in_name(name):
+    """
+
+    :param name:
+    :return:
+    e.g., nonchlamydial nongonococcal urethritis -> urethritis
+    """
+    name = re.sub(r"^(?:non\w+\s+)+", "", name).strip()
+    return name
 
 
 def remove_spp_in_name(name: str) -> str:
