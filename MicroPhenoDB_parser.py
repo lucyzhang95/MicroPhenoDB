@@ -1034,8 +1034,13 @@ if __name__ == "__main__":
     print(f"BT mapped info: {len(bt_mapped_info)}")
 
     bt_mapped_final = map_bt_disease_info(disease_name2id=preprocessed_mapped, disease_name_map=preprocessed_disease_names, disease_info=bt_mapped_info)
-    print(bt_mapped_final)
+    # print(bt_mapped_final)
     print(f"BT final mapped info: {len(bt_mapped_final)}")
+
+    efo_disease_mapped.update(bt_mapped_final)
+    print(f"All mapped disease with info: {len(efo_disease_mapped)}")
+    # save_pickle(efo_disease_mapped, "original_disease_name2id.pkl")
+    # print(load_pickle("original_disease_name2id.pkl"))
 
 
 
