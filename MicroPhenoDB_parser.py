@@ -1019,12 +1019,16 @@ if __name__ == "__main__":
     efo_path = os.path.join("downloads", "EFO.txt")
     efo_disease_mapped = get_efo_disease_info(efo_path)
     disease_not_in_efo = [di for di in core_disease_names if di not in efo_disease_mapped]
-    print(f"Disease names do not have identifiers after checking EFO.txt: {len(set(disease_not_in_efo))}")
+    print(
+        f"Disease names do not have identifiers after checking EFO.txt: {len(set(disease_not_in_efo))}"
+    )
 
     disease4query = list(set(disease_not_in_efo))
     preprocessed_disease_names = {name: preprocess_disease_name(name) for name in disease4query}
     preprocessed4map = [new_name for old_name, new_name in preprocessed_disease_names.items()]
-    preprocessed_mapped = text2term_name2id(preprocessed4map, )
+    preprocessed_mapped = text2term_name2id(
+        preprocessed4map,
+    )
     print(f"Preprocessed mapped: {len(preprocessed_mapped)}")
     # print(preprocessed_mapped)
 
@@ -1033,7 +1037,11 @@ if __name__ == "__main__":
     # print(bt_mapped_info)
     print(f"BT mapped info: {len(bt_mapped_info)}")
 
-    bt_mapped_final = map_bt_disease_info(disease_name2id=preprocessed_mapped, disease_name_map=preprocessed_disease_names, disease_info=bt_mapped_info)
+    bt_mapped_final = map_bt_disease_info(
+        disease_name2id=preprocessed_mapped,
+        disease_name_map=preprocessed_disease_names,
+        disease_info=bt_mapped_info,
+    )
     # print(bt_mapped_final)
     print(f"BT final mapped info: {len(bt_mapped_final)}")
 
@@ -1041,8 +1049,3 @@ if __name__ == "__main__":
     print(f"All mapped disease with info: {len(efo_disease_mapped)}")
     # save_pickle(efo_disease_mapped, "original_disease_name2id.pkl")
     # print(load_pickle("original_disease_name2id.pkl"))
-
-
-
-
-
