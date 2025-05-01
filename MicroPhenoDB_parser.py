@@ -787,13 +787,13 @@ def get_efo_disease_info(efo_path):
         sci_di_name = line[1].lower().strip()
         _id = line[2].lower().strip().replace("_", ":")
         if ":" in _id:
-            id_prefix = _id.split(":")[0].strip()
+            id_prefix = _id.split(":")[0].strip().lower()
             efo_disease_map[sci_di_name] = {
-                "id": f"{id_prefix.upper() if id_prefix != 'orphanet' else id_prefix}:{_id}",
-                id_prefix: _id,
+                "id": _id if "orphanet" in _id else _id.upper(),
+                id_prefix: _id if "orphanet" in _id else _id.upper(),
                 "scientific_name": sci_di_name,
                 "name": d_name,
-                "description": f"{line[3].strip()}[EFO]",
+                "description": f"{line[3].strip()}[{id_prefix.upper()}]",
                 "type": "biolink:Disease",
             }
         else:
