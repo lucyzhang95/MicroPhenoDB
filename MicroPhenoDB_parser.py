@@ -450,6 +450,7 @@ def preprocess_disease_name(name: str) -> str:
 
     # character cleaning
     name = remove_non_english_chars_in_name(name)
+    name = remove_parentheses(name)
 
     # semantic cleaning
     name = remove_in_and_one_word_after_in_name(name)
