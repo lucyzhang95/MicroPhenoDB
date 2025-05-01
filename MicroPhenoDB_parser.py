@@ -783,21 +783,44 @@ def get_efo_disease_info(efo_path):
     efo_disease_map = {}
     efo_no_disease_id = []
     for line in efo_data:
+        d_name = line[0].lower().strip()
         sci_di_name = line[1].lower().strip()
-        _id = line[2].lower().strip()
-        if "_" in _id:
-            id_prefix = _id.split("_")[0].strip()
-            _id = str(_id.split("_")[1].strip())
+        _id = line[2].lower().strip().replace("_", ":")
+        if ":" in _id:
+            id_prefix = _id.split(":")[0].strip()
             efo_disease_map[sci_di_name] = {
                 "id": f"{id_prefix.upper() if id_prefix != 'orphanet' else id_prefix}:{_id}",
                 id_prefix: _id,
-                "name": sci_di_name,
+                "scientific_name": sci_di_name,
+                "name": d_name,
                 "description": f"{line[3].strip()}[EFO]",
                 "type": "biolink:Disease",
             }
         else:
             efo_no_disease_id.append(sci_di_name)
     return efo_disease_map, efo_no_disease_id
+
+
+def bt_get_disease_info(ids):
+    ids = set(ids)
+    get_disease = bt.get_client("disease")
+    d_queried = get_disease.querymany(
+        ids, scopes=["mondo.mondo", "mondo.xrefs.hp"], fields=["mondo", "mondo.definition"]
+    )
+    d_info_all = {}
+
+    for info in d_queried:
+        prefix = info["query"].split(":")[0].strip().lower()
+        if "notfound" not in info:
+            d_info = {
+                "id": info["query"],
+                prefix: info["query"],
+                "scientific_name": info["label"],
+                "description": f"{info['definition']}[MONDO]",
+                "type": "biolink:Disease",
+            }
+            d_info_all[info["query"]] = d_info
+    return d_info_all
 
 
 def text2term_name2id(
