@@ -854,6 +854,26 @@ def text2term_name2id(
     return dict(zip(filtered_map_df["Source Term"], filtered_map_df["Mapped Term CURIE"]))
 
 
+def map_bt_disease_info(preprocessed_mapped, preprocessed_disease_names, bt_mapped_info):
+    """Map back disease names to their final info using intermediate mappings.
+
+    :param preprocessed_mapped: {new_name: id}
+    :param preprocessed_disease_names: {old_name: new_name}
+    :param bt_mapped_info: {id: info_dict}
+    :return: {old_name: info_dict}
+    """
+    final_d_mapping = {}
+
+    for old_name, new_name in preprocessed_disease_names.items():
+        _id = preprocessed_mapped.get(new_name)
+        if _id and _id in bt_mapped_info:
+            d_info = bt_mapped_info[_id].copy()
+            d_info["name"] = old_name
+        final_d_mapping[old_name] = d_info
+
+    return final_d_mapping
+
+
 if __name__ == "__main__":
     """
     in_f_ncit = os.path.join("downloads", "NCIT.txt")
@@ -986,3 +1006,10 @@ if __name__ == "__main__":
     original_name_map.update(ncit_name_map)
     print(f"Combined name taxon map: {len(original_name_map)}")
     # save_pickle(original_name_map, "original_name2taxon_info.pkl")
+
+    # map disease names
+    core_disease_names = [
+        line[2].lower().strip()
+        for line in core_data
+        if line[2].lower() != "null" and line[2].lower() != "not foundthogenic"
+    ]
