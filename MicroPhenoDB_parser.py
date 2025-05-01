@@ -854,22 +854,22 @@ def text2term_name2id(
     return dict(zip(filtered_map_df["Source Term"], filtered_map_df["Mapped Term CURIE"]))
 
 
-def map_bt_disease_info(preprocessed_mapped, preprocessed_disease_names, bt_mapped_info):
+def map_bt_disease_info(disease_name2id, disease_name_map, disease_info):
     """Map back disease names to their final info using intermediate mappings.
 
-    :param preprocessed_mapped: {new_name: id}
-    :param preprocessed_disease_names: {old_name: new_name}
-    :param bt_mapped_info: {id: info_dict}
+    :param disease_name2id: {new_name: id}
+    :param disease_name_map: {old_name: new_name}
+    :param disease_info: {id: info_dict}
     :return: {old_name: info_dict}
     """
     final_d_mapping = {}
 
-    for old_name, new_name in preprocessed_disease_names.items():
-        _id = preprocessed_mapped.get(new_name)
-        if _id and _id in bt_mapped_info:
-            d_info = bt_mapped_info[_id].copy()
+    for old_name, new_name in disease_name_map.items():
+        _id = disease_name2id.get(new_name)
+        if _id and _id in disease_info:
+            d_info = disease_info[_id].copy()
             d_info["name"] = old_name
-        final_d_mapping[old_name] = d_info
+            final_d_mapping[old_name] = d_info
 
     return final_d_mapping
 
@@ -1024,15 +1024,18 @@ if __name__ == "__main__":
     disease4query = list(set(disease_not_in_efo))
     preprocessed_disease_names = {name: preprocess_disease_name(name) for name in disease4query}
     preprocessed4map = [new_name for old_name, new_name in preprocessed_disease_names.items()]
-    preprocessed_mapped = text2term_name2id(preprocessed4map)
+    preprocessed_mapped = text2term_name2id(preprocessed4map, )
     print(f"Preprocessed mapped: {len(preprocessed_mapped)}")
+    # print(preprocessed_mapped)
 
     disease4info = [_id for name, _id in preprocessed_mapped.items()]
     bt_mapped_info = bt_get_disease_info(disease4info)
-    print(bt_mapped_info)
-    bt_mapped_final = map_bt_disease_info(preprocessed_mapped, preprocessed_disease_names, bt_mapped_info)
-    print(f"BT final mapped info: {len(bt_mapped_final)}")
+    # print(bt_mapped_info)
+    print(f"BT mapped info: {len(bt_mapped_info)}")
+
+    bt_mapped_final = map_bt_disease_info(disease_name2id=preprocessed_mapped, disease_name_map=preprocessed_disease_names, disease_info=bt_mapped_info)
     print(bt_mapped_final)
+    print(f"BT final mapped info: {len(bt_mapped_final)}")
 
 
 
