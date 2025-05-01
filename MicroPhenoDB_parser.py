@@ -798,7 +798,7 @@ def get_efo_disease_info(efo_path):
             }
         else:
             efo_no_disease_id.append(sci_di_name)
-    return efo_disease_map, efo_no_disease_id
+    return efo_disease_map
 
 
 def bt_get_disease_info(ids):
@@ -1008,8 +1008,33 @@ if __name__ == "__main__":
     # save_pickle(original_name_map, "original_name2taxon_info.pkl")
 
     # map disease names
+    core_data = read_file(in_f_core)
     core_disease_names = [
         line[2].lower().strip()
         for line in core_data
         if line[2].lower() != "null" and line[2].lower() != "not foundthogenic"
     ]
+    print(f"Unique diseases in core_table.txt: {len(core_disease_names)}")
+
+    efo_path = os.path.join("downloads", "EFO.txt")
+    efo_disease_mapped = get_efo_disease_info(efo_path)
+    disease_not_in_efo = [di for di in core_disease_names if di not in efo_disease_mapped]
+    print(f"Disease names do not have identifiers after checking EFO.txt: {len(set(disease_not_in_efo))}")
+
+    disease4query = list(set(disease_not_in_efo))
+    preprocessed_disease_names = {name: preprocess_disease_name(name) for name in disease4query}
+    preprocessed4map = [new_name for old_name, new_name in preprocessed_disease_names.items()]
+    preprocessed_mapped = text2term_name2id(preprocessed4map)
+    print(f"Preprocessed mapped: {len(preprocessed_mapped)}")
+
+    disease4info = [_id for name, _id in preprocessed_mapped.items()]
+    bt_mapped_info = bt_get_disease_info(disease4info)
+    print(bt_mapped_info)
+    bt_mapped_final = map_bt_disease_info(preprocessed_mapped, preprocessed_disease_names, bt_mapped_info)
+    print(f"BT final mapped info: {len(bt_mapped_final)}")
+    print(bt_mapped_final)
+
+
+
+
+
