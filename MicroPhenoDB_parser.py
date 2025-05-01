@@ -815,8 +815,8 @@ def bt_get_disease_info(ids):
             d_info = {
                 "id": info["query"],
                 prefix: info["query"],
-                "scientific_name": info["label"],
-                "description": f"{info['definition']}[MONDO]",
+                "scientific_name": info["mondo"].get("label"),
+                "description": f"{info['mondo'].get('definition')}]",
                 "type": "biolink:Disease",
             }
             d_info_all[info["query"]] = d_info
