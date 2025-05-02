@@ -777,7 +777,7 @@ def get_efo_disease_info(efo_path):
     :param efo_path: downloads/EFO.txt
     Header: Disease	Scientific_disease_name	EFO_name	Disease_annotation
     :return: a dictionary with scientific disease name line[1]
-    {'colon cancer': {'id': 'EFO:1001950', 'efo': '1001950', 'name': 'colon cancer', 'original_name': 'colon cancer', 'description': 'A malignant epithelial neoplasm that arises from the colon and invades through the muscularis mucosa into the submucosa. The vast majority are adenocarcinomas.[EFO]', 'type': 'biolink:Disease'}}
+    {'colon cancer': {'id': 'EFO:1001950', 'name': 'colon cancer', 'original_name': 'colon cancer', 'description': 'A malignant epithelial neoplasm that arises from the colon and invades through the muscularis mucosa into the submucosa. The vast majority are adenocarcinomas.[EFO]', 'type': 'biolink:Disease', 'xrefs': {'efo': 'EFO:1001950'}}}
     """
     efo_data = read_file(efo_path)
     efo_disease_map = {}
@@ -799,6 +799,12 @@ def get_efo_disease_info(efo_path):
         else:
             efo_no_disease_id.append(sci_di_name)
     return efo_disease_map
+
+
+def bt_orphanet2mondo(efo_disease_map):
+    if "orphanet" in efo_disease_map.values():
+
+
 
 
 def bt_get_disease_info(ids):
