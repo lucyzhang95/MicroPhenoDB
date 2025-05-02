@@ -15,6 +15,7 @@ import text2term
 from Bio import Entrez
 from ete3 import NCBITaxa
 from rapidfuzz import fuzz, process
+from operator import itemgetter
 
 CACHE_DIR = os.path.join(os.getcwd(), "cache")
 os.makedirs(CACHE_DIR, exist_ok=True)
@@ -820,17 +821,26 @@ def bt_get_disease_info(ids):
     d_info_all = {}
 
     for info in d_queried:
-        prefix = info["query"].split(":")[0].strip().lower()
-        if "notfound" not in info:
-            _id = info["query"].lower() if "Orphanet" in info["query"] else info["query"].upper()
-            d_info = {
+        query = info["query"]
+        if "notfound" in info:
+            continue
+
+        current_score = info.get("_score", 0)
+        existing = d_info_all.get(query)
+        existing_score = existing.get("_score", -1) if existing else -1
+
+        if current_score > existing_score:
+            mondo_data = info.get("mondo", {})
+            _id = query.lower() if "Orphanet" in query else query.upper()
+            prefix = query.split(":")[0].strip().lower()
+
+            d_info_all[query] = {
                 "id": info["_id"],
-                "name": info["mondo"].get("label"),
-                "description": f"{info['mondo'].get('definition')}",
+                "name": info.get("mondo").get("label"),
+                "description": mondo_data.get("definition"),
                 "type": "biolink:Disease",
                 "xrefs": {prefix: _id if info["_id"] != _id else info["_id"]},
             }
-            d_info_all[info["query"]] = d_info
     return d_info_all
 
 
