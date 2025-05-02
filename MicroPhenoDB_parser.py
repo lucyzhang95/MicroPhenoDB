@@ -15,7 +15,6 @@ import text2term
 from Bio import Entrez
 from ete3 import NCBITaxa
 from rapidfuzz import fuzz, process
-from operator import itemgetter
 
 CACHE_DIR = os.path.join(os.getcwd(), "cache")
 os.makedirs(CACHE_DIR, exist_ok=True)
@@ -836,11 +835,15 @@ def bt_get_disease_info(ids):
 
             d_info_all[query] = {
                 "id": info["_id"],
-                "name": info.get("mondo").get("label"),
+                "name": mondo_data.get("label"),
                 "description": mondo_data.get("definition"),
                 "type": "biolink:Disease",
                 "xrefs": {prefix: _id if info["_id"] != _id else info["_id"]},
+                "_score": current_score,
             }
+    for v in d_info_all.values():
+        v.pop("_score", None)
+
     return d_info_all
 
 
