@@ -661,7 +661,7 @@ def get_taxon_info_from_bt(taxids) -> dict:
     :param taxids:
     :return:
     '36855': {'taxid': 36855,
-    'scientific_name': 'brucella canis',
+    'name': 'brucella canis',
     'parent_taxid': 234,
     'lineage': [36855,
                 234,
@@ -688,7 +688,7 @@ def get_taxon_info_from_bt(taxids) -> dict:
         if "notfound" not in info.keys():
             taxon[info["query"]] = {
                 "taxid": int(info["_id"]),
-                "scientific_name": info["scientific_name"],
+                "name": info["scientific_name"],
                 "parent_taxid": int(info["parent_taxid"]),
                 "lineage": info["lineage"],
                 "rank": info["rank"],
@@ -703,7 +703,7 @@ def map_preprocessed_name2taxon_info(taxid_dict: dict, bt_taxon_info: dict) -> d
     {'gulbenkiania': 397456, 'gymnopilus': 86085, 'haemophilus quentini': 123834,...}
     :param bt_taxon_info:
     '36855': {'taxid': 36855,
-    'scientific_name': 'brucella canis',
+    'name': 'brucella canis',
     'parent_taxid': 234,
     'lineage': [36855,
                 234,
@@ -719,7 +719,7 @@ def map_preprocessed_name2taxon_info(taxid_dict: dict, bt_taxon_info: dict) -> d
     'rank': 'species'}
     }
     :return:
-    {'brucella canis': {'taxid': 36855, 'scientific_name': 'brucella canis', 'parent_taxid': 234, 'lineage': [36855, 234, 2826938, 118882, 356, 28211, 1224, 3379134, 2, 131567, 1], 'rank': 'species'}}
+    {'brucella canis': {'taxid': 36855, 'name': 'brucella canis', 'parent_taxid': 234, 'lineage': [36855, 234, 2826938, 118882, 356, 28211, 1224, 3379134, 2, 131567, 1], 'rank': 'species'}}
     """
     return {
         name: bt_taxon_info[str(taxid)]
@@ -734,12 +734,12 @@ def map_original_name2taxon_info(name_map: dict, preprocessed_name2taxon_info: d
     :param name_map:
     {'enterovirus (nonpolio)': 'enterovirus', 'haemophilus influenzae (nontypeable)': 'haemophilus influenzae', 'absidia': 'absidia',...}
     :param preprocessed_name2taxon_info:
-    {'enterovirus': {'taxid': 12059, 'scientific_name': 'enterovirus', 'parent_taxid': 2946630, 'lineage': [12059, 2946630, 12058, 464095, 2732506, 2732408, 2732396, 2559587, 10239, 1], 'rank': 'genus'}}
+    {'enterovirus': {'taxid': 12059, 'name': 'enterovirus', 'parent_taxid': 2946630, 'lineage': [12059, 2946630, 12058, 464095, 2732506, 2732408, 2732396, 2559587, 10239, 1], 'rank': 'genus'}}
     :return:
-    {'enterovirus (nonpolio)': {'taxid': 12059, 'scientific_name': 'enterovirus', 'parent_taxid': 2946630, 'lineage': [12059, 2946630, 12058, 464095, 2732506, 2732408, 2732396, 2559587, 10239, 1], 'rank': 'genus'}}
+    {'enterovirus (nonpolio)': {'taxid': 12059, 'name': 'enterovirus', 'parent_taxid': 2946630, 'lineage': [12059, 2946630, 12058, 464095, 2732506, 2732408, 2732396, 2559587, 10239, 1], 'rank': 'genus', 'original_name': 'enterovirus (nonpolio)'}}
     """
     return {
-        ori_name: preprocessed_name2taxon_info[pre_name]
+        ori_name: {**preprocessed_name2taxon_info[pre_name], "original_name": ori_name}
         for ori_name, pre_name in name_map.items()
         if pre_name in preprocessed_name2taxon_info
     }
@@ -777,7 +777,7 @@ def get_efo_disease_info(efo_path):
     :param efo_path: downloads/EFO.txt
     Header: Disease	Scientific_disease_name	EFO_name	Disease_annotation
     :return: a dictionary with scientific disease name line[1]
-    {'colon cancer': {'id': 'EFO:1001950', 'efo': '1001950', 'name': 'colon cancer', 'description': 'A malignant epithelial neoplasm that arises from the colon and invades through the muscularis mucosa into the submucosa. The vast majority are adenocarcinomas.[EFO]', 'type': 'biolink:Disease'}}
+    {'colon cancer': {'id': 'EFO:1001950', 'efo': '1001950', 'name': 'colon cancer', 'original_name': 'colon cancer', 'description': 'A malignant epithelial neoplasm that arises from the colon and invades through the muscularis mucosa into the submucosa. The vast majority are adenocarcinomas.[EFO]', 'type': 'biolink:Disease'}}
     """
     efo_data = read_file(efo_path)
     efo_disease_map = {}
@@ -790,11 +790,11 @@ def get_efo_disease_info(efo_path):
             id_prefix = _id.split(":")[0].strip().lower()
             efo_disease_map[sci_di_name] = {
                 "id": _id if "orphanet" in _id else _id.upper(),
-                id_prefix: _id if "orphanet" in _id else _id.upper(),
-                "scientific_name": sci_di_name,
-                "name": d_name,
+                "name": sci_di_name,
+                "original_name": d_name,
                 "description": f"{line[3].strip()}[{id_prefix.upper()}]",
                 "type": "biolink:Disease",
+                "xrefs": {id_prefix: _id if "orphanet" in _id else _id.upper()}
             }
         else:
             efo_no_disease_id.append(sci_di_name)
@@ -814,10 +814,10 @@ def bt_get_disease_info(ids):
         if "notfound" not in info:
             d_info = {
                 "id": info["query"],
-                prefix: info["query"],
-                "scientific_name": info["mondo"].get("label"),
+                "name": info["mondo"].get("label"),
                 "description": f"{info['mondo'].get('definition')}]",
                 "type": "biolink:Disease",
+                "xrefs": {prefix: info["query"]}
             }
             d_info_all[info["query"]] = d_info
     return d_info_all
@@ -861,6 +861,7 @@ def map_bt_disease_info(disease_name2id, disease_name_map, disease_info):
     :param disease_name_map: {old_name: new_name}
     :param disease_info: {id: info_dict}
     :return: {old_name: info_dict}
+    {'nonchlamydial nongonococcal urethritis in males': {'id': 'HP:0500006', 'name': 'urethritis', 'description': 'Inflammation of the urethra. [NCIT:P378]]', 'type': 'biolink:Disease', 'xrefs': {'hp': 'HP:0500006'}, 'original_name': 'nonchlamydial nongonococcal urethritis in males'}}
     """
     final_d_mapping = {}
 
@@ -868,7 +869,7 @@ def map_bt_disease_info(disease_name2id, disease_name_map, disease_info):
         _id = disease_name2id.get(new_name)
         if _id and _id in disease_info:
             d_info = disease_info[_id].copy()
-            d_info["name"] = old_name
+            d_info["original_name"] = old_name
             final_d_mapping[old_name] = d_info
 
     return final_d_mapping
@@ -1005,7 +1006,7 @@ if __name__ == "__main__":
 
     original_name_map.update(ncit_name_map)
     print(f"Combined name taxon map: {len(original_name_map)}")
-    # save_pickle(original_name_map, "original_name2taxon_info.pkl")
+    # save_pickle(original_name_map, "original_taxon_name2taxid.pkl")
 
     # map disease names
     core_data = read_file(in_f_core)
