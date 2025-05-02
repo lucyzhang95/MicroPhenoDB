@@ -794,7 +794,7 @@ def get_efo_disease_info(efo_path):
                 "original_name": d_name,
                 "description": f"{line[3].strip()}[{id_prefix.upper()}]",
                 "type": "biolink:Disease",
-                "xrefs": {id_prefix: _id if "orphanet" in _id else _id.upper()}
+                "xrefs": {id_prefix: _id if "orphanet" in _id else _id.upper()},
             }
         else:
             efo_no_disease_id.append(sci_di_name)
@@ -817,7 +817,7 @@ def bt_get_disease_info(ids):
                 "name": info["mondo"].get("label"),
                 "description": f"{info['mondo'].get('definition')}]",
                 "type": "biolink:Disease",
-                "xrefs": {prefix: info["query"]}
+                "xrefs": {prefix: info["query"]},
             }
             d_info_all[info["query"]] = d_info
     return d_info_all
