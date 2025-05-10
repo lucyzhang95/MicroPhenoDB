@@ -464,6 +464,12 @@ def preprocess_disease_name(name: str) -> str:
 
 
 def convert_preprocessed_name2dict(names: list) -> dict:
+    """
+
+    :param names:
+    :return:
+    {"original_name": "preprocessed_name"}
+    """
     return {original_name: preprocess_taxon_name(original_name) for original_name in names}
 
 
@@ -899,7 +905,151 @@ def map_bt_disease_info(disease_name2id, disease_name_map, disease_info):
     return final_d_mapping
 
 
+def cache_data(core_f_path, ncit_f_path, efo_f_path):
+    ncit_codes = get_ncit_code(ncit_f_path)
+    if not NCBITaxa:
+        download_ncbi_taxdump()
+    ncit2taxids = hard_code_ncit2taxid(ncit_codes)
+    print(f"Mapped NCIT taxon: {len(ncit2taxids)}")
+    cache_hard_code_ncit2taxid(ncit_codes)
+
+    full_taxon_names = get_all_taxon_names(core_f_path)
+    print(f"Total unique taxon names: {len(set(full_taxon_names))}")
+    core_taxon_names = get_taxon_names2map(core_f_path, "ncit2taxid.pkl")
+    print(
+        f"Unique taxon names exclude NCIT covered to map: {len(set(core_taxon_names))}"
+    )
+
+    # preprocess all taxon names and map names to ncbi taxids
+    # ete -> entrez -> biothings -> rapidfuzz
+    preprocessed_taxon_names = convert_preprocessed_name2dict(core_taxon_names)
+    names4ete3 = [new_name for old_name, new_name in preprocessed_taxon_names.items()]
+    print(f"Names for ete3 map: {len(set(names4ete3))}")
+    cache_ete3_taxon_name2taxid(names4ete3)
+    ete3_mapped = load_pickle("ete3_name2taxid.pkl")
+
+    names4entrez = [
+        new_name for old_name, new_name in preprocessed_taxon_names.items() if new_name not in ete3_mapped
+    ]
+    print(f"Names for entrez map: {len(set(names4entrez))}")
+    cache_entrez_batch_name2taxid(names4entrez)
+    entrez_mapped = load_pickle("entrez_name2taxid.pkl")
+
+    names4bt = [
+        new_name
+        for old_name, new_name in preprocessed_taxon_names.items()
+        if new_name not in ete3_mapped and new_name not in entrez_mapped
+    ]
+    print(f"Names for bt map: {len(set(names4bt))}")
+    cache_bt_name2taxid(names4bt)
+    bt_mapped = load_pickle("bt_name2taxid.pkl")
+
+    names4fuzz = [
+        new_name
+        for old_name, new_name in preprocessed_taxon_names.items()
+        if new_name not in ete3_mapped
+           and new_name not in entrez_mapped
+           and new_name not in bt_mapped
+    ]
+    print(f"Names for rapidfuzz map: {len(set(names4fuzz))}")
+
+    # prepare reference taxon names for rapidfuzz map
+    if not os.path.exists("cache/ncbi_taxdump.pkl"):
+        tar_path = os.path.join(os.getcwd(), "taxdump.tar.gz")
+        taxdump = parse_names_dmp_from_taxdump(tar_path)
+        save_pickle(taxdump, "ncbi_taxdump.pkl")
+    ncbi_name_dmp = load_pickle("ncbi_taxdump.pkl")
+    ncbi_taxon_names = [name for name, taxon in ncbi_name_dmp.items()]
+
+    fuzzy_matched_name = fuzzy_match(names4fuzz, ncbi_taxon_names, score_cutoff=90)
+    fuzzy_matched_taxid = fuzzy_matched_name2taxid(fuzzy_matched_name, ncbi_name_dmp)
+    save_pickle(fuzzy_matched_taxid, "rapidfuzz_name2taxid.pkl")
+
+    ncit_cached = load_pickle("ncit2taxid.pkl")
+    print(f"NCIT cached: {len(ncit_cached)}")
+    ete3_cached = load_pickle("ete3_name2taxid.pkl")
+    print(f"ETE3 cached: {len(ete3_cached)}")
+    entrez_cached = load_pickle("entrez_name2taxid.pkl")
+    print(f"ENTREZ cached: {len(entrez_cached)}")
+    bt_cached = load_pickle("bt_name2taxid.pkl")
+    print(f"BT cached: {len(bt_cached)}")
+    fuzz_cached = load_pickle("rapidfuzz_name2taxid.pkl")
+    print(f"RapidFuzz cached: {len(fuzz_cached)}")
+
+    ncit_taxid = get_taxid_from_cache(ncit_cached)
+    ete3_taxid = get_taxid_from_cache(ete3_cached)
+    entrez_taxid = get_taxid_from_cache(entrez_cached)
+    bt_taxid = get_taxid_from_cache(bt_cached)
+    fuzz_taxid = get_taxid_from_cache(fuzz_cached)
+
+    # query taxon lineage info from all combined taxids from cached files
+    taxid_dicts = [ncit_taxid, ete3_taxid, entrez_taxid, bt_taxid, fuzz_taxid]
+    combined_taxids = {name: taxid for d in taxid_dicts for name, taxid in d.items()}
+    taxids = [taxid for name, taxid in combined_taxids.items()]
+    taxon_info = get_taxon_info_from_bt(taxids)
+
+    # use preprocessed taxon name as keys
+    preprocessed_name_map = map_preprocessed_name2taxon_info(combined_taxids, taxon_info)
+    # map preprocessed taxon names to original taxon names which serve as keys
+    original_name_map = map_original_name2taxon_info(preprocessed_taxon_names, preprocessed_name_map)
+    ncit_name_map = map_ncit2taxon_info(taxon_info, ncit_cached)
+    original_name_map.update(ncit_name_map)
+    print(f"Complete taxon mapped: {len(original_name_map)}")
+    save_pickle(original_name_map, "original_taxon_name2taxid.pkl")
+
+    # map disease names
+    core_data = read_file(core_f_path)
+    core_disease_names = [
+        line[2].lower().strip()
+        for line in core_data
+        if line[2].lower() != "null" and line[2].lower() != "not foundthogenic"
+    ]
+    print(f"Total disease names: {len(core_disease_names)}")
+
+    efo_disease_mapped = get_efo_disease_info(efo_f_path)
+    print(f"EFO file has disease with identifiers: {len(efo_disease_mapped)}")
+    disease_not_in_efo = [di for di in core_disease_names if di not in efo_disease_mapped]
+
+    disease4query = list(set(disease_not_in_efo))
+    print(f"Disease names for mapping: {len(set(disease4query))}")
+    preprocessed_disease_names = {name: preprocess_disease_name(name) for name in disease4query}
+    preprocessed4map = [new_name for old_name, new_name in preprocessed_disease_names.items()]
+    preprocessed_mapped = text2term_name2id(
+        preprocessed4map,
+    )
+
+    disease4info = [_id for name, _id in preprocessed_mapped.items()]
+    bt_mapped_info = bt_get_disease_info(disease4info)
+    bt_mapped_final = map_bt_disease_info(
+        disease_name2id=preprocessed_mapped,
+        disease_name_map=preprocessed_disease_names,
+        disease_info=bt_mapped_info,
+    )
+    efo_disease_mapped.update(bt_mapped_final)
+    print(f"All disease mapped: {len(efo_disease_mapped)}")
+    save_pickle(efo_disease_mapped, "original_disease_name2id.pkl")
+
+
+def load_data():
+    core_f_path = os.path.join("downloads", "core_table.txt")
+    ncit_f_path = os.path.join("downloads", "NCIT.txt")
+    efo_f_path = os.path.join("downloads", "EFO.txt")
+
+
+
+
+
+
+
+
+
 if __name__ == "__main__":
+    core_f_path = os.path.join("downloads", "core_table.txt")
+    ncit_f_path = os.path.join("downloads", "NCIT.txt")
+    efo_f_path = os.path.join("downloads", "EFO.txt")
+
+    cache_data(core_f_path, ncit_f_path, efo_f_path)
+
     """
     in_f_ncit = os.path.join("downloads", "NCIT.txt")
     ncit_codes = get_ncit_code(in_f_ncit)
@@ -909,40 +1059,38 @@ if __name__ == "__main__":
     # ncit2taxids = cache_hard_code_ncit2taxid(ncit_codes)  # 582 records after manual mapping
     # print(ncit2taxids)
     # print(f"Mapped NCIT taxon: {len(ncit2taxids)}")
-    """
 
     in_f_core = os.path.join("downloads", "core_table.txt")
     total_taxon_names = get_all_taxon_names(in_f_core)
     print(f"Total taxon names: {len(total_taxon_names)}")  # 5529 with redundancy
     print(f"Total unique taxon names: {len(set(total_taxon_names))}")  # 1767 unique
 
-    taxon_names = get_taxon_names2map(in_f_core, "ncit2taxid.pkl")
+    core_taxon_names = get_taxon_names2map(in_f_core, "ncit2taxid.pkl")
     # print(taxon_names)
     print(
-        f"Total taxon names exclude NCIT covered to map with redundancy: {len(taxon_names)}"
+        f"Total taxon names exclude NCIT covered to map with redundancy: {len(core_taxon_names)}"
     )  # 2450 redundant names
     print(
-        f"Unique taxon names exclude NCIT covered to map: {len(set(taxon_names))}"
+        f"Unique taxon names exclude NCIT covered to map: {len(set(core_taxon_names))}"
     )  # 1252 unique names need to be mapped
 
     # save_pickle(taxon_names, "MicrophenoDB_original_taxon_names.pkl")
 
-    preprocessed_names = convert_preprocessed_name2dict(taxon_names)
+    preprocessed_taxon_names = convert_preprocessed_name2dict(core_taxon_names)
 
-    """
-    names4ete3 = [new_name for old_name, new_name in preprocessed_names.items()]
+    names4ete3 = [new_name for old_name, new_name in preprocessed_taxon_names.items()]
     print(f"Unique names for ete3 after preprocessing: {len(set(names4ete3))}")
 
     # Now ete3 has 1031/ hit, 221/ unique names need to map
-    # cache_ete3_mapped = cache_ete3_taxon_name2taxid(names4ete3)
-    # print(f"Cached ete3 mapped: {len(cache_ete3_mapped)}")
+    cache_ete3_mapped = cache_ete3_taxon_name2taxid(names4ete3)
+    print(f"Cached ete3 mapped: {len(cache_ete3_mapped)}")
     ete3_mapped = load_pickle("ete3_name2taxid.pkl")
     # print(ete3_mapped)
     print(f"Cached ete3 mapped: {len(ete3_mapped)}")  # 1031 names mapped
 
     # Now entrez has 56/169 mapped, 113/169 no hit
     names4entrez = [
-        new_name for old_name, new_name in preprocessed_names.items() if new_name not in ete3_mapped
+        new_name for old_name, new_name in preprocessed_taxon_names.items() if new_name not in ete3_mapped
     ]
     print(f"Names to map for entrez: {len(set(names4entrez))}")  # 169 names to map for entrez
     # cache_entrez_mapped = cache_entrez_batch_name2taxid(names4entrez)
@@ -955,7 +1103,7 @@ if __name__ == "__main__":
     # biothings: 1/113 with 1 hit, 21/113 with dup hits, 91/113 no hit
     names4bt = [
         new_name
-        for old_name, new_name in preprocessed_names.items()
+        for old_name, new_name in preprocessed_taxon_names.items()
         if new_name not in ete3_mapped and new_name not in entrez_mapped
     ]
     print(f"Names to map for bt: {len(set(names4bt))}")  # 113 names to map for bt
@@ -969,7 +1117,7 @@ if __name__ == "__main__":
     # after bt mapping, 91 no hit
     names4fuzz = [
         new_name
-        for old_name, new_name in preprocessed_names.items()
+        for old_name, new_name in preprocessed_taxon_names.items()
         if new_name not in ete3_mapped
         and new_name not in entrez_mapped
         and new_name not in bt_mapped
@@ -997,7 +1145,6 @@ if __name__ == "__main__":
     # 38 no hit
     no_hit = [name for name in names4fuzz if name not in cache_fuzzy_matched_taxid]
     print(f"No hit after preprocess, ete3, entrez, bt, and fuzzy match: {len(set(no_hit))}")
-    """
 
     # Start querying taxids using BT and get more taxon info
     ncit_cached = load_pickle("ncit2taxid.pkl")
@@ -1023,7 +1170,7 @@ if __name__ == "__main__":
 
     preprocessed_name_map = map_preprocessed_name2taxon_info(combined_taxids, taxon_info)
     # print(preprocessed_name_map)
-    original_name_map = map_original_name2taxon_info(preprocessed_names, preprocessed_name_map)
+    original_name_map = map_original_name2taxon_info(preprocessed_taxon_names, preprocessed_name_map)
     print(f"Original name mapped taxon: {len(original_name_map)}")
     ncit_name_map = map_ncit2taxon_info(taxon_info, ncit_cached)
     print(f"NCIT mapped taxon: {len(ncit_name_map)}")
@@ -1071,6 +1218,8 @@ if __name__ == "__main__":
     print(f"BT final mapped info: {len(bt_mapped_final)}")
 
     efo_disease_mapped.update(bt_mapped_final)
+    # print(efo_disease_mapped)
     print(f"All mapped disease with info: {len(efo_disease_mapped)}")
     # save_pickle(efo_disease_mapped, "original_disease_name2id.pkl")
     # print(load_pickle("original_disease_name2id.pkl"))
+    """
