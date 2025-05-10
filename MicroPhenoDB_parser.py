@@ -916,9 +916,7 @@ def cache_data(core_f_path, ncit_f_path, efo_f_path):
     full_taxon_names = get_all_taxon_names(core_f_path)
     print(f"Total unique taxon names: {len(set(full_taxon_names))}")
     core_taxon_names = get_taxon_names2map(core_f_path, "ncit2taxid.pkl")
-    print(
-        f"Unique taxon names exclude NCIT covered to map: {len(set(core_taxon_names))}"
-    )
+    print(f"Unique taxon names exclude NCIT covered to map: {len(set(core_taxon_names))}")
 
     # preprocess all taxon names and map names to ncbi taxids
     # ete -> entrez -> biothings -> rapidfuzz
@@ -929,7 +927,9 @@ def cache_data(core_f_path, ncit_f_path, efo_f_path):
     ete3_mapped = load_pickle("ete3_name2taxid.pkl")
 
     names4entrez = [
-        new_name for old_name, new_name in preprocessed_taxon_names.items() if new_name not in ete3_mapped
+        new_name
+        for old_name, new_name in preprocessed_taxon_names.items()
+        if new_name not in ete3_mapped
     ]
     print(f"Names for entrez map: {len(set(names4entrez))}")
     cache_entrez_batch_name2taxid(names4entrez)
@@ -948,8 +948,8 @@ def cache_data(core_f_path, ncit_f_path, efo_f_path):
         new_name
         for old_name, new_name in preprocessed_taxon_names.items()
         if new_name not in ete3_mapped
-           and new_name not in entrez_mapped
-           and new_name not in bt_mapped
+        and new_name not in entrez_mapped
+        and new_name not in bt_mapped
     ]
     print(f"Names for rapidfuzz map: {len(set(names4fuzz))}")
 
@@ -991,7 +991,9 @@ def cache_data(core_f_path, ncit_f_path, efo_f_path):
     # use preprocessed taxon name as keys
     preprocessed_name_map = map_preprocessed_name2taxon_info(combined_taxids, taxon_info)
     # map preprocessed taxon names to original taxon names which serve as keys
-    original_name_map = map_original_name2taxon_info(preprocessed_taxon_names, preprocessed_name_map)
+    original_name_map = map_original_name2taxon_info(
+        preprocessed_taxon_names, preprocessed_name_map
+    )
     ncit_name_map = map_ncit2taxon_info(taxon_info, ncit_cached)
     original_name_map.update(ncit_name_map)
     print(f"Complete taxon mapped: {len(original_name_map)}")
@@ -1034,13 +1036,6 @@ def load_data():
     core_f_path = os.path.join("downloads", "core_table.txt")
     ncit_f_path = os.path.join("downloads", "NCIT.txt")
     efo_f_path = os.path.join("downloads", "EFO.txt")
-
-
-
-
-
-
-
 
 
 if __name__ == "__main__":
