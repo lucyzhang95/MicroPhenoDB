@@ -943,6 +943,7 @@ def get_pubmed_metadata(pmids):
     :param pmids: a list of pmids obtained from core_table.txt
     :return: a dictionary keyed by pmid
     """
+    pmids = set(pmids)
     handle = Entrez.efetch(db="pubmed", id=",".join(map(str, pmids)), retmode="xml")
     records = Entrez.read(handle)
     handle.close()
@@ -967,9 +968,11 @@ def get_pubmed_metadata(pmids):
                     break
 
             result[pmid] = {
+                "pmid": int(pmid),
                 "title": title,
                 "abstract": abstract,
-                "doi": doi
+                "doi": doi,
+                "type": "biolink:Publication",
             }
         except Exception as e:
             print(f"Failed to parse article: {e}")
@@ -1142,6 +1145,14 @@ def cache_data(core_f_path, ncit_f_path, efo_f_path):
     print(f"All disease mapped: {len(efo_disease_mapped)}")
     save_pickle(efo_disease_mapped, "original_disease_name2id.pkl")
 
+    # get publication title, doi, and abstract
+    core_data = read_file(core_f_path)
+    pmids = [line[4] for line in core_data if re.match(r"\b\d+\b", line[4])]
+    print(f"Unique pmids: {len(set(pmids))}")
+    pub_info = get_pubmed_metadata(pmids)
+    print(f"Fetched pubmed metadata: {len(pub_info)}")
+    save_pickle(pub_info, "publication_metadata.pkl")
+
 
 def load_microphenodb_data(core_f_path, ncit_f_path, efo_f_path):
     """
@@ -1151,7 +1162,7 @@ def load_microphenodb_data(core_f_path, ncit_f_path, efo_f_path):
     :return:
     subject_node: 137 records do not have taxids
     """
-    # cache_data(core_f_path, ncit_f_path, efo_f_path)
+    cache_data(core_f_path, ncit_f_path, efo_f_path)
     mapped_taxon = load_pickle("original_taxon_name2taxid.pkl")
     mapped_diseases = load_pickle("original_disease_name2id.pkl")
 
@@ -1178,20 +1189,16 @@ def load_microphenodb_data(core_f_path, ncit_f_path, efo_f_path):
                 object_node = mapped_diseases[disease_name]
                 rec["object"] = object_node
 
-        if re.match(r"\b\d+\b", line[4]):
-            publication_node = {
-                "pmid": int(line[4]),
-                "type": "biolink:Publication",
-            }
+        pmid = str(line[4])
+        cached_pub_info = load_pickle("publication_metadata.pkl")
+        if pmid in cached_pub_info:
+            publication_node = cached_pub_info[pmid]
+            rec["publication"] = publication_node
+        else:
+            publication_node = {"type": "biolink:Publication"}
             rec["publication"] = publication_node
 
-
-
-
-
-
-
-        print(rec)
+        # print(rec)
 
 
 if __name__ == "__main__":
