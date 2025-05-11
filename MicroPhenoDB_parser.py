@@ -1112,26 +1112,33 @@ def load_microphenodb_data(core_f_path, ncit_f_path, efo_f_path):
     :return:
     subject_node: 137 records do not have taxids
     """
-    cache_data(core_f_path, ncit_f_path, efo_f_path)
+    # cache_data(core_f_path, ncit_f_path, efo_f_path)
     mapped_taxon = load_pickle("original_taxon_name2taxid.pkl")
-    mapped_diseases = load_pickle("original_disease_name2xid.pkl")
+    mapped_diseases = load_pickle("original_disease_name2id.pkl")
 
     core_data = read_file(core_f_path)
-    not_mapped = []
-    mapped = []
     for line in core_data:
+        rec = {
+            "association": {},
+            "object": {},
+            "subject": {},
+            "publication": {},
+        }
+
         organism_name = line[1].lower().strip()
         if organism_name in mapped_taxon:
             subject_node = mapped_taxon[organism_name]
             subject_node["type"] = "biolink:OrganismTaxon"
             subject_node["original_name"] = organism_name
-            mapped.append(organism_name)
-        else:
-            not_mapped.append(organism_name)
-    print(list(set(not_mapped)))
-    print(len(set(not_mapped)))
-    print(len(mapped))  # 137
-    print(len(set(mapped)))
+            rec["subject"] = subject_node
+
+        if line[2].lower() != "null" and line[2].lower() != "not foundthogenic":
+            disease_name = line[2].lower().strip()
+            if disease_name in mapped_diseases:
+                object_node = mapped_diseases[disease_name]
+                rec["object"] = object_node
+
+        print(rec)
 
 
 if __name__ == "__main__":
