@@ -1162,7 +1162,7 @@ def load_microphenodb_data(core_f_path, ncit_f_path, efo_f_path):
     :return:
     subject_node: 187 records are excluded due to a missing subject or object id
     """
-    cache_data(core_f_path, ncit_f_path, efo_f_path)
+    # cache_data(core_f_path, ncit_f_path, efo_f_path)
     mapped_taxon = load_pickle("original_taxon_name2taxid.pkl")
     mapped_diseases = load_pickle("original_disease_name2id.pkl")
 
@@ -1230,6 +1230,32 @@ if __name__ == "__main__":
         f"Number of records: {len(recs)}, "
         f"{5529 - len(recs)} records fewer than the full data (5529)."
     )
-    # obj = load_microphenodb_data(core_f_path, ncit_f_path, efo_f_path)
-    # for rec in obj:
-    #     print(rec)
+
+    from collections import Counter
+
+    disease_id = []
+    taxon_rank = []
+    anatomical_entity = []
+    dis_descr = []
+    taxon_descr = []
+    for rec in recs:
+        # print(rec)
+        disease_id.append(rec["object"]["id"].split(":")[0])
+        taxon_rank.append(rec["subject"]["rank"])
+        anatomical_entity.append(
+            rec["association"]["anatomical_entity"]
+            if "anatomical_entity" in rec["association"]
+            else "unknown"
+        )
+        if "description" in rec["subject"]:
+            if rec["object"]["description"] != "":
+                taxon_descr.append(rec["subject"]["description"])
+        if "description" in rec["object"]:
+            if rec["object"]["description"] != "":
+                dis_descr.append(rec["object"]["description"])
+
+    print(f"Disease id count: {Counter(disease_id)}")
+    print(f"Taxon rank count: {Counter(taxon_rank)}")
+    print(f"Anatomical entity count: {Counter(anatomical_entity)}")
+    print(f"Taxon with description count: {len(taxon_descr)}")
+    print(f"Disease with descriptions: {len(dis_descr)}")
