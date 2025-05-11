@@ -169,6 +169,7 @@ def hard_code_ncit2taxid(ncit_codes: list) -> dict:
     """Manual map leftover NCIT identifiers to taxids
     There are a total of 15 NCIT identifiers need to be manually mapped
     2 key-values are removed due to non-microorganism property
+    There is also mismatches of NCIT to NCBI taxids...
 
     :param ncit_codes: a list of NCIT codes derived from NCIT.txt file
     :return: a dictionary mapping NCIT codes to taxids
@@ -188,6 +189,7 @@ def hard_code_ncit2taxid(ncit_codes: list) -> dict:
     ] = "A virus from the family Flaviviridae, part of the Japanese encephalitis serocomplex of nine genetically and antigenically related viruses, some of which are particularly severe in horses, and four of which, including West Nile virus, are known to infect humans. The enveloped virus is closely related to the West Nile virus and the St. Louis encephalitis virus. The positive sense single-stranded RNA genome is packaged in the capsid which is formed by the capsid protein.[Wikipedia]"
     # Only 2 keys do not have taxids nor descriptions: Growth Hormone-Releasing Hormone Analogue and Metastatic Breast Carcinoma
     manual_taxid_map = {
+        "ruminococcaceae": 216572,
         "powassan virus": 11083,
         "alpha-amylase (aspergillus oryzae)": 5062,
         "clostridiales xi": 189325,
@@ -201,6 +203,7 @@ def hard_code_ncit2taxid(ncit_codes: list) -> dict:
         "clostridiales xiii": 189325,
         "human parainfluenza Virus": 336871,
         "mycobacterium xenopi": 1789,
+        "human parainfluenza virus": 2905673,  # it is parainfluenza virus 5
     }
 
     for name, taxid in manual_taxid_map.items():
@@ -213,6 +216,21 @@ def hard_code_ncit2taxid(ncit_codes: list) -> dict:
     ncit2taxids["bacteroides dorei"]["taxid"] = 357276
     ncit2taxids["clostridiales xi"]["id"] = 884684
     ncit2taxids["clostridiales xi"]["taxid"] = 884684
+    ncit2taxids["peptococcus"]["id"] = 2740
+    ncit2taxids["peptococcus"]["taxid"] = 2740
+    ncit2taxids["mumps virus"]["id"] = 2560602
+    ncit2taxids["mumps virus"]["taxid"] = 2560602
+    ncit2taxids["lymphocytic choriomeningitis virus"]["id"] = 3052303
+    ncit2taxids["lymphocytic choriomeningitis virus"]["taxid"] = 3052303
+    ncit2taxids["trichosporon"]["id"] = 5552
+    ncit2taxids["trichosporon"]["taxid"] = 5552
+    ncit2taxids["bacillus cereus"]["id"] = 1396
+    ncit2taxids["bacillus cereus"]["taxid"] = 1396
+    ncit2taxids["prevotella nanceiensis"]["id"] = 425941
+    ncit2taxids["prevotella nanceiensis"]["taxid"] = 425941
+    ncit2taxids["bacillaceae"]["id"] = 1396
+    ncit2taxids["bacillaceae"]["taxid"] = 1396
+
     return ncit2taxids
 
 
@@ -402,7 +420,7 @@ def remove_pre_postfix_in_taxon_name(name: str) -> str:
     name = re.sub(r"^\s*b\s+", "", name)
     name = re.sub(r"\bstains?\b", "", name)
     name = re.sub(
-        r"(coagulase negative|(?:non)?hemolytic|sensu lato complexe|rapid growers|complex(?:es)?|incertae sedis)",
+        r"\b(coagulase negative|nonhemolytic|hemolytic|sensu lato complexe|rapid growers|complex(?:es)?|incertae sedis|groups?\s+[a-z]|subgroup)\b",
         "",
         name,
     )
@@ -988,9 +1006,43 @@ def cache_data(core_f_path, ncit_f_path, efo_f_path):
     bt_taxid = get_taxid_from_cache(bt_cached)
     fuzz_taxid = get_taxid_from_cache(fuzz_cached)
 
+    hard_coded_taxid = {
+        "coxsackie": 12066,
+        "??hemolytic streptococci": 1301,
+        "b. streptococci": 1301,
+        "group a, b, c, and g streptococci": 1301,
+        "nonhemolytic streptococci": 1301,
+        "coagulase-negative staphylococci": 1279,
+        "saccharomyces castellii": 27288,
+        "actinomyces radingae": 131110,
+        "prevotella multisaccharivorax": 310514,
+        "??hemolytic streptococci groups a": 36470,
+        "enterococci": 1350,
+        "cryptococcus albidus": 100951,
+        "enterococci a": 1350,
+        "neisseriaceae": 481,
+        "streptococci": 1301,
+        "??hemolytic streptococci groups g": 1320,
+        "??hemolytic streptococci groups c": 33972,
+        "lactobacilli": 1578,
+        "??hemolytic streptococci groups b": 1319,
+        "ovine jaagziekte virus": 11746,
+        "actinomyces turicensis": 131111,
+        "staphylococci": 1279,
+        "escherichia vulneris": 566,
+        "eubacterium tortuosum": 39494,
+        "neisseriagonorrhoeae": 485,
+        "clostridium lituseburense": 1537,
+        "actinomyces neuii subspecies neuii": 44053,
+        "group b streptococci": 33972,
+        "astrovirusm": 1868658,
+        "turicella": 1716,
+    }
+
     # query taxon lineage info from all combined taxids from cached files
     taxid_dicts = [ncit_taxid, ete3_taxid, entrez_taxid, bt_taxid, fuzz_taxid]
     combined_taxids = {name: taxid for d in taxid_dicts for name, taxid in d.items()}
+    combined_taxids.update(hard_coded_taxid)
     taxids = [taxid for name, taxid in combined_taxids.items()]
     taxon_info = get_taxon_info_from_bt(taxids)
 
@@ -1040,18 +1092,18 @@ def cache_data(core_f_path, ncit_f_path, efo_f_path):
 
 def load_microphenodb_data(core_f_path, ncit_f_path, efo_f_path):
     """
-
     :param core_f_path:
     :param ncit_f_path:
     :param efo_f_path:
     :return:
     subject_node: 137 records do not have taxids
     """
-    # cache_data(core_f_path, ncit_f_path, efo_f_path)
+    cache_data(core_f_path, ncit_f_path, efo_f_path)
     mapped_taxon = load_pickle("original_taxon_name2taxid.pkl")
     mapped_diseases = load_pickle("original_disease_name2xid.pkl")
 
     core_data = read_file(core_f_path)
+    not_mapped = []
     for line in core_data:
         organism_name = line[1].lower().strip()
         if organism_name in mapped_taxon:
@@ -1059,17 +1111,10 @@ def load_microphenodb_data(core_f_path, ncit_f_path, efo_f_path):
             subject_node["type"] = "biolink:OrganismTaxon"
             subject_node["original_name"] = organism_name
         else:
-            subject_node = {
-
-
-            }
+            not_mapped.append(organism_name)
+    print(list(set(not_mapped)))
+    print(len(set(not_mapped)))
     # print(len(taxon_ct)) # 137
-
-
-
-
-
-
 
 
 if __name__ == "__main__":
@@ -1077,5 +1122,3 @@ if __name__ == "__main__":
     ncit_f_path = os.path.join("downloads", "NCIT.txt")
     efo_f_path = os.path.join("downloads", "EFO.txt")
     load_microphenodb_data(core_f_path, ncit_f_path, efo_f_path)
-
-
