@@ -226,8 +226,6 @@ def hard_code_ncit2taxid(ncit_codes: list) -> dict:
     ncit2taxids["trichosporon"]["taxid"] = 5552
     ncit2taxids["bacillus cereus"]["id"] = 1396
     ncit2taxids["bacillus cereus"]["taxid"] = 1396
-    ncit2taxids["prevotella nanceiensis"]["id"] = 425941
-    ncit2taxids["prevotella nanceiensis"]["taxid"] = 425941
     ncit2taxids["bacillaceae"]["id"] = 1396
     ncit2taxids["bacillaceae"]["taxid"] = 1396
 
@@ -1041,6 +1039,7 @@ def cache_data(core_f_path, ncit_f_path, efo_f_path):
         "group b streptococci": 33972,
         "astrovirusm": 1868658,
         "turicella": 1716,
+        "prevotella nanceiensis": 425941
     }
 
     # query taxon lineage info from all combined taxids from cached files
