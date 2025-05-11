@@ -1,0 +1,27 @@
+{
+  "version": "1.0",
+  "__metadata__": {
+    "url": "http://liwzlab.ifr.fidt.top:61010/microphenodb/#/home",
+    "description": "MicroPhenoDB database",
+    "License": "CC BY 4.0"
+  },
+  "display_name": "MicroPhenoDB",
+  "biothing_type": "association",
+  "requires": [
+    "asyncio", "aiohttp", "csv", "ssl", "tarfile",
+    "biothings_client", "chardet", "requests", "text2term",
+    "Bio", "ete3", "rapidfuzz"
+  ],
+  "dumper": {
+    "data_url": [
+      "http://lilab2.sysu.edu.cn/Microbe/download/core_table.txt",
+      "http://lilab2.sysu.edu.cn/Microbe/download/EFO.txt",
+      "http://lilab2.sysu.edu.cn/Microbe/download/NCIT.txt"
+    ],
+    "release": "version:get_release"
+  },
+  "uploader": {
+    "parser": "microphenpdb_parser:load_microphenodb_data",
+    "on_duplicates": "error"
+  }
+}
