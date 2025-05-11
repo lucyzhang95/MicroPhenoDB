@@ -418,7 +418,7 @@ def remove_pre_postfix_in_taxon_name(name: str) -> str:
     name = re.sub(r"^\s*b\s+", "", name)
     name = re.sub(r"\bstains?\b", "", name)
     name = re.sub(
-        r"\b(coagulase negative|nonhemolytic|hemolytic|sensu lato complexe|rapid growers|complex(?:es)?|incertae sedis|groups?\s+[a-z]|subgroup)\b",
+        r"(coagulase negative|(?:non)?hemolytic|sensu lato complexe|rapid growers|complex(?:es)?|incertae sedis)",
         "",
         name,
     )
