@@ -768,11 +768,15 @@ def map_original_name2taxon_info(name_map: dict, preprocessed_name2taxon_info: d
     :return:
     {'enterovirus (nonpolio)': {'id': 12059, 'taxid': 12059, 'name': 'enterovirus', 'parent_taxid': 2946630, 'lineage': [12059, 2946630, 12058, 464095, 2732506, 2732408, 2732396, 2559587, 10239, 1], 'rank': 'genus', 'original_name': 'enterovirus (nonpolio)'}}
     """
-    return {
-        ori_name: {**preprocessed_name2taxon_info[pre_name], "original_name": ori_name}
-        for ori_name, pre_name in name_map.items()
-        if pre_name in preprocessed_name2taxon_info
-    }
+    original_name2taxon_info = {}
+    for ori_name, pre_name in name_map.items():
+        key = pre_name if pre_name in preprocessed_name2taxon_info else ori_name
+        if key in preprocessed_name2taxon_info:
+            original_name2taxon_info[ori_name] = {
+                **preprocessed_name2taxon_info[key],
+                "original_name": ori_name,
+            }
+    return original_name2taxon_info
 
 
 def map_ncit2taxon_info(bt_taxon_info: dict, cached_ncit2taxid: dict) -> dict:
