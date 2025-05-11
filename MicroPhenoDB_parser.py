@@ -18,6 +18,7 @@ from rapidfuzz import fuzz, process
 
 CACHE_DIR = os.path.join(os.getcwd(), "cache")
 os.makedirs(CACHE_DIR, exist_ok=True)
+Entrez.email = "bazhang@scripps.edu"
 
 
 def save_pickle(obj, f_name):
@@ -547,7 +548,6 @@ def entrez_taxon_name2taxid(taxon_name: list) -> dict:
     :param taxon_name:
     :return:
     """
-    Entrez.email = "bazhang@scripps.edu"
     try:
         handle = Entrez.esearch(db="taxonomy", term=taxon_name, retmode="xml", retmax=1)
         record = Entrez.read(handle)
@@ -937,6 +937,45 @@ def map_bt_disease_info(disease_name2id, disease_name_map, disease_info):
     return final_d_mapping
 
 
+def get_pubmed_metadata(pmids):
+    """Get title, DOI, and abstract for a list of pmids using Entrez.
+
+    :param pmids: a list of pmids obtained from core_table.txt
+    :return: a dictionary keyed by pmid
+    """
+    handle = Entrez.efetch(db="pubmed", id=",".join(map(str, pmids)), retmode="xml")
+    records = Entrez.read(handle)
+    handle.close()
+
+    result = {}
+    for article in records["PubmedArticle"]:
+        try:
+            pmid = str(article["MedlineCitation"]["PMID"])
+            article_data = article["MedlineCitation"]["Article"]
+
+            title = article_data.get("ArticleTitle", "")
+            abstract = ""
+            if "Abstract" in article_data:
+                abstract_parts = article_data["Abstract"].get("AbstractText", [])
+                abstract = " ".join(str(part) for part in abstract_parts)
+
+            doi = ""
+            elist = article.get("PubmedData", {}).get("ArticleIdList", [])
+            for el in elist:
+                if el.attributes.get("IdType") == "doi":
+                    doi = str(el)
+                    break
+
+            result[pmid] = {
+                "title": title,
+                "abstract": abstract,
+                "doi": doi
+            }
+        except Exception as e:
+            print(f"Failed to parse article: {e}")
+    return result
+
+
 def cache_data(core_f_path, ncit_f_path, efo_f_path):
     ncit_codes = get_ncit_code(ncit_f_path)
     if not NCBITaxa:
@@ -1119,6 +1158,7 @@ def load_microphenodb_data(core_f_path, ncit_f_path, efo_f_path):
     core_data = read_file(core_f_path)
     for line in core_data:
         rec = {
+            "_id": None,
             "association": {},
             "object": {},
             "subject": {},
@@ -1137,6 +1177,19 @@ def load_microphenodb_data(core_f_path, ncit_f_path, efo_f_path):
             if disease_name in mapped_diseases:
                 object_node = mapped_diseases[disease_name]
                 rec["object"] = object_node
+
+        if re.match(r"\b\d+\b", line[4]):
+            publication_node = {
+                "pmid": int(line[4]),
+                "type": "biolink:Publication",
+            }
+            rec["publication"] = publication_node
+
+
+
+
+
+
 
         print(rec)
 
