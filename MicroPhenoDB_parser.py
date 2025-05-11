@@ -1160,7 +1160,7 @@ def load_microphenodb_data(core_f_path, ncit_f_path, efo_f_path):
     :param ncit_f_path:
     :param efo_f_path:
     :return:
-    subject_node: 137 records do not have taxids
+    subject_node: 187 records are excluded due to a missing subject or object id
     """
     cache_data(core_f_path, ncit_f_path, efo_f_path)
     mapped_taxon = load_pickle("original_taxon_name2taxid.pkl")
