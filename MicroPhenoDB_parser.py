@@ -129,7 +129,7 @@ async def fetch_ncit_taxid(session, ncit_code: list, notfound_ncit: dict):
                 taxid_list = annot.get("NCBI_Taxon_ID")
                 taxid = taxid_list[0]
                 return name, {
-                    "id": int(taxid),
+                    "id": f"taxid:{int(taxid)}",
                     "taxid": int(taxid),
                     "ncit": ncit_code,
                     "description": (
@@ -175,7 +175,7 @@ def hard_code_ncit2taxid(ncit_codes: list) -> dict:
     """Manual map leftover NCIT identifiers to taxids
     There are a total of 15 NCIT identifiers need to be manually mapped
     2 key-values are removed due to non-microorganism property
-    There is also mismatches of NCIT to NCBI taxids...
+    There are also mismatches of NCIT to NCBI taxids...
 
     :param ncit_codes: a list of NCIT codes derived from NCIT.txt file
     :return: a dictionary mapping NCIT codes to taxids
@@ -206,36 +206,29 @@ def hard_code_ncit2taxid(ncit_codes: list) -> dict:
         "japanese encephalitis virus strain nakayama-nih antigen (formaldehyde inactivated)": 11076,
         "trichomonas vaginalis": 5722,
         "clostridiales xiii": 189325,
-        "human parainfluenza Virus": 336871,
-        "mycobacterium xenopi": 1789,
-        "human parainfluenza virus": 2905673,  # it is parainfluenza virus 5
     }
 
     for name, taxid in manual_taxid_map.items():
         if name in notfound_ncit:
-            notfound_ncit[name].update({"id": taxid, "taxid": taxid})
-
+            notfound_ncit[name].update({"id": f"taxid:{taxid}", "taxid": int(taxid)})
     ncit2taxids.update(notfound_ncit)
     # manual change the taxid of bacteroides dorei, since the src mapping is wrong
-    ncit2taxids["ruminococcaceae"]["id"] = 216572
-    ncit2taxids["ruminococcaceae"]["taxid"] = 216572
-    ncit2taxids["bacteroides dorei"]["id"] = 357276
-    ncit2taxids["bacteroides dorei"]["taxid"] = 357276
-    ncit2taxids["clostridiales xi"]["id"] = 884684
-    ncit2taxids["clostridiales xi"]["taxid"] = 884684
-    ncit2taxids["peptococcus"]["id"] = 2740
-    ncit2taxids["peptococcus"]["taxid"] = 2740
-    ncit2taxids["mumps virus"]["id"] = 2560602
-    ncit2taxids["mumps virus"]["taxid"] = 2560602
-    ncit2taxids["lymphocytic choriomeningitis virus"]["id"] = 3052303
-    ncit2taxids["lymphocytic choriomeningitis virus"]["taxid"] = 3052303
-    ncit2taxids["trichosporon"]["id"] = 5552
-    ncit2taxids["trichosporon"]["taxid"] = 5552
-    ncit2taxids["bacillus cereus"]["id"] = 1396
-    ncit2taxids["bacillus cereus"]["taxid"] = 1396
-    ncit2taxids["bacillaceae"]["id"] = 1396
-    ncit2taxids["bacillaceae"]["taxid"] = 1396
-
+    manual_override = {
+        "bacteroides dorei": 357276,
+        "clostridiales xi": 884684,
+        "mycobacterium xenopi": 1789,
+        "human parainfluenza virus": 2905673,  # it is parainfluenza virus 5
+        "ruminococcaceae": 216572,
+        "peptococcus": 2740,
+        "mumps virus": 2560602,
+        "lymphocytic choriomeningitis virus": 3052303,
+        "trichosporon": 5552,
+        "bacillus cereus": 1396,
+        "bacillaceae": 186817,
+    }
+    for name, taxid in manual_override.items():
+        if name in ncit2taxids:
+            ncit2taxids[name].update({"id": f"taxid:{taxid}", "taxid": taxid})
     return ncit2taxids
 
 
@@ -523,7 +516,7 @@ def cache_ete3_taxon_name2taxid(taxon_names: list, cache_file="ete3_name2taxid.p
 
     :param taxon_names:
     :param cache_file:
-    :return: a dict with first preprocessed names as keys and values as follows:
+    :return: a dict with the first preprocessed names as keys and values as follows:
     {'varicella zoster virus': {'taxid': 10335, 'mapping_tool': 'ete3'},...}
     """
     cache = load_pickle(cache_file)
@@ -691,7 +684,7 @@ def get_taxon_info_from_bt(taxids) -> dict:
 
     :param taxids:
     :return:
-    '36855': {'id': 36855,
+    '36855': {'id': 'taxid:36855',
     'taxid': 36855,
     'name': 'brucella canis',
     'parent_taxid': 234,
@@ -719,7 +712,7 @@ def get_taxon_info_from_bt(taxids) -> dict:
     for info in taxon_info:
         if "notfound" not in info.keys():
             taxon[info["query"]] = {
-                "id": int(info["_id"]),
+                "id": f"taxid:{int(info['_id'])}",
                 "taxid": int(info["_id"]),
                 "name": info["scientific_name"],
                 "parent_taxid": int(info["parent_taxid"]),
@@ -735,7 +728,7 @@ def map_preprocessed_name2taxon_info(taxid_dict: dict, bt_taxon_info: dict) -> d
     :param taxid_dict:
     {'gulbenkiania': 397456, 'gymnopilus': 86085, 'haemophilus quentini': 123834,...}
     :param bt_taxon_info:
-    '36855': {'id': 36855,
+    '36855': {'id': 'taxid:36855',
     'taxid': 36855,
     'name': 'brucella canis',
     'parent_taxid': 234,
@@ -753,7 +746,7 @@ def map_preprocessed_name2taxon_info(taxid_dict: dict, bt_taxon_info: dict) -> d
     'rank': 'species'}
     }
     :return:
-    {'brucella canis': {'id': 36855, 'taxid': 36855, 'name': 'brucella canis', 'parent_taxid': 234, 'lineage': [36855, 234, 2826938, 118882, 356, 28211, 1224, 3379134, 2, 131567, 1], 'rank': 'species'}}
+    {'brucella canis': {'id': 'taxid:36855', 'taxid': 36855, 'name': 'brucella canis', 'parent_taxid': 234, 'lineage': [36855, 234, 2826938, 118882, 356, 28211, 1224, 3379134, 2, 131567, 1], 'rank': 'species'}}
     """
     return {
         name: bt_taxon_info[str(taxid)]
@@ -768,9 +761,9 @@ def map_original_name2taxon_info(name_map: dict, preprocessed_name2taxon_info: d
     :param name_map:
     {'enterovirus (nonpolio)': 'enterovirus', 'haemophilus influenzae (nontypeable)': 'haemophilus influenzae', 'absidia': 'absidia',...}
     :param preprocessed_name2taxon_info:
-    {'enterovirus': {{'id': 12059, 'taxid': 12059, 'name': 'enterovirus', 'parent_taxid': 2946630, 'lineage': [12059, 2946630, 12058, 464095, 2732506, 2732408, 2732396, 2559587, 10239, 1], 'rank': 'genus'}}
+    {'enterovirus': {{'id': 'taxid:12059', 'taxid': 12059, 'name': 'enterovirus', 'parent_taxid': 2946630, 'lineage': [12059, 2946630, 12058, 464095, 2732506, 2732408, 2732396, 2559587, 10239, 1], 'rank': 'genus'}}
     :return:
-    {'enterovirus (nonpolio)': {'id': 12059, 'taxid': 12059, 'name': 'enterovirus', 'parent_taxid': 2946630, 'lineage': [12059, 2946630, 12058, 464095, 2732506, 2732408, 2732396, 2559587, 10239, 1], 'rank': 'genus', 'original_name': 'enterovirus (nonpolio)'}}
+    {'enterovirus (nonpolio)': {'id': 'taxid:12059', 'taxid': 12059, 'name': 'enterovirus', 'parent_taxid': 2946630, 'lineage': [12059, 2946630, 12058, 464095, 2732506, 2732408, 2732396, 2559587, 10239, 1], 'rank': 'genus', 'original_name': 'enterovirus (nonpolio)'}}
     """
     original_name2taxon_info = {}
     for ori_name, pre_name in name_map.items():
@@ -790,7 +783,7 @@ def map_ncit2taxon_info(bt_taxon_info: dict, cached_ncit2taxid: dict) -> dict:
     :param bt_taxon_info:
     :param cached_ncit2taxid:
     :return:
-    {'bacteroides dorei': {'id': 357276, 'taxid': 357276, 'description': 'A species of anaerobic, gram-negative, rod shaped bacteria assigned to the phylum Bacteroidetes. This specis is non-spore forming, non-motile, does not hydrolyze esculin, is indole negative and nitrate is not reduced.[NCIT]', 'scientific_name': 'phocaeicola dorei', 'parent_taxid': 909656, 'lineage': [357276, 909656, 815, 171549, 200643, 976, 68336, 1783270, 3379134, 2, 131567, 1], 'rank': 'species', 'xrefs': {'ncit': 'C111133'}}}
+    {'bacteroides dorei': {'id': 'taxid:357276', 'taxid': 357276, 'description': 'A species of anaerobic, gram-negative, rod shaped bacteria assigned to the phylum Bacteroidetes. This specis is non-spore forming, non-motile, does not hydrolyze esculin, is indole negative and nitrate is not reduced.[NCIT]', 'scientific_name': 'phocaeicola dorei', 'parent_taxid': 909656, 'lineage': [357276, 909656, 815, 171549, 200643, 976, 68336, 1783270, 3379134, 2, 131567, 1], 'rank': 'species', 'xrefs': {'ncit': 'C111133'}}}
     """
     ncit2taxon_info = {}
 
@@ -1093,6 +1086,12 @@ def cache_data(core_f_path, ncit_f_path, efo_f_path):
         "astrovirusm": 1868658,
         "turicella": 1716,
         "prevotella nanceiensis": 425941,
+        "clostridium group xi": 189325,
+        "clostridia cluster i": 189325,
+        "uncultured clostridiales ii": 189325,
+        "clostridium xivb": 543317,
+        "clostridium cluster xviii": 189325,
+        "clostridium cluster xiva": 543317,
     }
 
     # query taxon lineage info from all combined taxids from cached files
@@ -1100,6 +1099,7 @@ def cache_data(core_f_path, ncit_f_path, efo_f_path):
     combined_taxids = {name: taxid for d in taxid_dicts for name, taxid in d.items()}
     combined_taxids.update(hard_coded_taxid)
     taxids = [taxid for name, taxid in combined_taxids.items()]
+    print(f"Unique taxids for query: {len(set(taxids))}")
     taxon_info = get_taxon_info_from_bt(taxids)
 
     # use preprocessed taxon name as keys
@@ -1198,11 +1198,38 @@ def load_microphenodb_data(core_f_path, ncit_f_path, efo_f_path):
             publication_node = {"type": "biolink:Publication"}
             rec["publication"] = publication_node
 
-        # print(rec)
+        score = float(line[3])
+        position = line[6].lower().strip()
+        if line[-1] and line[-1] != "Tendency":
+            qualifier = line[-1].lower().strip()
+
+            association_node = {
+                "predicate": "biolink:OrganismalEntityAsAModelOfDiseaseAssociation",
+                "qualifier": qualifier,
+                "score": score,
+                "anatomical_entity": position,
+                "infores": "MicroPhenoDB",
+            }
+
+            rec["association"] = association_node
+
+        if "id" in rec["subject"] and "id" in rec["object"]:
+            id_subj = rec["subject"]["id"].split(":")[1]
+            id_obj = rec["object"]["id"].split(":")[1]
+            rec["_id"] = f"{id_subj}_OrganismalEntityAsAModelOfDiseaseAssociation_{id_obj}"
+            yield rec
 
 
 if __name__ == "__main__":
     core_f_path = os.path.join("downloads", "core_table.txt")
     ncit_f_path = os.path.join("downloads", "NCIT.txt")
     efo_f_path = os.path.join("downloads", "EFO.txt")
-    load_microphenodb_data(core_f_path, ncit_f_path, efo_f_path)
+    obj = load_microphenodb_data(core_f_path, ncit_f_path, efo_f_path)
+    recs = [rec for rec in obj]
+    print(
+        f"Number of records: {len(recs)}, "
+        f"{5529 - len(recs)} records fewer than the full data (5529)."
+    )
+    # obj = load_microphenodb_data(core_f_path, ncit_f_path, efo_f_path)
+    # for rec in obj:
+    #     print(rec)
