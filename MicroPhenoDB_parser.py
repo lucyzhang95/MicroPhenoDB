@@ -131,10 +131,15 @@ async def fetch_ncit_taxid(session, ncit_code: list, notfound_ncit: dict):
                     "id": int(taxid),
                     "taxid": int(taxid),
                     "ncit": ncit_code,
-                    "description": f"{description}[NCIT]",  # add description src
+                    "description": (
+                        f"{description}[NCIT]" if description != "N/A" else ""
+                    ),  # add description src
                 }
             else:
-                notfound_ncit[name] = {"ncit": ncit_code, "description": f"{description}[NCIT]"}
+                notfound_ncit[name] = {
+                    "ncit": ncit_code,
+                    "description": f"{description}[NCIT]" if description != "N/A" else "",
+                }
                 # print(f"NO NCBI Taxonomy ID found for NCIT:{ncit_code}")
 
     except requests.exceptions.RequestException as e:
@@ -189,7 +194,6 @@ def hard_code_ncit2taxid(ncit_codes: list) -> dict:
     ] = "A virus from the family Flaviviridae, part of the Japanese encephalitis serocomplex of nine genetically and antigenically related viruses, some of which are particularly severe in horses, and four of which, including West Nile virus, are known to infect humans. The enveloped virus is closely related to the West Nile virus and the St. Louis encephalitis virus. The positive sense single-stranded RNA genome is packaged in the capsid which is formed by the capsid protein.[Wikipedia]"
     # Only 2 keys do not have taxids nor descriptions: Growth Hormone-Releasing Hormone Analogue and Metastatic Breast Carcinoma
     manual_taxid_map = {
-        "ruminococcaceae": 216572,
         "powassan virus": 11083,
         "alpha-amylase (aspergillus oryzae)": 5062,
         "clostridiales xi": 189325,
@@ -212,6 +216,8 @@ def hard_code_ncit2taxid(ncit_codes: list) -> dict:
 
     ncit2taxids.update(notfound_ncit)
     # manual change the taxid of bacteroides dorei, since the src mapping is wrong
+    ncit2taxids["ruminococcaceae"]["id"] = 216572
+    ncit2taxids["ruminococcaceae"]["taxid"] = 216572
     ncit2taxids["bacteroides dorei"]["id"] = 357276
     ncit2taxids["bacteroides dorei"]["taxid"] = 357276
     ncit2taxids["clostridiales xi"]["id"] = 884684
@@ -947,7 +953,8 @@ def cache_data(core_f_path, ncit_f_path, efo_f_path):
     # preprocess all taxon names and map names to ncbi taxids
     # ete -> entrez -> biothings -> rapidfuzz
     preprocessed_taxon_names = convert_preprocessed_name2dict(core_taxon_names)
-    names4ete3 = [new_name for old_name, new_name in preprocessed_taxon_names.items()]
+    # print(preprocessed_taxon_names)
+    names4ete3 = [new_name for old_name, new_name in preprocessed_taxon_names.items() if new_name]
     print(f"Names for ete3 map: {len(set(names4ete3))}")
     cache_ete3_taxon_name2taxid(names4ete3)
     ete3_mapped = load_pickle("ete3_name2taxid.pkl")
@@ -956,7 +963,9 @@ def cache_data(core_f_path, ncit_f_path, efo_f_path):
         new_name
         for old_name, new_name in preprocessed_taxon_names.items()
         if new_name not in ete3_mapped
+        if new_name
     ]
+    # print(names4entrez)
     print(f"Names for entrez map: {len(set(names4entrez))}")
     cache_entrez_batch_name2taxid(names4entrez)
     entrez_mapped = load_pickle("entrez_name2taxid.pkl")
@@ -965,6 +974,7 @@ def cache_data(core_f_path, ncit_f_path, efo_f_path):
         new_name
         for old_name, new_name in preprocessed_taxon_names.items()
         if new_name not in ete3_mapped and new_name not in entrez_mapped
+        if new_name
     ]
     print(f"Names for bt map: {len(set(names4bt))}")
     cache_bt_name2taxid(names4bt)
@@ -976,6 +986,7 @@ def cache_data(core_f_path, ncit_f_path, efo_f_path):
         if new_name not in ete3_mapped
         and new_name not in entrez_mapped
         and new_name not in bt_mapped
+        if new_name
     ]
     print(f"Names for rapidfuzz map: {len(set(names4fuzz))}")
 
@@ -1039,7 +1050,7 @@ def cache_data(core_f_path, ncit_f_path, efo_f_path):
         "group b streptococci": 33972,
         "astrovirusm": 1868658,
         "turicella": 1716,
-        "prevotella nanceiensis": 425941
+        "prevotella nanceiensis": 425941,
     }
 
     # query taxon lineage info from all combined taxids from cached files
@@ -1107,17 +1118,20 @@ def load_microphenodb_data(core_f_path, ncit_f_path, efo_f_path):
 
     core_data = read_file(core_f_path)
     not_mapped = []
+    mapped = []
     for line in core_data:
         organism_name = line[1].lower().strip()
         if organism_name in mapped_taxon:
             subject_node = mapped_taxon[organism_name]
             subject_node["type"] = "biolink:OrganismTaxon"
             subject_node["original_name"] = organism_name
+            mapped.append(organism_name)
         else:
             not_mapped.append(organism_name)
     print(list(set(not_mapped)))
     print(len(set(not_mapped)))
-    # print(len(taxon_ct)) # 137
+    print(len(mapped))  # 137
+    print(len(set(mapped)))
 
 
 if __name__ == "__main__":
