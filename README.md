@@ -1,8 +1,95 @@
 # Data parser for [MicroPhenoDB](http://liwzlab.ifr.fidt.top:61010/microphenodb/#/home)
-A manually collected and curated database includes microbe-disease (5529 from downloads) associations from HMDAD and Disbiome databases. 
+A manually collected and curated database includes **Microbe-Disease** associations (5529 from downloads) from HMDAD and Disbiome databases. 
+
+## Statistics Summary
+Last Modified: 05/11/2025 <br>
+**Number of records: 5342, 187 records fewer than the full data (5529). <br>
+~96.6% of the entire records**
+
+### Taxon 
+- Total unique taxon names: 1767
+- NCIT cached: 582 
+- ETE3 cached: 1031 
+- ENTREZ cached: 56 
+- BT cached: 22 
+- RapidFuzz cached: 53
+- Unique taxids for query to get full taxon info: 1621
+- Complete taxon mapped: 1813
+- Taxon with description count: 2985
+
+
+```json
+{
+   "genus":2345,
+   "species":2315,
+   "family":335,
+   "no rank":118,
+   "phylum":106,
+   "serotype":40,
+   "order":34,
+   "class":18,
+   "subspecies":11,
+   "serogroup":9,
+   "kingdom":4,
+   "biotype":3,
+   "strain":2,
+   "forma":1,
+   "subgenus":1
+}
+```
+
+### Disease
+- Total disease names: 5518
+- All unique disease mapped: 485
+- Disease with descriptions: 5342
+
+```json
+{
+   "EFO":4680,
+   "MONDO":301,
+   "orphanet":249,
+   "HP":108,
+   "DOID":4
+}
+```
+
+### Publication
+- Unique pmids: 515
+- Fetched pubmed metadata: 514
+
+### Anatomical Entity
+```json
+{
+   "gastrointestinal tract":2096,
+   "other":1350,
+   "oral cavity":541,
+   "respiratory tract":250,
+   "skin and soft tissue":222,
+   "urinary tract":173,
+   "vagina":141,
+   "central nervous system":112,
+   "bloodstream":80,
+   "nasal cavity":75,
+   "eye":63,
+   "throat":56,
+   "genitals":46,
+   "cervix":30,
+   "placenta":24,
+   "gallbladder":22,
+   "oesophagus":12,
+   "foot":11,
+   "unknown":11,
+   "abdominal cavity":10,
+   "auditory meatus":7,
+   "biofilm":6,
+   "lung":3,
+   "breast":1
+}
+```
+
 
 ## Example of output record
-```ruby
+```json
 {
    "_id":"2051_OrganismalEntityAsAModelOfDiseaseAssociation_0005316",
    "association":{
@@ -56,3 +143,8 @@ A manually collected and curated database includes microbe-disease (5529 from do
    }
 }
 ```
+
+## Issues and Future Updates
+Most of the clostridium clusters are manually mapped to `taxid:189325`
+*Clostridia incertae sedis*. For further mapping in depth with cluster or family along with the species or strains under the cluster requires more knowledge regarding the evolution and taxonomy of 
+*Clostridia*. Can refer to [this paper]("https://pmc.ncbi.nlm.nih.gov/articles/PMC6656338/").
