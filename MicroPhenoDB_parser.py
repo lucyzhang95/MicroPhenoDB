@@ -128,6 +128,7 @@ async def fetch_ncit_taxid(session, ncit_code: list, notfound_ncit: dict):
                 taxid_list = annot.get("NCBI_Taxon_ID")
                 taxid = taxid_list[0]
                 return name, {
+                    "id": int(taxid),
                     "taxid": int(taxid),
                     "ncit": ncit_code,
                     "description": f"{description}[NCIT]",  # add description src
@@ -204,11 +205,13 @@ def hard_code_ncit2taxid(ncit_codes: list) -> dict:
 
     for name, taxid in manual_taxid_map.items():
         if name in notfound_ncit:
-            notfound_ncit[name].update({"taxid": taxid})
+            notfound_ncit[name].update({"id": taxid, "taxid": taxid})
 
     ncit2taxids.update(notfound_ncit)
     # manual change the taxid of bacteroides dorei, since the src mapping is wrong
+    ncit2taxids["bacteroides dorei"]["id"] = 357276
     ncit2taxids["bacteroides dorei"]["taxid"] = 357276
+    ncit2taxids["clostridiales xi"]["id"] = 884684
     ncit2taxids["clostridiales xi"]["taxid"] = 884684
     return ncit2taxids
 
@@ -666,7 +669,8 @@ def get_taxon_info_from_bt(taxids) -> dict:
 
     :param taxids:
     :return:
-    '36855': {'taxid': 36855,
+    '36855': {'id': 36855,
+    'taxid': 36855,
     'name': 'brucella canis',
     'parent_taxid': 234,
     'lineage': [36855,
@@ -693,6 +697,7 @@ def get_taxon_info_from_bt(taxids) -> dict:
     for info in taxon_info:
         if "notfound" not in info.keys():
             taxon[info["query"]] = {
+                "id": int(info["_id"]),
                 "taxid": int(info["_id"]),
                 "name": info["scientific_name"],
                 "parent_taxid": int(info["parent_taxid"]),
@@ -708,7 +713,8 @@ def map_preprocessed_name2taxon_info(taxid_dict: dict, bt_taxon_info: dict) -> d
     :param taxid_dict:
     {'gulbenkiania': 397456, 'gymnopilus': 86085, 'haemophilus quentini': 123834,...}
     :param bt_taxon_info:
-    '36855': {'taxid': 36855,
+    '36855': {'id': 36855,
+    'taxid': 36855,
     'name': 'brucella canis',
     'parent_taxid': 234,
     'lineage': [36855,
@@ -725,7 +731,7 @@ def map_preprocessed_name2taxon_info(taxid_dict: dict, bt_taxon_info: dict) -> d
     'rank': 'species'}
     }
     :return:
-    {'brucella canis': {'taxid': 36855, 'name': 'brucella canis', 'parent_taxid': 234, 'lineage': [36855, 234, 2826938, 118882, 356, 28211, 1224, 3379134, 2, 131567, 1], 'rank': 'species'}}
+    {'brucella canis': {'id': 36855, 'taxid': 36855, 'name': 'brucella canis', 'parent_taxid': 234, 'lineage': [36855, 234, 2826938, 118882, 356, 28211, 1224, 3379134, 2, 131567, 1], 'rank': 'species'}}
     """
     return {
         name: bt_taxon_info[str(taxid)]
@@ -740,9 +746,9 @@ def map_original_name2taxon_info(name_map: dict, preprocessed_name2taxon_info: d
     :param name_map:
     {'enterovirus (nonpolio)': 'enterovirus', 'haemophilus influenzae (nontypeable)': 'haemophilus influenzae', 'absidia': 'absidia',...}
     :param preprocessed_name2taxon_info:
-    {'enterovirus': {'taxid': 12059, 'name': 'enterovirus', 'parent_taxid': 2946630, 'lineage': [12059, 2946630, 12058, 464095, 2732506, 2732408, 2732396, 2559587, 10239, 1], 'rank': 'genus'}}
+    {'enterovirus': {{'id': 12059, 'taxid': 12059, 'name': 'enterovirus', 'parent_taxid': 2946630, 'lineage': [12059, 2946630, 12058, 464095, 2732506, 2732408, 2732396, 2559587, 10239, 1], 'rank': 'genus'}}
     :return:
-    {'enterovirus (nonpolio)': {'taxid': 12059, 'name': 'enterovirus', 'parent_taxid': 2946630, 'lineage': [12059, 2946630, 12058, 464095, 2732506, 2732408, 2732396, 2559587, 10239, 1], 'rank': 'genus', 'original_name': 'enterovirus (nonpolio)'}}
+    {'enterovirus (nonpolio)': {'id': 12059, 'taxid': 12059, 'name': 'enterovirus', 'parent_taxid': 2946630, 'lineage': [12059, 2946630, 12058, 464095, 2732506, 2732408, 2732396, 2559587, 10239, 1], 'rank': 'genus', 'original_name': 'enterovirus (nonpolio)'}}
     """
     return {
         ori_name: {**preprocessed_name2taxon_info[pre_name], "original_name": ori_name}
@@ -758,7 +764,7 @@ def map_ncit2taxon_info(bt_taxon_info: dict, cached_ncit2taxid: dict) -> dict:
     :param bt_taxon_info:
     :param cached_ncit2taxid:
     :return:
-    {'bacteroides dorei': {'taxid': 357276, 'description': 'A species of anaerobic, gram-negative, rod shaped bacteria assigned to the phylum Bacteroidetes. This specis is non-spore forming, non-motile, does not hydrolyze esculin, is indole negative and nitrate is not reduced.[NCIT]', 'scientific_name': 'phocaeicola dorei', 'parent_taxid': 909656, 'lineage': [357276, 909656, 815, 171549, 200643, 976, 68336, 1783270, 3379134, 2, 131567, 1], 'rank': 'species', 'xrefs': {'ncit': 'C111133'}}}
+    {'bacteroides dorei': {'id': 357276, 'taxid': 357276, 'description': 'A species of anaerobic, gram-negative, rod shaped bacteria assigned to the phylum Bacteroidetes. This specis is non-spore forming, non-motile, does not hydrolyze esculin, is indole negative and nitrate is not reduced.[NCIT]', 'scientific_name': 'phocaeicola dorei', 'parent_taxid': 909656, 'lineage': [357276, 909656, 815, 171549, 200643, 976, 68336, 1783270, 3379134, 2, 131567, 1], 'rank': 'species', 'xrefs': {'ncit': 'C111133'}}}
     """
     ncit2taxon_info = {}
 
@@ -1032,189 +1038,44 @@ def cache_data(core_f_path, ncit_f_path, efo_f_path):
     save_pickle(efo_disease_mapped, "original_disease_name2id.pkl")
 
 
-def load_data():
-    core_f_path = os.path.join("downloads", "core_table.txt")
-    ncit_f_path = os.path.join("downloads", "NCIT.txt")
-    efo_f_path = os.path.join("downloads", "EFO.txt")
+def load_microphenodb_data(core_f_path, ncit_f_path, efo_f_path):
+    """
+
+    :param core_f_path:
+    :param ncit_f_path:
+    :param efo_f_path:
+    :return:
+    subject_node: 137 records do not have taxids
+    """
+    # cache_data(core_f_path, ncit_f_path, efo_f_path)
+    mapped_taxon = load_pickle("original_taxon_name2taxid.pkl")
+    mapped_diseases = load_pickle("original_disease_name2xid.pkl")
+
+    core_data = read_file(core_f_path)
+    for line in core_data:
+        organism_name = line[1].lower().strip()
+        if organism_name in mapped_taxon:
+            subject_node = mapped_taxon[organism_name]
+            subject_node["type"] = "biolink:OrganismTaxon"
+            subject_node["original_name"] = organism_name
+        else:
+            subject_node = {
+
+
+            }
+    # print(len(taxon_ct)) # 137
+
+
+
+
+
+
 
 
 if __name__ == "__main__":
     core_f_path = os.path.join("downloads", "core_table.txt")
     ncit_f_path = os.path.join("downloads", "NCIT.txt")
     efo_f_path = os.path.join("downloads", "EFO.txt")
+    load_microphenodb_data(core_f_path, ncit_f_path, efo_f_path)
 
-    cache_data(core_f_path, ncit_f_path, efo_f_path)
 
-    """
-    in_f_ncit = os.path.join("downloads", "NCIT.txt")
-    ncit_codes = get_ncit_code(in_f_ncit)
-    # print(ncit_codes)
-    # print(len(ncit_codes))
-
-    # ncit2taxids = cache_hard_code_ncit2taxid(ncit_codes)  # 582 records after manual mapping
-    # print(ncit2taxids)
-    # print(f"Mapped NCIT taxon: {len(ncit2taxids)}")
-
-    in_f_core = os.path.join("downloads", "core_table.txt")
-    total_taxon_names = get_all_taxon_names(in_f_core)
-    print(f"Total taxon names: {len(total_taxon_names)}")  # 5529 with redundancy
-    print(f"Total unique taxon names: {len(set(total_taxon_names))}")  # 1767 unique
-
-    core_taxon_names = get_taxon_names2map(in_f_core, "ncit2taxid.pkl")
-    # print(taxon_names)
-    print(
-        f"Total taxon names exclude NCIT covered to map with redundancy: {len(core_taxon_names)}"
-    )  # 2450 redundant names
-    print(
-        f"Unique taxon names exclude NCIT covered to map: {len(set(core_taxon_names))}"
-    )  # 1252 unique names need to be mapped
-
-    # save_pickle(taxon_names, "MicrophenoDB_original_taxon_names.pkl")
-
-    preprocessed_taxon_names = convert_preprocessed_name2dict(core_taxon_names)
-
-    names4ete3 = [new_name for old_name, new_name in preprocessed_taxon_names.items()]
-    print(f"Unique names for ete3 after preprocessing: {len(set(names4ete3))}")
-
-    # Now ete3 has 1031/ hit, 221/ unique names need to map
-    cache_ete3_mapped = cache_ete3_taxon_name2taxid(names4ete3)
-    print(f"Cached ete3 mapped: {len(cache_ete3_mapped)}")
-    ete3_mapped = load_pickle("ete3_name2taxid.pkl")
-    # print(ete3_mapped)
-    print(f"Cached ete3 mapped: {len(ete3_mapped)}")  # 1031 names mapped
-
-    # Now entrez has 56/169 mapped, 113/169 no hit
-    names4entrez = [
-        new_name for old_name, new_name in preprocessed_taxon_names.items() if new_name not in ete3_mapped
-    ]
-    print(f"Names to map for entrez: {len(set(names4entrez))}")  # 169 names to map for entrez
-    # cache_entrez_mapped = cache_entrez_batch_name2taxid(names4entrez)
-    # print(cached_entrez_mapped)
-    # print(f"Cached entrez mapped: {len(set(cache_entrez_mapped))}")
-    entrez_mapped = load_pickle("entrez_name2taxid.pkl")
-    # print(entrez_mapped)
-    print(f"Cached entrez mapped: {len(set(entrez_mapped))}")  # 56 names mapped
-
-    # biothings: 1/113 with 1 hit, 21/113 with dup hits, 91/113 no hit
-    names4bt = [
-        new_name
-        for old_name, new_name in preprocessed_taxon_names.items()
-        if new_name not in ete3_mapped and new_name not in entrez_mapped
-    ]
-    print(f"Names to map for bt: {len(set(names4bt))}")  # 113 names to map for bt
-    # cache_bt_mapped = cache_bt_name2taxid(names4bt)
-    # print(cache_bt_mapped)
-    # print(f"Cached bt mapped: {len(cache_bt_mapped)}")
-    bt_mapped = load_pickle("bt_name2taxid.pkl")
-    # print(bt_mapped)
-    print(f"Cached bt mapped: {len(bt_mapped)}")  # 22 names mapped
-
-    # after bt mapping, 91 no hit
-    names4fuzz = [
-        new_name
-        for old_name, new_name in preprocessed_taxon_names.items()
-        if new_name not in ete3_mapped
-        and new_name not in entrez_mapped
-        and new_name not in bt_mapped
-    ]
-    print(f"Taxon names to fuzzy match: {len(set(names4fuzz))}")  # 91 names for fuzzy match
-
-    if not os.path.exists("cache/ncbi_taxdump.pkl"):
-        tar_path = os.path.join(os.getcwd(), "taxdump.tar.gz")
-        taxdump = parse_names_dmp_from_taxdump(tar_path)
-        save_pickle(taxdump, "ncbi_taxdump.pkl")
-
-    ncbi_name_dmp = load_pickle("ncbi_taxdump.pkl")
-    ncbi_taxon_names = [name for name, taxon in ncbi_name_dmp.items()]
-
-    # fuzzy-matched names: 53 mapped > 90 score cutoff
-    # fuzzy_matched = fuzzy_match(names4fuzz, ncbi_taxon_names, score_cutoff=90)
-    # print(f"Fuzzy matched names with a cutoff score of 90: {len(fuzzy_matched)}")
-
-    # fuzzy_matched_taxid = fuzzy_matched_name2taxid(fuzzy_matched, ncbi_name_dmp)
-    # print(fuzzy_matched_taxid)
-    # save_pickle(fuzzy_matched_taxid, "rapidfuzz_name2taxid.pkl")
-    cache_fuzzy_matched_taxid = load_pickle("rapidfuzz_name2taxid.pkl")
-    print(f"Fuzzy matched names with a cutoff score of 90: {len(cache_fuzzy_matched_taxid)}")
-
-    # 38 no hit
-    no_hit = [name for name in names4fuzz if name not in cache_fuzzy_matched_taxid]
-    print(f"No hit after preprocess, ete3, entrez, bt, and fuzzy match: {len(set(no_hit))}")
-
-    # Start querying taxids using BT and get more taxon info
-    ncit_cached = load_pickle("ncit2taxid.pkl")
-    ete3_cached = load_pickle("ete3_name2taxid.pkl")
-    entrez_cached = load_pickle("entrez_name2taxid.pkl")
-    bt_cached = load_pickle("bt_name2taxid.pkl")
-    fuzz_cached = load_pickle("rapidfuzz_name2taxid.pkl")
-
-    ncit_taxid = get_taxid_from_cache(ncit_cached)
-    ete3_taxid = get_taxid_from_cache(ete3_cached)
-    entrez_taxid = get_taxid_from_cache(entrez_cached)
-    bt_taxid = get_taxid_from_cache(bt_cached)
-    fuzz_taxid = get_taxid_from_cache(fuzz_cached)
-
-    taxid_dicts = [ncit_taxid, ete3_taxid, entrez_taxid, bt_taxid, fuzz_taxid]
-    combined_taxids = {name: taxid for d in taxid_dicts for name, taxid in d.items()}
-    print(f"Combined taxids from all cache: {len(combined_taxids)}")
-
-    taxids = [taxid for name, taxid in combined_taxids.items()]
-    print(f"Combined unique taxids: {len(set(taxids))}")
-    taxon_info = get_taxon_info_from_bt(taxids)
-    print(f"Taxon info: {len(taxon_info)}, {len(set(taxids)) - len(taxon_info)} less")
-
-    preprocessed_name_map = map_preprocessed_name2taxon_info(combined_taxids, taxon_info)
-    # print(preprocessed_name_map)
-    original_name_map = map_original_name2taxon_info(preprocessed_taxon_names, preprocessed_name_map)
-    print(f"Original name mapped taxon: {len(original_name_map)}")
-    ncit_name_map = map_ncit2taxon_info(taxon_info, ncit_cached)
-    print(f"NCIT mapped taxon: {len(ncit_name_map)}")
-
-    original_name_map.update(ncit_name_map)
-    print(f"Combined name taxon map: {len(original_name_map)}")
-    # save_pickle(original_name_map, "original_taxon_name2taxid.pkl")
-
-    # map disease names
-    core_data = read_file(in_f_core)
-    core_disease_names = [
-        line[2].lower().strip()
-        for line in core_data
-        if line[2].lower() != "null" and line[2].lower() != "not foundthogenic"
-    ]
-    print(f"Unique diseases in core_table.txt: {len(core_disease_names)}")
-
-    efo_path = os.path.join("downloads", "EFO.txt")
-    efo_disease_mapped = get_efo_disease_info(efo_path)
-    disease_not_in_efo = [di for di in core_disease_names if di not in efo_disease_mapped]
-    print(
-        f"Disease names do not have identifiers after checking EFO.txt: {len(set(disease_not_in_efo))}"
-    )
-
-    disease4query = list(set(disease_not_in_efo))
-    preprocessed_disease_names = {name: preprocess_disease_name(name) for name in disease4query}
-    preprocessed4map = [new_name for old_name, new_name in preprocessed_disease_names.items()]
-    preprocessed_mapped = text2term_name2id(
-        preprocessed4map,
-    )
-    print(f"Preprocessed mapped: {len(preprocessed_mapped)}")
-    # print(preprocessed_mapped)
-
-    disease4info = [_id for name, _id in preprocessed_mapped.items()]
-    bt_mapped_info = bt_get_disease_info(disease4info)
-    # print(bt_mapped_info)
-    print(f"BT mapped info: {len(bt_mapped_info)}")
-
-    bt_mapped_final = map_bt_disease_info(
-        disease_name2id=preprocessed_mapped,
-        disease_name_map=preprocessed_disease_names,
-        disease_info=bt_mapped_info,
-    )
-    # print(bt_mapped_final)
-    print(f"BT final mapped info: {len(bt_mapped_final)}")
-
-    efo_disease_mapped.update(bt_mapped_final)
-    # print(efo_disease_mapped)
-    print(f"All mapped disease with info: {len(efo_disease_mapped)}")
-    # save_pickle(efo_disease_mapped, "original_disease_name2id.pkl")
-    # print(load_pickle("original_disease_name2id.pkl"))
-    """
