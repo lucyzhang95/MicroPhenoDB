@@ -4,7 +4,9 @@ A manually collected and curated database includes **Microbe-Disease** associati
 ## Statistics Summary
 Last Modified: 05/11/2025 <br>
 **Number of records: 5342, 187 records fewer than the full data (5529). <br>
-~96.6% of the entire records**
+~96.6% of the entire records** <br>
+Some of the taxon and disease preprocessing workflow can refer to [this google sheet]("https://docs.google.com/spreadsheets/d/1dnPfB6qppecZWK3Yl_6HHXM1M4i7Vpam55-_vkHo2DI/edit?gid=0#gid=0)
+
 
 ### Taxon 
 - Total unique taxon names: 1767
