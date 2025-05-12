@@ -961,9 +961,10 @@ def get_pubmed_metadata(pmids):
                     break
 
             result[pmid] = {
+                "id": f"PMID:{pmid}",
                 "pmid": int(pmid),
-                "title": title,
-                "abstract": abstract,
+                "name": title,
+                "summary": f"{abstract} [abstract]",
                 "doi": doi,
                 "type": "biolink:Publication",
             }
@@ -1162,7 +1163,7 @@ def load_microphenodb_data(core_f_path, ncit_f_path, efo_f_path):
     :return:
     subject_node: 187 records are excluded due to a missing subject or object id
     """
-    # cache_data(core_f_path, ncit_f_path, efo_f_path)
+    cache_data(core_f_path, ncit_f_path, efo_f_path)
     mapped_taxon = load_pickle("original_taxon_name2taxid.pkl")
     mapped_diseases = load_pickle("original_disease_name2id.pkl")
 
