@@ -88,7 +88,7 @@ Last Modified: 05/11/2025 <br>
 ```
 
 
-## Example of output record
+## Output Example
 ```json
 {
    "_id":"2051_OrganismalEntityAsAModelOfDiseaseAssociation_0005316",
@@ -135,9 +135,10 @@ Last Modified: 05/11/2025 <br>
       "original_name":"mobiluncus curtisii"
    },
    "publication":{
+      "id":"PMID:21272848",
       "pmid":21272848,
-      "title":"Microarray-based identification of clinically relevant vaginal bacteria in relation to bacterial vaginosis.",
-      "abstract":"The objective was to examine the use of a tailor-made DNA microarray containing probes representing the vaginal microbiota to examine bacterial vaginosis. One hundred one women attending a health center for HIV testing in South Africa were enrolled. Stained, liquid-based cytology slides were scored for bacterial vaginosis. An inventory of organisms was obtained using microarray technology, probing genera associated with bacterial vaginosis in more detail, namely Gardnerella, Atopobium, Dialister, Leptotrichia, Megasphaera, Mobiluncus, Peptostreptococcus, Prevotella, and Sneathia. Of 101 women, 34 were diagnosed positive for bacterial vaginosis. This condition was associated with an increased microbial diversity. It is no longer useful to base the diagnosis of bacterial vaginosis on Gardnerella alone. Rather, its presence with Leptotrichia and Prevotella species, and especially Atopobium was more indicative of an aberrant state of the vaginal flora. To understand the vaginal microbiota in more detail, microarray-based identification can be used after microscopic scoring.",
+      "name":"Microarray-based identification of clinically relevant vaginal bacteria in relation to bacterial vaginosis.",
+      "summary":"The objective was to examine the use of a tailor-made DNA microarray containing probes representing the vaginal microbiota to examine bacterial vaginosis. One hundred one women attending a health center for HIV testing in South Africa were enrolled. Stained, liquid-based cytology slides were scored for bacterial vaginosis. An inventory of organisms was obtained using microarray technology, probing genera associated with bacterial vaginosis in more detail, namely Gardnerella, Atopobium, Dialister, Leptotrichia, Megasphaera, Mobiluncus, Peptostreptococcus, Prevotella, and Sneathia. Of 101 women, 34 were diagnosed positive for bacterial vaginosis. This condition was associated with an increased microbial diversity. It is no longer useful to base the diagnosis of bacterial vaginosis on Gardnerella alone. Rather, its presence with Leptotrichia and Prevotella species, and especially Atopobium was more indicative of an aberrant state of the vaginal flora. To understand the vaginal microbiota in more detail, microarray-based identification can be used after microscopic scoring. [abstract]",
       "doi":"10.1016/j.ajog.2010.11.012",
       "type":"biolink:Publication"
    }
