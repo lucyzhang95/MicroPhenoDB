@@ -157,3 +157,7 @@ https://docs.google.com/spreadsheets/d/1dnPfB6qppecZWK3Yl_6HHXM1M4i7Vpam55-_vkHo
 Most of the clostridium clusters are manually mapped to `taxid:189325`
 *Clostridia incertae sedis*. For further mapping in depth with cluster or family along with the species or strains under the cluster requires more knowledge regarding the evolution and taxonomy of 
 *Clostridia*. Can refer to [this paper]("https://pmc.ncbi.nlm.nih.gov/articles/PMC6656338/").
+
+## Biothings Data plugin Type & Stats Report
+The data plugin indicated a few duplicated _ids when I was using subject and object ids.
+I have randomly checked some ids and they are from different publications, so I had to use uuid to generate random ids to prevent merging or replacement of the records.
