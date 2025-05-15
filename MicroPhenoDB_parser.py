@@ -6,6 +6,7 @@ import re
 import ssl
 import tarfile
 import time
+import uuid
 
 import aiohttp
 import biothings_client as bt
@@ -1174,11 +1175,10 @@ def load_microphenodb_data(data_dir):
     # seen_ids = set()
     for line in core_data:
         rec = {
-            # "_id": None,
+            "_id": None,
             "association": {},
             "object": {},
             "subject": {},
-            "publication": {},
         }
 
         organism_name = line[1].lower().strip()
@@ -1194,15 +1194,6 @@ def load_microphenodb_data(data_dir):
                 object_node = mapped_diseases[disease_name]
                 rec["object"] = object_node
 
-        pmid = str(line[4])
-        cached_pub_info = load_pickle("publication_metadata.pkl")
-        if pmid in cached_pub_info:
-            publication_node = cached_pub_info[pmid]
-            rec["publication"] = publication_node
-        else:
-            publication_node = {"type": "biolink:Publication"}
-            rec["publication"] = publication_node
-
         score = float(line[3])
         position = line[6].lower().strip()
         if line[-1] and line[-1] != "Tendency":
@@ -1215,9 +1206,18 @@ def load_microphenodb_data(data_dir):
                 "anatomical_entity": position,
                 "infores": "MicroPhenoDB",
             }
-
             rec["association"] = association_node
 
+        pmid = str(line[4])
+        cached_pub_info = load_pickle("publication_metadata.pkl")
+        if pmid in cached_pub_info:
+            publication_node = cached_pub_info[pmid]
+            rec["association"]["publication"] = publication_node
+        else:
+            publication_node = {"type": "biolink:Publication"}
+            rec["association"]["publication"] = publication_node
+
+        rec["_id"] = str(uuid.uuid4())
         if "id" in rec["subject"] and "id" in rec["object"]:
             # id_subj = rec["subject"]["id"].split(":")[1]
             # id_obj = rec["object"]["id"].split(":")[1]
