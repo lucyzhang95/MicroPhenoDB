@@ -1155,14 +1155,16 @@ def cache_data(core_f_path, ncit_f_path, efo_f_path):
     save_pickle(pub_info, "publication_metadata.pkl")
 
 
-def load_microphenodb_data(core_f_path, ncit_f_path, efo_f_path):
+def load_microphenodb_data(data_dir):
     """
-    :param core_f_path:
-    :param ncit_f_path:
-    :param efo_f_path:
+    :param data_dir:
     :return:
     subject_node: 187 records are excluded due to a missing subject or object id
     """
+    core_f_path = os.path.join(data_dir, "core_table.txt")
+    ncit_f_path = os.path.join(data_dir, "NCIT.txt")
+    efo_f_path = os.path.join(data_dir, "EFO.txt")
+
     cache_data(core_f_path, ncit_f_path, efo_f_path)
     mapped_taxon = load_pickle("original_taxon_name2taxid.pkl")
     mapped_diseases = load_pickle("original_disease_name2id.pkl")
@@ -1223,10 +1225,8 @@ def load_microphenodb_data(core_f_path, ncit_f_path, efo_f_path):
 
 
 if __name__ == "__main__":
-    core_f_path = os.path.join("downloads", "core_table.txt")
-    ncit_f_path = os.path.join("downloads", "NCIT.txt")
-    efo_f_path = os.path.join("downloads", "EFO.txt")
-    obj = load_microphenodb_data(core_f_path, ncit_f_path, efo_f_path)
+    data_path = os.path.join("downloads")
+    obj = load_microphenodb_data(data_path)
     recs = [rec for rec in obj]
     print(
         f"Number of records: {len(recs)}, "
