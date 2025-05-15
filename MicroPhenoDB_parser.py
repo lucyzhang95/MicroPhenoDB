@@ -1196,17 +1196,16 @@ def load_microphenodb_data(data_dir):
 
         score = float(line[3])
         position = line[6].lower().strip()
+        association_node = {
+            "predicate": "biolink:OrganismalEntityAsAModelOfDiseaseAssociation",
+            "score": score,
+            "anatomical_entity": position,
+            "infores": "MicroPhenoDB",
+        }
         if line[-1] and line[-1] != "Tendency":
             qualifier = line[-1].lower().strip()
-
-            association_node = {
-                "predicate": "biolink:OrganismalEntityAsAModelOfDiseaseAssociation",
-                "qualifier": qualifier,
-                "score": score,
-                "anatomical_entity": position,
-                "infores": "MicroPhenoDB",
-            }
-            rec["association"] = association_node
+            association_node["qualifier"] = qualifier
+        rec["association"] = association_node
 
         pmid = str(line[4])
         cached_pub_info = load_pickle("publication_metadata.pkl")
