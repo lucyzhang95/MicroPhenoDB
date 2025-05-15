@@ -1238,8 +1238,8 @@ def load_microphenodb_data(data_dir):
 
 if __name__ == "__main__":
     data_path = os.path.join("downloads")
-    obj = load_microphenodb_data(data_path)
-    recs = [rec for rec in obj]
+    data_obj = load_microphenodb_data(data_path)
+    recs = [rec for rec in data_obj]
     print(
         f"Number of records: {len(recs)}, "
         f"{5529 - len(recs)} records fewer than the full data (5529)."
