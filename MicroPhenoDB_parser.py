@@ -1167,7 +1167,7 @@ def load_microphenodb_data(core_f_path, ncit_f_path, efo_f_path):
     mapped_taxon = load_pickle("original_taxon_name2taxid.pkl")
     mapped_diseases = load_pickle("original_disease_name2id.pkl")
 
-    #TODO: need to move publication into the association key-value pairs
+    # TODO: need to move publication into the association key-value pairs
     core_data = read_file(core_f_path)
     for line in core_data:
         rec = {
