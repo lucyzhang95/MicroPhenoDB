@@ -1165,12 +1165,13 @@ def load_microphenodb_data(data_dir):
     ncit_f_path = os.path.join(data_dir, "NCIT.txt")
     efo_f_path = os.path.join(data_dir, "EFO.txt")
 
-    cache_data(core_f_path, ncit_f_path, efo_f_path)
+    # cache_data(core_f_path, ncit_f_path, efo_f_path)
     mapped_taxon = load_pickle("original_taxon_name2taxid.pkl")
     mapped_diseases = load_pickle("original_disease_name2id.pkl")
 
     # TODO: need to move publication into the association key-value pairs
     core_data = read_file(core_f_path)
+    seen_ids = set()
     for line in core_data:
         rec = {
             "_id": None,
@@ -1223,6 +1224,15 @@ def load_microphenodb_data(data_dir):
             rec["_id"] = f"{id_subj}_OrganismalEntityAsAModelOfDiseaseAssociation_{id_obj}"
             yield rec
 
+            ## eliminate duplicated record _id
+            # if rec["_id"] in seen_ids:
+            #     # print(f"[WARN] Duplicate _id skipped: {rec['_id']}")
+            #     continue
+            # else:
+            #     rec["_id"] = rec["_id"]
+            #     seen_ids.add(rec["_id"])
+            #     yield rec
+
 
 if __name__ == "__main__":
     data_path = os.path.join("downloads")
@@ -1261,3 +1271,11 @@ if __name__ == "__main__":
     print(f"Anatomical entity count: {Counter(anatomical_entity)}")
     print(f"Taxon with description count: {len(taxon_descr)}")
     print(f"Disease with descriptions: {len(dis_descr)}")
+
+    # data plugin troubleshoot for duplication
+    # the same _id is from two different publications, so need to keep them
+    for rec in recs:
+        # if rec["_id"] == "724_OrganismalEntityAsAModelOfDiseaseAssociation_0000649":
+        #     print(rec)
+        if rec["_id"] == "838_OrganismalEntityAsAModelOfDiseaseAssociation_0000384":
+            print(rec)
