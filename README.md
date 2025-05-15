@@ -49,7 +49,7 @@ https://docs.google.com/spreadsheets/d/1dnPfB6qppecZWK3Yl_6HHXM1M4i7Vpam55-_vkHo
 ### Disease
 - Total disease names: 5518
 - All unique disease mapped: 485
-- Disease with descriptions: 5342
+- Disease with descriptions: 5336
 
 ```json
 {
