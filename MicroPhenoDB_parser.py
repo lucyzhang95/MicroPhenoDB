@@ -14,12 +14,14 @@ import chardet
 import requests
 import text2term
 from Bio import Entrez
+from dotenv import load_dotenv
 from ete3 import NCBITaxa
 from rapidfuzz import fuzz, process
 
 CACHE_DIR = os.path.join(os.getcwd(), "cache")
 os.makedirs(CACHE_DIR, exist_ok=True)
-Entrez.email = "bazhang@scripps.edu"
+load_dotenv()
+Entrez.email = os.getenv("EMAIL_ADDRESS")
 
 
 def save_pickle(obj, f_name):
@@ -1170,7 +1172,6 @@ def load_microphenodb_data(data_dir):
     mapped_taxon = load_pickle("original_taxon_name2taxid.pkl")
     mapped_diseases = load_pickle("original_disease_name2id.pkl")
 
-    # TODO: need to move publication into the association key-value pairs
     core_data = read_file(core_f_path)
     # seen_ids = set()
     for line in core_data:
