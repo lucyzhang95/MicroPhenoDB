@@ -1274,6 +1274,15 @@ if __name__ == "__main__":
     print(f"Taxon with description count: {len(taxon_descr)}")
     print(f"Disease with descriptions: {len(dis_descr)}")
 
+    # export the records to pickle and json files
+    save_pickle(recs, "microphenodb_microbe_disease.pkl")
+
+    import json
+
+    json_out_path = os.path.join("cache", "microphenodb_microbe_disease.json")
+    with open(json_out_path, "w") as f:
+        json.dump(recs, f, indent=4, ensure_ascii=False)
+
     # data plugin troubleshoot for duplication
     # the same _id is from two different publications, so need to keep them
     # for rec in recs:
