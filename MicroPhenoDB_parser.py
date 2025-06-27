@@ -1061,7 +1061,7 @@ def cache_data(core_f_path, ncit_f_path, efo_f_path):
     hard_coded_taxid = {
         "coxsackie": 12066,
         "??hemolytic streptococci": 1301,
-        "b. streptococci": 1301,
+        "b. streptococci": 1319,  # changed from 1301 to 1319
         "group a, b, c, and g streptococci": 1301,
         "nonhemolytic streptococci": 1301,
         "coagulase-negative staphylococci": 1279,
@@ -1085,14 +1085,14 @@ def cache_data(core_f_path, ncit_f_path, efo_f_path):
         "eubacterium tortuosum": 39494,
         "neisseriagonorrhoeae": 485,
         "clostridium lituseburense": 1537,
-        "actinomyces neuii subspecies neuii": 44053,
+        "actinomyces neuii subspecies neuii": 144053,  # changed from 44053 to 144053
         "group b streptococci": 33972,
         "astrovirusm": 1868658,
         "turicella": 1716,
         "prevotella nanceiensis": 425941,
-        "clostridium group xi": 189325,
-        "clostridia cluster i": 189325,
-        "uncultured clostridiales ii": 189325,
+        "clostridium group xi": 186804, # changed from 189325 to 186804
+        "clostridia cluster i": 186801,  # changed from 189325 to 186801
+        "uncultured clostridiales ii": 186801,  # changed from 189325 to 186801
         "clostridium xivb": 543317,
         "clostridium cluster xviii": 189325,
         "clostridium cluster xiva": 543317,
