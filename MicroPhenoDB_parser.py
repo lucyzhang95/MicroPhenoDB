@@ -1199,6 +1199,7 @@ def load_microphenodb_data(data_dir):
         position = line[6].lower().strip()
         association_node = {
             "predicate": "biolink:OrganismalEntityAsAModelOfDiseaseAssociation",
+            "type": "biolink:associated_with",
             "score": score,
             "anatomical_entity": position,
             "infores": "MicroPhenoDB",
