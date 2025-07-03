@@ -102,6 +102,7 @@ https://docs.google.com/spreadsheets/d/1dnPfB6qppecZWK3Yl_6HHXM1M4i7Vpam55-_vkHo
    "_id":"496a78cb-c71f-4e78-a997-80ed0be4e241",
    "association":{
       "predicate":"biolink:OrganismalEntityAsAModelOfDiseaseAssociation",
+      "type": "biolink:associated_with",
       "qualifier":"increase",
       "score":0.599701933,
       "anatomical_entity":"vagina",
