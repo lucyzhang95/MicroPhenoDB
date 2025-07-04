@@ -18,7 +18,8 @@
     "text2term",
     "Bio",
     "ete3",
-    "rapidfuzz"
+    "rapidfuzz",
+    "dotenv"
   ],
   "dumper": {
     "data_url": [
