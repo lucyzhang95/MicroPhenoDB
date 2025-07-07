@@ -5,6 +5,7 @@ urls=(
   "http://lilab2.sysu.edu.cn/Microbe/download/core_table.txt"
   "http://lilab2.sysu.edu.cn/Microbe/download/EFO.txt"
   "http://lilab2.sysu.edu.cn/Microbe/download/NCIT.txt"
+  "http://lilab2.sysu.edu.cn/Microbe/download/GeneID.txt"
 )
 for url in "${urls[@]}"; do
   echo "Downloading $url …"
