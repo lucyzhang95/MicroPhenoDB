@@ -979,6 +979,26 @@ def get_pubmed_metadata(pmids):
     return result
 
 
+def get_organism_type(node) -> str:
+    """
+    Inspect node['lineage'] for known taxids.
+    Return the matching biolink CURIE, or Other if no match.
+    Types include: 3 domains of life (Bacteria, Archaea, Eukaryota) and Virus.
+    """
+    taxon_map = {
+        2: "biolink:Bacterium",
+        2157: "Archaeon",
+        2759: "Eukaryote",
+        10239: "biolink:Virus",
+    }
+
+    for taxid, biolink_type in taxon_map.items():
+        if taxid in node.get("lineage", []):
+            return biolink_type
+
+    return "Other"
+
+
 def cache_data(core_f_path, ncit_f_path, efo_f_path):
     ncit_codes = get_ncit_code(ncit_f_path)
     if not NCBITaxa:
@@ -1093,7 +1113,7 @@ def cache_data(core_f_path, ncit_f_path, efo_f_path):
         "astrovirusm": 1868658,
         "turicella": 1716,
         "prevotella nanceiensis": 425941,
-        "clostridium group xi": 186804, # changed from 189325 to 186804
+        "clostridium group xi": 186804,  # changed from 189325 to 186804
         "clostridia cluster i": 186801,  # changed from 189325 to 186801
         "uncultured clostridiales ii": 186801,  # changed from 189325 to 186801
         "clostridium xivb": 543317,
@@ -1189,6 +1209,7 @@ def load_microphenodb_data(data_dir):
         if organism_name in mapped_taxon:
             subject_node = mapped_taxon[organism_name]
             subject_node["type"] = "biolink:OrganismTaxon"
+            subject_node["organism_type"] = get_organism_type(subject_node)
             subject_node["original_name"] = organism_name
             rec["subject"] = subject_node
 
