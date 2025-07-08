@@ -1,5 +1,6 @@
 import asyncio
 import csv
+import json
 import os
 import pickle
 import re
@@ -135,7 +136,7 @@ async def fetch_ncit_taxid(session, ncit_code: list, notfound_ncit: dict):
                 taxid_list = annot.get("NCBI_Taxon_ID")
                 taxid = taxid_list[0]
                 return name, {
-                    "id": f"taxid:{int(taxid)}",
+                    "id": f"NCBITaxon:{int(taxid)}",
                     "taxid": int(taxid),
                     "ncit": ncit_code,
                     "description": (
@@ -216,7 +217,7 @@ def hard_code_ncit2taxid(ncit_codes: list) -> dict:
 
     for name, taxid in manual_taxid_map.items():
         if name in notfound_ncit:
-            notfound_ncit[name].update({"id": f"taxid:{taxid}", "taxid": int(taxid)})
+            notfound_ncit[name].update({"id": f"NCBITaxon:{taxid}", "taxid": int(taxid)})
     ncit2taxids.update(notfound_ncit)
     # manual change the taxid of bacteroides dorei, since the src mapping is wrong
     manual_override = {
@@ -234,7 +235,7 @@ def hard_code_ncit2taxid(ncit_codes: list) -> dict:
     }
     for name, taxid in manual_override.items():
         if name in ncit2taxids:
-            ncit2taxids[name].update({"id": f"taxid:{taxid}", "taxid": taxid})
+            ncit2taxids[name].update({"id": f"NCBITaxon:{taxid}", "taxid": taxid})
     return ncit2taxids
 
 
@@ -690,7 +691,7 @@ def get_taxon_info_from_bt(taxids) -> dict:
 
     :param taxids:
     :return:
-    '36855': {'id': 'taxid:36855',
+    '36855': {'id': 'NCBITaxon:36855',
     'taxid': 36855,
     'name': 'brucella canis',
     'parent_taxid': 234,
@@ -718,7 +719,7 @@ def get_taxon_info_from_bt(taxids) -> dict:
     for info in taxon_info:
         if "notfound" not in info.keys():
             taxon[info["query"]] = {
-                "id": f"taxid:{int(info['_id'])}",
+                "id": f"NCBITaxon:{int(info['_id'])}",
                 "taxid": int(info["_id"]),
                 "name": info["scientific_name"],
                 "parent_taxid": int(info["parent_taxid"]),
@@ -734,7 +735,7 @@ def map_preprocessed_name2taxon_info(taxid_dict: dict, bt_taxon_info: dict) -> d
     :param taxid_dict:
     {'gulbenkiania': 397456, 'gymnopilus': 86085, 'haemophilus quentini': 123834,...}
     :param bt_taxon_info:
-    '36855': {'id': 'taxid:36855',
+    '36855': {'id': 'NCBITaxon:36855',
     'taxid': 36855,
     'name': 'brucella canis',
     'parent_taxid': 234,
@@ -752,7 +753,7 @@ def map_preprocessed_name2taxon_info(taxid_dict: dict, bt_taxon_info: dict) -> d
     'rank': 'species'}
     }
     :return:
-    {'brucella canis': {'id': 'taxid:36855', 'taxid': 36855, 'name': 'brucella canis', 'parent_taxid': 234, 'lineage': [36855, 234, 2826938, 118882, 356, 28211, 1224, 3379134, 2, 131567, 1], 'rank': 'species'}}
+    {'brucella canis': {'id': 'NCBITaxon36855', 'taxid': 36855, 'name': 'brucella canis', 'parent_taxid': 234, 'lineage': [36855, 234, 2826938, 118882, 356, 28211, 1224, 3379134, 2, 131567, 1], 'rank': 'species'}}
     """
     return {
         name: bt_taxon_info[str(taxid)]
@@ -767,9 +768,9 @@ def map_original_name2taxon_info(name_map: dict, preprocessed_name2taxon_info: d
     :param name_map:
     {'enterovirus (nonpolio)': 'enterovirus', 'haemophilus influenzae (nontypeable)': 'haemophilus influenzae', 'absidia': 'absidia',...}
     :param preprocessed_name2taxon_info:
-    {'enterovirus': {{'id': 'taxid:12059', 'taxid': 12059, 'name': 'enterovirus', 'parent_taxid': 2946630, 'lineage': [12059, 2946630, 12058, 464095, 2732506, 2732408, 2732396, 2559587, 10239, 1], 'rank': 'genus'}}
+    {'enterovirus': {{'id': 'NCBITaxon:12059', 'taxid': 12059, 'name': 'enterovirus', 'parent_taxid': 2946630, 'lineage': [12059, 2946630, 12058, 464095, 2732506, 2732408, 2732396, 2559587, 10239, 1], 'rank': 'genus'}}
     :return:
-    {'enterovirus (nonpolio)': {'id': 'taxid:12059', 'taxid': 12059, 'name': 'enterovirus', 'parent_taxid': 2946630, 'lineage': [12059, 2946630, 12058, 464095, 2732506, 2732408, 2732396, 2559587, 10239, 1], 'rank': 'genus', 'original_name': 'enterovirus (nonpolio)'}}
+    {'enterovirus (nonpolio)': {'id': 'NCBITaxon:12059', 'taxid': 12059, 'name': 'enterovirus', 'parent_taxid': 2946630, 'lineage': [12059, 2946630, 12058, 464095, 2732506, 2732408, 2732396, 2559587, 10239, 1], 'rank': 'genus', 'original_name': 'enterovirus (nonpolio)'}}
     """
     original_name2taxon_info = {}
     for ori_name, pre_name in name_map.items():
@@ -789,7 +790,7 @@ def map_ncit2taxon_info(bt_taxon_info: dict, cached_ncit2taxid: dict) -> dict:
     :param bt_taxon_info:
     :param cached_ncit2taxid:
     :return:
-    {'bacteroides dorei': {'id': 'taxid:357276', 'taxid': 357276, 'description': 'A species of anaerobic, gram-negative, rod shaped bacteria assigned to the phylum Bacteroidetes. This specis is non-spore forming, non-motile, does not hydrolyze esculin, is indole negative and nitrate is not reduced.[NCIT]', 'scientific_name': 'phocaeicola dorei', 'parent_taxid': 909656, 'lineage': [357276, 909656, 815, 171549, 200643, 976, 68336, 1783270, 3379134, 2, 131567, 1], 'rank': 'species', 'xrefs': {'ncit': 'C111133'}}}
+    {'bacteroides dorei': {'id': 'NCBITaxon:357276', 'taxid': 357276, 'description': 'A species of anaerobic, gram-negative, rod shaped bacteria assigned to the phylum Bacteroidetes. This specis is non-spore forming, non-motile, does not hydrolyze esculin, is indole negative and nitrate is not reduced.[NCIT]', 'scientific_name': 'phocaeicola dorei', 'parent_taxid': 909656, 'lineage': [357276, 909656, 815, 171549, 200643, 976, 68336, 1783270, 3379134, 2, 131567, 1], 'rank': 'species', 'xrefs': {'ncit': 'C111133'}}}
     """
     ncit2taxon_info = {}
 
@@ -1301,12 +1302,7 @@ if __name__ == "__main__":
 
     # export the records to pickle and json files
     save_pickle(recs, "microphenodb_microbe_disease.pkl")
-
-    import json
-
-    json_out_path = os.path.join("cache", "microphenodb_microbe_disease.json")
-    with open(json_out_path, "w") as f:
-        json.dump(recs, f, indent=4, ensure_ascii=False)
+    save_json(recs, "microphenodb_microbe_disease.json")
 
     # data plugin troubleshoot for duplication
     # the same _id is from two different publications, so need to keep them
