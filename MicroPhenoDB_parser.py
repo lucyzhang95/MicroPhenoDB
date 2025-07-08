@@ -30,17 +30,20 @@ def save_pickle(obj, f_name):
     :param f_name: files should only be existing in the cache directory
     :return:
     """
-    f_path = os.path.join(CACHE_DIR, f_name)
-    with open(f_path, "wb") as in_f:
-        pickle.dump(obj, in_f)
+    with open(os.path.join(CACHE_DIR, f_name), "wb") as out_f:
+        pickle.dump(obj, out_f)
 
 
 def load_pickle(f_name):
-    f_path = os.path.join(CACHE_DIR, f_name)
-    if os.path.exists(f_path):
-        with open(f_path, "rb") as in_f:
-            return pickle.load(in_f)
-    return None
+    path = os.path.join(CACHE_DIR, f_name)
+    return (
+        pickle.load(open(path, "rb")) if os.path.exists(path) else print("The file does not exist.")
+    )
+
+
+def save_json(obj, f_name):
+    with open(os.path.join(CACHE_DIR, f_name), "w") as out_f:
+        json.dump(obj, out_f, indent=4)
 
 
 def detect_encoding(in_file):
