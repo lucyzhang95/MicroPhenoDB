@@ -1228,6 +1228,7 @@ def load_microphenodb_data(data_dir):
             "score": score,
             "anatomical_entity": position,
             "infores": "MicroPhenoDB",
+            "infores_type": "manual_curation"
         }
         if line[-1] and line[-1] != "Tendency":
             qualifier = line[-1].lower().strip()
