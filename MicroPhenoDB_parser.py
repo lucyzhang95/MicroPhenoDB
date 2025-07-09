@@ -1227,8 +1227,8 @@ def load_microphenodb_data(data_dir):
             "type": "biolink:associated_with",
             "score": score,
             "anatomical_entity": position,
-            "infores": "MicroPhenoDB",
-            "infores_type": "manual_curation"
+            "aggregator_knowledge_source": "infores:MicroPhenoDB",
+            "evidence_type": "ECO:0000305"  # manual assertion
         }
         if line[-1] and line[-1] != "Tendency":
             qualifier = line[-1].lower().strip()
