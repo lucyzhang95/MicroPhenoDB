@@ -63,8 +63,7 @@ def read_file(in_file, has_header=True):
             if has_header:
                 next(reader)
             for line in reader:
-                if len(line) == 8:
-                    yield line
+                yield line
     except UnicodeDecodeError as e:
         print(f"Unicode error with {encoding} on file {in_file}: {e}")
 
