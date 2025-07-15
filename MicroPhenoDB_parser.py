@@ -1267,7 +1267,7 @@ def load_microphenodb_data(data_dir):
 
 if __name__ == "__main__":
     data_path = os.path.join("downloads")
-    cache_data(os.path.join(data_path, "core_table.txt"), os.path.join(data_path, "NCIT.txt"), os.path.join(data_path, "EFO.txt"))
+    # cache_data(os.path.join(data_path, "core_table.txt"), os.path.join(data_path, "NCIT.txt"), os.path.join(data_path, "EFO.txt"))
     data_obj = load_microphenodb_data(data_path)
     recs = [rec for rec in data_obj]
     print(
@@ -1305,8 +1305,8 @@ if __name__ == "__main__":
     print(f"Disease with descriptions: {len(dis_descr)}")
 
     # export the records to pickle and json files
-    save_pickle(recs, "microphenodb_microbe_disease.pkl")
-    save_json(recs, "microphenodb_microbe_disease.json")
+    save_pickle(recs, "microphenodb_parsed_records.pkl")
+    save_json(recs, "microphenodb_parsed_records.json")
 
     # data plugin troubleshoot for duplication
     # the same _id is from two different publications, so need to keep them
