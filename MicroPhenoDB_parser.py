@@ -38,7 +38,7 @@ def save_pickle(obj, f_name):
 def load_pickle(f_name):
     path = os.path.join(CACHE_DIR, f_name)
     return (
-        pickle.load(open(path, "rb")) if os.path.exists(path) else print("The file does not exist.")
+        pickle.load(open(path, "rb")) if os.path.exists(path) else None
     )
 
 
@@ -193,14 +193,18 @@ def hard_code_ncit2taxid(ncit_codes: list) -> dict:
     'taxid': 31285}}
     """
     ncit2taxids, notfound_ncit = asyncio.run(ncit2taxid(ncit_codes))
-    notfound_ncit["alpha-amylase (aspergillus oryzae)"][
-        "description"
-    ] = "A fungus used in East Asia to saccharify rice, sweet potato, and barley in the making of alcoholic beverages such as sake and shochu, and also to ferment soybeans for making soy sauce and miso. It is one of the different koji molds used for food fermentation.[Wikipedia]"
-    notfound_ncit[
-        "japanese encephalitis virus strain nakayama-nih antigen (formaldehyde inactivated)"
-    ][
-        "description"
-    ] = "A virus from the family Flaviviridae, part of the Japanese encephalitis serocomplex of nine genetically and antigenically related viruses, some of which are particularly severe in horses, and four of which, including West Nile virus, are known to infect humans. The enveloped virus is closely related to the West Nile virus and the St. Louis encephalitis virus. The positive sense single-stranded RNA genome is packaged in the capsid which is formed by the capsid protein.[Wikipedia]"
+    key1 = "alpha-amylase (aspergillus oryzae)"
+    key2 = "japanese encephalitis virus strain nakayama-nih antigen (formaldehyde inactivated)"
+    if key1 in notfound_ncit:
+        notfound_ncit["alpha-amylase (aspergillus oryzae)"][
+            "description"
+        ] = "A fungus used in East Asia to saccharify rice, sweet potato, and barley in the making of alcoholic beverages such as sake and shochu, and also to ferment soybeans for making soy sauce and miso. It is one of the different koji molds used for food fermentation.[Wikipedia]"
+    if key2 in notfound_ncit:
+        notfound_ncit[
+            "japanese encephalitis virus strain nakayama-nih antigen (formaldehyde inactivated)"
+        ][
+            "description"
+        ] = "A virus from the family Flaviviridae, part of the Japanese encephalitis serocomplex of nine genetically and antigenically related viruses, some of which are particularly severe in horses, and four of which, including West Nile virus, are known to infect humans. The enveloped virus is closely related to the West Nile virus and the St. Louis encephalitis virus. The positive sense single-stranded RNA genome is packaged in the capsid which is formed by the capsid protein.[Wikipedia]"
     # Only 2 keys do not have taxids nor descriptions: Growth Hormone-Releasing Hormone Analogue and Metastatic Breast Carcinoma
     manual_taxid_map = {
         "powassan virus": 11083,
@@ -251,14 +255,12 @@ def cache_hard_code_ncit2taxid(ncit_codes: list, cache_file="ncit2taxid.pkl"):
                                'taxid': 1689151,
                                'mapping_tool': 'obo'}, ...}
     """
-    cached = load_pickle(cache_file)
-    if cached:
-        return cached
-    result = hard_code_ncit2taxid(ncit_codes)
-    for name in result:
-        result[name]["mapping_tool"] = "obo"
-    save_pickle(result, cache_file)
-    return result
+    if not load_pickle(cache_file):
+        result = hard_code_ncit2taxid(ncit_codes)
+        for name in result:
+            result[name]["mapping_tool"] = "obo"
+        save_pickle(result, cache_file)
+        return result
 
 
 def get_all_taxon_names(in_file) -> list:
@@ -273,7 +275,7 @@ def get_all_taxon_names(in_file) -> list:
     return core_taxon_names
 
 
-def get_taxon_names2map(in_file1, in_file2) -> dict:
+def get_taxon_names2map(in_file1, in_file2) -> list:
     core_taxon_names = get_all_taxon_names(in_file1)
     ncit_mapped_names = load_pickle(in_file2)
     name2map = [name.strip() for name in core_taxon_names if name not in ncit_mapped_names]
@@ -1266,6 +1268,7 @@ def load_microphenodb_data(data_dir):
 
 if __name__ == "__main__":
     data_path = os.path.join("downloads")
+    cache_data(os.path.join(data_path, "core_table.txt"), os.path.join(data_path, "NCIT.txt"), os.path.join(data_path, "EFO.txt"))
     data_obj = load_microphenodb_data(data_path)
     recs = [rec for rec in data_obj]
     print(
