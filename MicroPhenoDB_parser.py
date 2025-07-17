@@ -970,7 +970,6 @@ def get_pubmed_metadata(pmids):
                     break
 
             result[pmid] = {
-                "id": f"PMID:{pmid}",
                 "pmid": int(pmid),
                 "name": title,
                 "summary": f"{abstract} [abstract]",
