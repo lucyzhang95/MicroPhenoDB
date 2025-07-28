@@ -18,6 +18,7 @@ from Bio import Entrez
 from dotenv import load_dotenv
 from ete3 import NCBITaxa
 from rapidfuzz import fuzz, process
+from tqdm.asyncio import tqdm
 
 load_dotenv()
 
@@ -261,15 +262,14 @@ class NCBITaxonomyService:
     def __init__(self):
         self.ncbi_taxa = None
 
-    def _initialize_ncbi_taxa(self):
+    def initialize_local_ncbi_taxa(self):
+        """Initializes the NCBITaxa from ETE3.
+        This method ensures that the local NCBITaxa instance is created and updated via ETE3.
+        """
         if self.ncbi_taxa is None:
             ssl._create_default_https_context = ssl._create_unverified_context
             self.ncbi_taxa = NCBITaxa()
-
-    def download_ncbi_taxdump(self):
-        """Downloads the NCBI Taxonomy database dump."""
-        self._initialize_ncbi_taxa()
-        self.ncbi_taxa.update_taxonomy_database()
+            self.ncbi_taxa.update_taxonomy_database()
 
     def parse_names_dmp_from_taxdump(self, tar_path, f_name="names.dmp", keep_classes=None):
         """Parses the names.dmp file from the NCBI Taxonomy database dump."""
@@ -334,10 +334,12 @@ class EntrezService:
 
 
 class NCItService:
-    """Handles interactions with NCIt and related services."""
+    """Handles NCIt API services and related tasks.
+    This service fetches NCIT codes and their corresponding NCBI Taxonomy IDs from the EBI OLS API.
+    """
 
     def get_ncit_code(self, ncit_file_path) -> list:
-        """Extracts NCIT codes from the NCIT file."""
+        """Extracts NCIT codes from NCIT.txt file."""
         reader = FileReader()
         return [
             line[2].split("_")[1]
@@ -345,12 +347,18 @@ class NCItService:
             if "NCIT" in line[2]
         ]
 
-    async def fetch_ncit_taxid(self, session, ncit_code: str):
-        """Fetches NCIT term information from EBI OLS API."""
+    async def query_taxid_from_ncit_code(self, session, ncit_code: str):
+        """Map NCIT identifier to NCBI Taxid using EBI API.
+
+        :param session: aiohttp session for making requests
+        :param ncit_code: a NCIT code e.g., "C125969"
+        :return:
+        """
         url = f"https://www.ebi.ac.uk/ols4/api/ontologies/ncit/terms?iri=http://purl.obolibrary.org/obo/NCIT_{ncit_code}"
         try:
             async with session.get(url, timeout=10) as resp:
                 if resp.status != 200:
+                    print(f"Failed to connect ebi API: status {resp.status}")
                     return None
                 data = await resp.json()
                 terms = data.get("_embedded", {}).get("terms", [{}])[0]
@@ -364,6 +372,7 @@ class NCItService:
                         "taxid": int(taxid),
                         "ncit": ncit_code,
                         "description": f"{description}[NCIT]" if description else "",
+                        "xrefs": {"ncit": ncit_code},
                     }
                 return name, {
                     "ncit": ncit_code,
@@ -372,6 +381,30 @@ class NCItService:
         except aiohttp.ClientError as e:
             print(f"EBI API request failed for NCIT_{ncit_code}: {e}")
             return None
+
+    async def query_taxids_from_ncit_codes(self, ncit_codes: list):
+        """Map NCIT identifiers to NCBI Taxids using EBI API
+
+        :param ncit_codes: a list of NCIT codes e.g., ["C85924", "C83526", ...]
+        :return ncit2taxid: a dictionary mapping NCIT codes to taxids
+        {'Trichostrongylus colubriformis': {'taxid': 6319, 'ncit': 'C125969', 'description': 'A species of parasitic...'}}
+        :return notfound_ncit: a dictionary with NCIT codes failed to map taxid
+        {'Trypanosoma brucei gambiense': {'ncit': 'C125975', 'description': 'A species of parasitic flagellate protozoa...'}}
+        """
+        ncit2taxids, notfound_ncit = {}, {}
+        async with aiohttp.ClientSession() as session:
+            tasks = [
+                self.query_taxid_from_ncit_code(session, ncit_code) for ncit_code in ncit_codes
+            ]
+            results = await tqdm.gather(*tasks, desc="Querying taxids from NCIT codes...")
+        for result in results:
+            if result:
+                name, info = result
+                if "taxid" in info:
+                    ncit2taxids[name] = info
+                else:
+                    notfound_ncit[name] = info
+        return ncit2taxids, notfound_ncit
 
 
 class PubMedService:
@@ -478,26 +511,7 @@ class OntologyMapper:
             self.ncit_service = NCItService()
             self.ncbi_tax_service = NCBITaxonomyService()
 
-        async def _ncit2taxid_async(self, ncit_codes: list):
-            ncit2taxids, notfound_ncit = {}, {}
-            async with aiohttp.ClientSession() as session:
-                tasks = [self.ncit_service.fetch_ncit_taxid(session, code) for code in ncit_codes]
-                results = await asyncio.gather(*tasks)
-            for result in results:
-                if result:
-                    name, info = result
-                    if "taxid" in info:
-                        ncit2taxids[name] = info
-                    else:
-                        notfound_ncit[name] = info
-            return ncit2taxids, notfound_ncit
-
-        def ncit2taxid(self, ncit_codes: list):
-            """Maps NCIT codes to NCBI Taxonomy IDs."""
-            ncit2taxids, notfound_ncit = asyncio.run(self._ncit2taxid_async(ncit_codes))
-            return self.hard_code_ncit2taxid(ncit2taxids, notfound_ncit)
-
-        def hard_code_ncit2taxid(self, ncit2taxids, notfound_ncit):
+        def hard_code_notfound_ncit2taxid(self, ncit2taxids, notfound_ncit):
             """Adds hardcoded NCIT to NCBI Taxonomy ID mappings."""
             manual_updates = {
                 "alpha-amylase (aspergillus oryzae)": {
@@ -536,9 +550,16 @@ class OntologyMapper:
             ncit2taxids.update(notfound_ncit)
             return ncit2taxids
 
+        def ncit2taxid(self, ncit_codes: list):
+            """Maps NCIT codes to NCBI Taxonomy IDs."""
+            ncit2taxids, notfound_ncit = asyncio.run(
+                self.ncit_service.query_taxids_from_ncit_codes(ncit_codes)
+            )
+            return self.hard_code_notfound_ncit2taxid(ncit2taxids, notfound_ncit)
+
         def ete3_taxon_name2taxid(self, taxon_names: list) -> dict:
             """Maps taxon names to NCBI Taxonomy IDs using ETE3."""
-            self.ncbi_tax_service._initialize_ncbi_taxa()
+            self.ncbi_tax_service.initialize_local_ncbi_taxa()
             name2taxid = self.ncbi_tax_service.ncbi_taxa.get_name_translator(list(set(taxon_names)))
             return {
                 name: {"taxid": int(taxid_list[0])}
@@ -836,7 +857,9 @@ class RecordCacheManager:
     def __init__(self, cache_helper: CacheHelper):
         self.cache_helper = cache_helper
 
-    def cache_microphenodb_entire_records(self, records, filename_base="microphenodb_parsed_records.pkl"):
+    def cache_microphenodb_entire_records(
+        self, records, filename_base="microphenodb_parsed_records.pkl"
+    ):
         """Caches the list of records to both pickle and JSON formats."""
         print(f"Caching {len(records)} final records...")
         self.cache_helper.save_pickle(records, f"{filename_base}.pkl")
