@@ -609,6 +609,8 @@ class IDMapper:
                     }
                 )
 
+        ncits2taxids["mapping_tool"] = "ebi_ols"
+
         return ncits2taxids
 
 
@@ -770,7 +772,7 @@ class CacheManager(CacheHelper):
 
 
 class DataCachePipeline:
-    def __init__(self, cache_dir="cache", downloads_dir = "downloads"):
+    def __init__(self, cache_dir="cache", downloads_dir="downloads"):
         self.downloads_dir = downloads_dir
         self.cache_dir = cache_dir
         self.ncit_path = os.path.join(self.downloads_dir, "NCIT.txt")
