@@ -758,6 +758,7 @@ class CacheManager(CacheHelper):
         self.id_mapper = IDMapper()
 
     def get_or_cache_ncits2taxids_mapping(self):
+        """Checks if the NCIT to NCBI Taxonomy ID mapping is cached."""
         cache_f_name = "ncit2taxid.pkl"
         cache_f_path = os.path.join(self.cache_dir, cache_f_name)
 
