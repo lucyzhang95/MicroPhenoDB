@@ -79,8 +79,7 @@ class FileReader:
                     except StopIteration:
                         return
                 for line in reader:
-                    if len(line) == 8:
-                        yield line
+                    yield line
         except UnicodeDecodeError as e:
             print(f"Unicode error with {encoding} on file {in_file_path}: {e}")
         except FileNotFoundError:
@@ -289,6 +288,7 @@ class NCBITaxonomyService:
                 for line in in_f:
                     parts = [part.strip().decode("utf-8") for part in line.strip().split(b"|")]
                     if len(parts) >= 4 and parts[3] in keep_classes:
+                        # parts[0] is taxid, part[1] is name, parts[3] is class
                         name2taxid[parts[1].lower()] = int(parts[0])
         return name2taxid
 
