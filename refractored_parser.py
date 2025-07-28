@@ -749,6 +749,39 @@ class InfoMapper:
         return final_d_mapping
 
 
+class CacheManager(CacheHelper):
+    def __init__(self, cache_dir="cache"):
+        super().__init__(cache_dir)
+        self.cache_dir = cache_dir
+        self.id_mapper = IDMapper()
+
+    def get_or_cache_ncits2taxids_mapping(self):
+        cache_f_name = "ncit2taxid.pkl"
+        cache_f_path = os.path.join(self.cache_dir, cache_f_name)
+
+        if os.path.exists(cache_f_path):
+            print("NCIT to NCBI Taxonomy mapping already cached. Loading...")
+            return self.load_pickle(cache_f_name)
+        else:
+            print("Caching NCIT to NCBI Taxonomy ID mapping...")
+            ncits2taxids = self.id_mapper.ncits2taxids()
+            self.save_pickle(ncits2taxids, cache_f_name)
+            return ncits2taxids
+
+
+class DataCachePipeline:
+    def __init__(self, cache_dir="cache", downloads_dir = "downloads"):
+        self.downloads_dir = downloads_dir
+        self.cache_dir = cache_dir
+        self.ncit_path = os.path.join(self.downloads_dir, "NCIT.txt")
+        self.cache_manager = CacheManager(cache_dir)
+
+    def run(self):
+        """Caches the NCIT to NCBI Taxonomy ID mappings."""
+        ncit2taxid_mapping = self.cache_manager.get_or_cache_ncits2taxids_mapping()
+        return ncit2taxid_mapping
+
+
 class MicroPhenoDBParser:
     """Orchestrates the entire data processing pipeline for MicroPhenoDB."""
 
