@@ -888,7 +888,7 @@ def bt_get_disease_info(ids):
 
 
 def text2term_name2id(
-    disease_names, ontology="MONDO", ontology_url="http://purl.obolibrary.org/obo/mondo.owl"
+        disease_names, ontology="MONDO", ontology_url="http://purl.obolibrary.org/obo/mondo.owl"
 ):
     """
 
