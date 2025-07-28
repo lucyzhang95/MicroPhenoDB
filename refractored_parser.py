@@ -565,6 +565,10 @@ class IDMapper:
             "taxid": 5599,
             "description": "Alternaria alternata is a fungus causing leaf spots, rots, and blights on many plant parts, and other diseases. It is an opportunistic[1] pathogen on over 380 host species of plant. It can also cause upper respiratory tract infections and asthma in humans with compromised immunity.[Wikipedia]",
         },
+        "sarcina": {
+            "taxid": 1266,
+            "description": "Sarcina is a genus of gram-positive cocci bacteria in the family Clostridiaceae.[2][3][4] A synthesizer of microbial cellulose,[5] various members of the genus are human flora and may be found in the skin and large intestine. The genus takes its name from the Latin word 'sarcina,' meaning pack or bundle, after the cuboidal (2x2x2) cellular associations they form during division along three planes. The genus's type species is Sarcina ventriculi, a variety found on the surface of cereal seeds, in soil, mud, and in the stomachs of humans, rabbits, and guinea pigs.[Wikipedia]",
+        },
     }
 
     def ncits2taxids(self, ncit_path=None):
