@@ -370,13 +370,12 @@ class NCItService:
                     return name, {
                         "id": f"NCBITaxon:{int(taxid)}",
                         "taxid": int(taxid),
-                        "ncit": ncit_code,
                         "description": f"{description}[NCIT]" if description else "",
                         "xrefs": {"ncit": ncit_code},
                     }
                 return name, {
-                    "ncit": ncit_code,
                     "description": f"{description}[NCIT]" if description else "",
+                    "xrefs": {"ncit": ncit_code},
                 }
         except aiohttp.ClientError as e:
             print(f"EBI API request failed for NCIT_{ncit_code}: {e}")
@@ -404,6 +403,11 @@ class NCItService:
                     ncit2taxids[name] = info
                 else:
                     notfound_ncit[name] = info
+        return ncit2taxids, notfound_ncit
+
+    def map_ncits_to_taxids(self, ncit_codes: list):
+        """Maps NCIT codes to NCBI Taxonomy IDs."""
+        ncit2taxids, notfound_ncit = asyncio.run(self.query_taxids_from_ncit_codes(ncit_codes))
         return ncit2taxids, notfound_ncit
 
 
@@ -500,188 +504,209 @@ class DiseaseUtils:
         return d_info
 
 
-class OntologyMapper:
-    """Coordinates the mapping of names to ontology identifiers."""
+class IDMapper:
+    """Handles the mapping of names to taxonomic identifiers using various services."""
 
-    class NameMapper:
-        """Handles the mapping of names to taxonomic identifiers using various services."""
+    def __init__(self):
+        self.ncit_service = NCItService()
 
-        def __init__(self, email):
-            self.entrez_service = EntrezService(email)
-            self.ncit_service = NCItService()
-            self.ncbi_tax_service = NCBITaxonomyService()
+    _MANUAL_TAXID_MAPPING_PATCHES = {
+        "alpha-amylase (aspergillus oryzae)": {
+            "taxid": 5062,
+            "description": "A fungus used in East Asia to saccharify rice, sweet potato, and barley in the making of alcoholic beverages such as sake and shochu, and also to ferment soybeans for making soy sauce and miso. It is one of the different koji molds used for food fermentation.[Wikipedia]",
+        },
+        "japanese encephalitis virus strain nakayama-nih antigen (formaldehyde inactivated)": {
+            "taxid": 11076,
+            "description": "A virus from the family Flaviviridae, part of the Japanese encephalitis serocomplex of nine genetically and antigenically related viruses, some of which are particularly severe in horses, and four of which, including West Nile virus, are known to infect humans. The enveloped virus is closely related to the West Nile virus and the St. Louis encephalitis virus. The positive sense single-stranded RNA genome is packaged in the capsid which is formed by the capsid protein.[Wikipedia]",
+        },
+        "powassan virus": {"taxid": 11083},
+        "trichoderma": {"taxid": 5543},
+        "trichomonas vaginalis": {"taxid": 5722},
+        "malassezia furfur": {"taxid": 55194},
+        "clostridium cluster iv": {"taxid": 1689151},
+        "clostridiales xi": {"taxid": 186804},
+        "clostridiales xiii": {"taxid": 189325},
+        "clostridium cluster xvi": {"taxid": 543347},
+        "trypanosoma brucei gambiense": {"taxid": 31285},
+    }
 
-        def hard_code_notfound_ncit2taxid(self, ncit2taxids, notfound_ncit):
-            """Adds hardcoded NCIT to NCBI Taxonomy ID mappings."""
-            manual_updates = {
-                "alpha-amylase (aspergillus oryzae)": {
-                    "taxid": 5062,
-                    "description": "A fungus used in East Asia...[Wikipedia]",
-                },
-                "japanese encephalitis virus strain nakayama-nih antigen (formaldehyde inactivated)": {
-                    "taxid": 11076,
-                    "description": "A virus from the family Flaviviridae...[Wikipedia]",
-                },
-                "powassan virus": {"taxid": 11083},
-                "clostridiales xi": {"taxid": 884684},
-                "trichoderma": {"taxid": 5543},
-                "malassezia furfur": {"taxid": 55194},
-                "clostridium cluster xvi": {"taxid": 543347},
-                "trypanosoma brucei gambiense": {"taxid": 31285},
-                "clostridium cluster iv": {"taxid": 1689151},
-                "trichomonas vaginalis": {"taxid": 5722},
-                "clostridiales xiii": {"taxid": 189325},
-                "bacteroides dorei": {"taxid": 357276},
-                "mycobacterium xenopi": {"taxid": 1789},
-                "human parainfluenza virus": {"taxid": 2905673},
-                "ruminococcaceae": {"taxid": 216572},
-                "peptococcus": {"taxid": 2740},
-                "mumps virus": {"taxid": 2560602},
-                "lymphocytic choriomeningitis virus": {"taxid": 3052303},
-                "trichosporon": {"taxid": 5552},
-                "bacillus cereus": {"taxid": 1396},
-                "bacillaceae": {"taxid": 186817},
-            }
-            for name, update_data in manual_updates.items():
-                target_dict = ncit2taxids if name in ncit2taxids else notfound_ncit
-                target_dict.setdefault(name, {}).update(update_data)
-                if "taxid" in target_dict[name]:
-                    target_dict[name]["id"] = f"NCBITaxon:{target_dict[name]['taxid']}"
-            ncit2taxids.update(notfound_ncit)
-            return ncit2taxids
+    _MANUAL_TAXID_MAPPING_OVERRIDES = {
+        "bacteroides dorei": {"taxid": 357276},
+        "mycobacterium xenopi": {"taxid": 1789},
+        "human parainfluenza virus": {"taxid": 2905673},
+        "ruminococcaceae": {"taxid": 216572},
+        "peptococcus": {"taxid": 2740},
+        "mumps virus": {"taxid": 2560602},
+        "lymphocytic choriomeningitis virus": {"taxid": 3052303},
+        "trichosporon": {"taxid": 5552},
+        "bacillus cereus": {"taxid": 1396},
+        "bacillaceae": {"taxid": 186817},
+    }
 
-        def ncit2taxid(self, ncit_codes: list):
-            """Maps NCIT codes to NCBI Taxonomy IDs."""
-            ncit2taxids, notfound_ncit = asyncio.run(
-                self.ncit_service.query_taxids_from_ncit_codes(ncit_codes)
-            )
-            return self.hard_code_notfound_ncit2taxid(ncit2taxids, notfound_ncit)
+    def ncits2taxids(self):
+        """Maps NCIT codes to NCBI Taxonomy IDs."""
+        ncit_codes = self.ncit_service.get_ncit_code("NCIT.txt")
+        ncits2taxids, notfound_ncit = self.ncit_service.map_ncits_to_taxids(ncit_codes)
 
-        def ete3_taxon_name2taxid(self, taxon_names: list) -> dict:
-            """Maps taxon names to NCBI Taxonomy IDs using ETE3."""
-            self.ncbi_tax_service.initialize_local_ncbi_taxa()
-            name2taxid = self.ncbi_tax_service.ncbi_taxa.get_name_translator(list(set(taxon_names)))
-            return {
-                name: {"taxid": int(taxid_list[0])}
-                for name, taxid_list in name2taxid.items()
-                if taxid_list
-            }
-
-        def entrez_batch_name2taxid(self, taxon_names: list, sleep=0.34) -> dict:
-            """Maps taxon names to NCBI Taxonomy IDs using Entrez in batches."""
-            mapped = {}
-            for name in set(taxon_names):
-                mapped.update(self.entrez_service.entrez_taxon_name2taxid(name))
-                time.sleep(sleep)
-            return mapped
-
-        def bt_name2taxid(self, taxon_names: list) -> dict:
-            """Maps taxon names to NCBI Taxonomy IDs using BioThings API."""
-            client = bt.get_client("taxon")
-            results = client.querymany(
-                list(set(taxon_names)), scopes=["scientific_name", "other_names"], fields=["taxid"]
-            )
-            return {
-                item["query"]: {"taxid": int(item["taxid"])}
-                for item in results
-                if "notfound" not in item
-            }
-
-        def fuzzy_match(
-            self, query_names: list, ref_names: list, scorer=fuzz.token_sort_ratio, score_cutoff=90
-        ) -> dict:
-            """Performs fuzzy matching of query names against reference names."""
-            matches = {}
-            for name in query_names:
-                match = process.extractOne(
-                    name, ref_names, scorer=scorer, score_cutoff=score_cutoff
-                )
-                if match:
-                    matched_name, score, _ = match
-                    matches[name] = {"matched_name": matched_name, "score": score}
-            return matches
-
-        def fuzzy_matched_name2taxid(self, fuzzy_matches: dict, ref_name_to_taxid: dict) -> dict:
-            """Maps fuzzy matched names to NCBI Taxonomy IDs."""
-            for _, match_info in fuzzy_matches.items():
-                matched_name = match_info["matched_name"]
-                if matched_name in ref_name_to_taxid:
-                    match_info["taxid"] = int(ref_name_to_taxid[matched_name])
-            return fuzzy_matches
-
-    class InfoMapper:
-        """Handles the mapping of preprocessed names and NCIT codes to taxon information."""
-
-        def get_taxid_from_cache(self, cache_data: dict) -> dict:
-            """Extracts taxid from cached data."""
-            return {
-                original_name: taxon_map_d["taxid"]
-                for original_name, taxon_map_d in cache_data.items()
-                if "taxid" in taxon_map_d
-            }
-
-        def map_preprocessed_name2taxon_info(self, taxid_dict: dict, bt_taxon_info: dict) -> dict:
-            """Maps preprocessed names to taxon information."""
-            return {
-                name: bt_taxon_info[str(taxid)]
-                for name, taxid in taxid_dict.items()
-                if str(taxid) in bt_taxon_info
-            }
-
-        def map_original_name2taxon_info(
-            self, name_map: dict, preprocessed_name2taxon_info: dict
-        ) -> dict:
-            """Maps original names to taxon information based on preprocessed names."""
-            original_name2taxon_info = {}
-            for ori_name, pre_name in name_map.items():
-                key = pre_name if pre_name in preprocessed_name2taxon_info else ori_name
-                if key in preprocessed_name2taxon_info:
-                    original_name2taxon_info[ori_name] = {
-                        **preprocessed_name2taxon_info[key],
-                        "original_name": ori_name,
+        for name, patch_info in self._MANUAL_TAXID_MAPPING_PATCHES.items():
+            if name in notfound_ncit:
+                notfound_ncit[name].update(
+                    {
+                        "id": f"NCBITaxon:{patch_info['taxid']}",
+                        "taxid": patch_info["taxid"],
+                        "description": patch_info.get("description", ""),
                     }
-            return original_name2taxon_info
+                )
 
-        def map_ncit2taxon_info(self, bt_taxon_info: dict, cached_ncit2taxid: dict) -> dict:
-            """Maps NCIT codes to taxon information using BioThings API."""
-            ncit2taxon_info = {}
-            for name, ncit_entry in cached_ncit2taxid.items():
-                taxid = ncit_entry.get("taxid")
-                taxon_info = bt_taxon_info.get(str(taxid)) if taxid else None
-                if taxon_info:
-                    combined = {**ncit_entry, **taxon_info}
-                    if "ncit" in combined:
-                        combined["xrefs"] = {"ncit": combined.pop("ncit")}
-                    combined.pop("mapping_tool", None)
-                    ncit2taxon_info[name] = combined
-            return ncit2taxon_info
+        ncits2taxids.update(notfound_ncit)  # add notfound NCIT dicts to the main mapping
 
-        def text2term_name2id(
-            self, disease_names, ontology="MONDO", url="http://purl.obolibrary.org/obo/mondo.owl"
-        ):
-            """Maps disease names to ontology identifiers using text2term."""
-            if not text2term.cache_exists(ontology):
-                text2term.cache_ontology(ontology_url=url, ontology_acronym=ontology)
-            df = text2term.map_terms(
-                list(set(disease_names)), ontology, use_cache=True, min_score=0.8, max_mappings=1
-            )
-            if df is None or df.empty:
-                return {}
-            df = df[~df["Mapped Term CURIE"].astype(str).str.contains("NCBITAXON", na=False)]
-            return dict(zip(df["Source Term"], df["Mapped Term CURIE"]))
+        for name, override_taxid in self._MANUAL_TAXID_MAPPING_OVERRIDES.items():
+            if name in ncits2taxids:
+                ncits2taxids[name].update(
+                    {
+                        "id": f"NCBITaxon:{override_taxid['taxid']}",
+                        "taxid": override_taxid["taxid"],
+                    }
+                )
 
-        def map_bt_disease_info(
-            self, disease_name2id: dict, disease_name_map: dict, disease_info: dict
-        ) -> dict:
-            """Maps disease names to their information using BioThings API."""
-            final_d_mapping = {}
-            for old_name, new_name in disease_name_map.items():
-                _id = disease_name2id.get(new_name)
-                if _id and _id in disease_info:
-                    d_info = disease_info[_id].copy()
-                    d_info["original_name"] = old_name
-                    final_d_mapping[old_name] = d_info
-            return final_d_mapping
+        return ncits2taxids
+
+
+class NameMapper:
+    def __init__(self, email):
+        self.entrez_service = EntrezService(email)
+        self.ncit_service = NCItService()
+        self.ncbi_tax_service = NCBITaxonomyService()
+
+    def ete3_taxon_name2taxid(self, taxon_names: list) -> dict:
+        """Maps taxon names to NCBI Taxonomy IDs using ETE3."""
+        self.ncbi_tax_service.initialize_local_ncbi_taxa()
+        name2taxid = self.ncbi_tax_service.ncbi_taxa.get_name_translator(list(set(taxon_names)))
+        return {
+            name: {"taxid": int(taxid_list[0])}
+            for name, taxid_list in name2taxid.items()
+            if taxid_list
+        }
+
+    def entrez_batch_name2taxid(self, taxon_names: list, sleep=0.34) -> dict:
+        """Maps taxon names to NCBI Taxonomy IDs using Entrez in batches."""
+        mapped = {}
+        for name in set(taxon_names):
+            mapped.update(self.entrez_service.entrez_taxon_name2taxid(name))
+            time.sleep(sleep)
+        return mapped
+
+    def bt_name2taxid(self, taxon_names: list) -> dict:
+        """Maps taxon names to NCBI Taxonomy IDs using BioThings API."""
+        client = bt.get_client("taxon")
+        results = client.querymany(
+            list(set(taxon_names)), scopes=["scientific_name", "other_names"], fields=["taxid"]
+        )
+        return {
+            item["query"]: {"taxid": int(item["taxid"])}
+            for item in results
+            if "notfound" not in item
+        }
+
+    def fuzzy_match(
+        self, query_names: list, ref_names: list, scorer=fuzz.token_sort_ratio, score_cutoff=90
+    ) -> dict:
+        """Performs fuzzy matching of query names against reference names."""
+        matches = {}
+        for name in query_names:
+            match = process.extractOne(name, ref_names, scorer=scorer, score_cutoff=score_cutoff)
+            if match:
+                matched_name, score, _ = match
+                matches[name] = {"matched_name": matched_name, "score": score}
+        return matches
+
+    def fuzzy_matched_name2taxid(self, fuzzy_matches: dict, ref_name_to_taxid: dict) -> dict:
+        """Maps fuzzy matched names to NCBI Taxonomy IDs."""
+        for _, match_info in fuzzy_matches.items():
+            matched_name = match_info["matched_name"]
+            if matched_name in ref_name_to_taxid:
+                match_info["taxid"] = int(ref_name_to_taxid[matched_name])
+        return fuzzy_matches
+
+
+class InfoMapper:
+    """Handles the mapping of preprocessed names and NCIT codes to taxon information."""
+
+    def __init__(self, email):
+        self.entrez_service = EntrezService(email)
+        self.ncit_service = NCItService()
+        self.ncbi_tax_service = NCBITaxonomyService()
+
+    def get_taxid_from_cache(self, cache_data: dict) -> dict:
+        """Extracts taxid from cached data."""
+        return {
+            original_name: taxon_map_d["taxid"]
+            for original_name, taxon_map_d in cache_data.items()
+            if "taxid" in taxon_map_d
+        }
+
+    def map_preprocessed_name2taxon_info(self, taxid_dict: dict, bt_taxon_info: dict) -> dict:
+        """Maps preprocessed names to taxon information."""
+        return {
+            name: bt_taxon_info[str(taxid)]
+            for name, taxid in taxid_dict.items()
+            if str(taxid) in bt_taxon_info
+        }
+
+    def map_original_name2taxon_info(
+        self, name_map: dict, preprocessed_name2taxon_info: dict
+    ) -> dict:
+        """Maps original names to taxon information based on preprocessed names."""
+        original_name2taxon_info = {}
+        for ori_name, pre_name in name_map.items():
+            key = pre_name if pre_name in preprocessed_name2taxon_info else ori_name
+            if key in preprocessed_name2taxon_info:
+                original_name2taxon_info[ori_name] = {
+                    **preprocessed_name2taxon_info[key],
+                    "original_name": ori_name,
+                }
+        return original_name2taxon_info
+
+    def map_ncit2taxon_info(self, bt_taxon_info: dict, cached_ncit2taxid: dict) -> dict:
+        """Maps NCIT codes to taxon information using BioThings API."""
+        ncit2taxon_info = {}
+        for name, ncit_entry in cached_ncit2taxid.items():
+            taxid = ncit_entry.get("taxid")
+            taxon_info = bt_taxon_info.get(str(taxid)) if taxid else None
+            if taxon_info:
+                combined = {**ncit_entry, **taxon_info}
+                if "ncit" in combined:
+                    combined["xrefs"] = {"ncit": combined.pop("ncit")}
+                combined.pop("mapping_tool", None)
+                ncit2taxon_info[name] = combined
+        return ncit2taxon_info
+
+    def text2term_name2id(
+        self, disease_names, ontology="MONDO", url="http://purl.obolibrary.org/obo/mondo.owl"
+    ):
+        """Maps disease names to ontology identifiers using text2term."""
+        if not text2term.cache_exists(ontology):
+            text2term.cache_ontology(ontology_url=url, ontology_acronym=ontology)
+        df = text2term.map_terms(
+            list(set(disease_names)), ontology, use_cache=True, min_score=0.8, max_mappings=1
+        )
+        if df is None or df.empty:
+            return {}
+        df = df[~df["Mapped Term CURIE"].astype(str).str.contains("NCBITAXON", na=False)]
+        return dict(zip(df["Source Term"], df["Mapped Term CURIE"]))
+
+    def map_bt_disease_info(
+        self, disease_name2id: dict, disease_name_map: dict, disease_info: dict
+    ) -> dict:
+        """Maps disease names to their information using BioThings API."""
+        final_d_mapping = {}
+        for old_name, new_name in disease_name_map.items():
+            _id = disease_name2id.get(new_name)
+            if _id and _id in disease_info:
+                d_info = disease_info[_id].copy()
+                d_info["original_name"] = old_name
+                final_d_mapping[old_name] = d_info
+        return final_d_mapping
 
 
 class MicroPhenoDBParser:
@@ -691,11 +716,11 @@ class MicroPhenoDBParser:
         self.data_dir = data_dir
         self.file_reader = FileReader()
         self.name_processor = OntologyNameProcessor()
-        email = os.getenv("EMAIL_ADDRESS", "user@example.com")
-        self.name_mapper = OntologyMapper.NameMapper(email)
-        self.info_mapper = OntologyMapper.InfoMapper()
+        self.email = os.getenv("EMAIL_ADDRESS", "user@example.com")
+        self.name_mapper = NameMapper(self.email)
+        self.info_mapper = InfoMapper()
         self.ncbi_tax_service = NCBITaxonomyService()
-        self.pubmed_service = PubMedService(email)
+        self.pubmed_service = PubMedService(self.email)
         self.disease_utils = DiseaseUtils()
         self.cache_helper = CacheHelper()
 
