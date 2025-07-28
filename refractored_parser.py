@@ -773,6 +773,8 @@ class CacheManager(CacheHelper):
 
 
 class DataCachePipeline:
+    """Pipeline for caching data for the parser."""
+
     def __init__(self, cache_dir="cache", downloads_dir="downloads"):
         self.downloads_dir = downloads_dir
         self.cache_dir = cache_dir
