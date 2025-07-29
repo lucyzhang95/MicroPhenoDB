@@ -563,11 +563,11 @@ class IDMapper:
         },
         "alternaria alternata": {
             "taxid": 5599,
-            "description": "Alternaria alternata is a fungus causing leaf spots, rots, and blights on many plant parts, and other diseases. It is an opportunistic[1] pathogen on over 380 host species of plant. It can also cause upper respiratory tract infections and asthma in humans with compromised immunity.[Wikipedia]",
+            "description": "Alternaria alternata is a fungus causing leaf spots, rots, and blights on many plant parts, and other diseases. It is an opportunistic pathogen on over 380 host species of plant. It can also cause upper respiratory tract infections and asthma in humans with compromised immunity.[Wikipedia]",
         },
         "sarcina": {
             "taxid": 1266,
-            "description": "Sarcina is a genus of gram-positive cocci bacteria in the family Clostridiaceae.[2][3][4] A synthesizer of microbial cellulose,[5] various members of the genus are human flora and may be found in the skin and large intestine. The genus takes its name from the Latin word 'sarcina,' meaning pack or bundle, after the cuboidal (2x2x2) cellular associations they form during division along three planes. The genus's type species is Sarcina ventriculi, a variety found on the surface of cereal seeds, in soil, mud, and in the stomachs of humans, rabbits, and guinea pigs.[Wikipedia]",
+            "description": "Sarcina is a genus of gram-positive cocci bacteria in the family Clostridiaceae. A synthesizer of microbial cellulose, various members of the genus are human flora and may be found in the skin and large intestine. The genus takes its name from the Latin word 'sarcina,' meaning pack or bundle, after the cuboidal (2x2x2) cellular associations they form during division along three planes. The genus's type species is Sarcina ventriculi, a variety found on the surface of cereal seeds, in soil, mud, and in the stomachs of humans, rabbits, and guinea pigs.[Wikipedia]",
         },
     }
 
@@ -576,7 +576,12 @@ class IDMapper:
         Final mapping derived 582 unique NCIT codes to 568 NCBI Taxonomy IDs.
         :param ncit_path: Path to the NCIT.txt file.
         :return: A dictionary mapping NCIT codes to NCBI Taxonomy IDs.
-
+        e.g.,
+        'clostridiales xiii': {'description': 'A bacterial family of uncertain placement in the phylum Firmicutes and the order Clostridiales that is used to classify the genus Mogibacterium.[NCIT]',
+        'xrefs': {'ncit': 'C85925'},
+        'id': 'NCBITaxon:189325',
+        'taxid': 189325},
+        'mapping_tool': 'ebi_ols'}
         """
         if ncit_path is None:
             ncit_path = os.path.join("downloads", "NCIT.txt")
@@ -971,29 +976,5 @@ class RecordCacheManager:
 
 
 if __name__ == "__main__":
-    parser = MicroPhenoDBParser(data_dir="downloads")
-    all_records = list(parser.load_microphenodb_data())
-
-    print("\n--- Processing Complete ---")
-    print(f"Number of processed records: {len(all_records)}")
-
-    record_cacher = RecordCacheManager(CacheHelper())
-    record_cacher.cache_microphenodb_entire_records(all_records)
-
-    if all_records:
-        print("\n--- Analytics ---")
-        print(
-            f"Disease ID prefix counts: {Counter(rec['object']['id'].split(':')[0] for rec in all_records if 'id' in rec['object'])}"
-        )
-        print(
-            f"Taxon rank counts: {Counter(rec['subject'].get('rank', 'unknown') for rec in all_records)}"
-        )
-        print(
-            f"Anatomical entity counts: {Counter(rec['association'].get('anatomical_entity', 'unknown') for rec in all_records)}"
-        )
-        print(
-            f"Taxa with description: {sum(1 for rec in all_records if rec['subject'].get('description'))}"
-        )
-        print(
-            f"Diseases with description: {sum(1 for rec in all_records if rec['object'].get('description'))}"
-        )
+    pipeline = DataCachePipeline()
+    data = pipeline.run()
