@@ -8,7 +8,6 @@ import ssl
 import tarfile
 import time
 import uuid
-from collections import Counter
 
 import aiohttp
 import biothings_client as bt
@@ -625,12 +624,6 @@ class Name2IDMapper:
         self.entrez_service = EntrezService(email)
         self.ncbi_service = NCBITaxonomyService()
 
-    def _get_taxon_names(self, file_path=None):
-        if file_path is None:
-            file_path = os.path.join("downloads", "core_table.txt")
-        core_data = self.file_reader.read_file(file_path)
-        return sorted(list(set(line[1].lower().strip() for line in core_data if line)))
-
     def ete3_taxon_name2taxid(self, taxon_names: list) -> dict:
         """Maps taxon names to NCBI Taxonomy IDs using ETE3."""
         self.ncbi_service.initialize_local_ncbi_taxa()
@@ -801,20 +794,30 @@ class DataCachePipeline:
 class MicroPhenoDBParser:
     """Orchestrates the entire data processing pipeline for MicroPhenoDB."""
 
-    def __init__(self, data_dir="downloads"):
+    def __init__(self, data_dir="downloads", email=os.getenv("EMAIL_ADDRESS")):
         self.data_dir = data_dir
         self.file_reader = FileReader()
         self.name_processor = OntologyNameProcessor()
-        self.email = os.getenv("EMAIL_ADDRESS", "user@example.com")
-        self.name_mapper = Name2IDMapper(self.email)
-        self.info_mapper = InfoMapper()
+        self.info_mapper = InfoMapper(email)
         self.ncbi_tax_service = NCBITaxonomyService()
-        self.pubmed_service = PubMedService(self.email)
         self.disease_utils = DiseaseUtils()
-        self.cache_helper = CacheHelper()
+        self.cache_manager = CacheManager()
 
     def _get_file_path(self, filename):
         return os.path.join(self.data_dir, filename)
+
+    def _get_taxon_names(self, file_path=None):
+        if file_path is None:
+            file_path = os.path.join(self.data_dir, "core_table.txt")
+        core_data = self.file_reader.read_file(file_path)
+        return sorted(list(set(line[1].lower().strip() for line in core_data if line)))
+
+    def _get_taxon_names_for_id_map(self):
+        core_taxon_names = self._get_taxon_names()
+        cached_ncit2taxids = self.cache_manager.get_or_cache_ncits2taxids_mapping()
+        ncit_taxon_names = set(cached_ncit2taxids.keys())
+        taxon_names_to_map = set(core_taxon_names) - ncit_taxon_names
+        return sorted(list(taxon_names_to_map))
 
     def _get_organism_type(self, node) -> str:
         type_map = {
@@ -828,12 +831,6 @@ class MicroPhenoDBParser:
                 return biolink_type
         return "biolink:OrganismalEntity"
 
-    def _get_all_taxon_names(self, file_path):
-        return {line[1].lower().strip() for line in self.file_reader.read_file(file_path) if line}
-
-    def _get_taxon_names_to_map(self, all_names, mapped_names):
-        return list(all_names - set(mapped_names.keys()))
-
     def _cache_and_load_data(self):
         """Manages the caching and loading of all intermediate and final data."""
         # Taxon Mapping
@@ -844,7 +841,7 @@ class MicroPhenoDBParser:
             ncit_mapped = self.name_mapper.ncit2taxid(ncit_codes)
             # 2. Other mappings
             all_taxon_names = self._get_all_taxon_names(self._get_file_path("core_table.txt"))
-            names_to_map = self._get_taxon_names_to_map(all_taxon_names, ncit_mapped)
+            names_to_map = self._get_taxon_names_for_id_map(all_taxon_names, ncit_mapped)
             preprocessed_map = self.name_processor.convert_preprocessed_name2dict(names_to_map)
             unique_preprocessed = list(set(preprocessed_map.values()))
             # 3. Pipeline
