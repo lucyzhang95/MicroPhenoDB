@@ -6,7 +6,6 @@ import pickle
 import re
 import ssl
 import tarfile
-import time
 import uuid
 
 import aiohttp
@@ -277,7 +276,7 @@ class NCItService:
             ]
         )
 
-    async def query_taxid_from_ncit_code(self, session, ncit_code: str):
+    async def async_query_ebi_ncit_code_to_taxid(self, session, ncit_code: str):
         """Map NCIT identifier to NCBI Taxid using EBI API.
 
         :param session: aiohttp session for making requests
@@ -311,7 +310,7 @@ class NCItService:
             print(f"EBI API request failed for NCIT_{ncit_code}: {e}")
             return None
 
-    async def query_taxids_from_ncit_codes(self, ncit_codes: list):
+    async def async_query_ebi_ncit_codes_to_taxids(self, ncit_codes: list):
         """Map NCIT identifiers to NCBI Taxids using EBI API
 
         :param ncit_codes: a list of NCIT codes e.g., ["C85924", "C83526", ...]
@@ -323,7 +322,8 @@ class NCItService:
         ncit2taxids, notfound_ncit = {}, {}
         async with aiohttp.ClientSession() as session:
             tasks = [
-                self.query_taxid_from_ncit_code(session, ncit_code) for ncit_code in ncit_codes
+                self.async_query_ebi_ncit_code_to_taxid(session, ncit_code)
+                for ncit_code in ncit_codes
             ]
             results = await tqdm.gather(*tasks, desc="Querying taxids from NCIT codes...")
         for result in results:
@@ -335,9 +335,11 @@ class NCItService:
                     notfound_ncit[name] = info
         return ncit2taxids, notfound_ncit
 
-    def map_ncits_to_taxids(self, ncit_codes: list):
+    def async_run_ncit_codes_to_taxids(self, ncit_codes: list):
         """Maps NCIT codes to NCBI Taxonomy IDs."""
-        ncit2taxids, notfound_ncit = asyncio.run(self.query_taxids_from_ncit_codes(ncit_codes))
+        ncit2taxids, notfound_ncit = asyncio.run(
+            self.async_query_ebi_ncit_codes_to_taxids(ncit_codes)
+        )
         return ncit2taxids, notfound_ncit
 
 
@@ -613,7 +615,7 @@ class Ncit2TaxidMapper:
         if ncit_path is None:
             ncit_path = os.path.join("downloads", "NCIT.txt")
         ncit_codes = self.ncit_service.get_ncit_code(ncit_path)
-        ncits2taxids, notfound_ncit = self.ncit_service.map_ncits_to_taxids(ncit_codes)
+        ncits2taxids, notfound_ncit = self.ncit_service.async_run_ncit_codes_to_taxids(ncit_codes)
 
         for name, patch_info in self._MANUAL_TAXID_MAPPING_PATCHES.items():
             if name in notfound_ncit:
@@ -678,7 +680,7 @@ class OntologyName2IDMapper:
         }
 
     def fuzzy_match(
-            self, query_names: list, ref_names: list, scorer=fuzz.token_sort_ratio, score_cutoff=90
+        self, query_names: list, ref_names: list, scorer=fuzz.token_sort_ratio, score_cutoff=90
     ) -> dict:
         """Performs fuzzy matching of query names against reference names."""
         matches = {}
