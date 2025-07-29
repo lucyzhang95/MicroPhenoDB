@@ -344,7 +344,7 @@ class NCItTaxonomyService:
 
 
 class ETE3TaxonomyService:
-    """Handles interactions with local NCBI Taxonomy database files."""
+    """Handles interactions with local NCBI Taxonomy database file0s via ETE3."""
 
     def __init__(self):
         self.ncbi_taxa = None
