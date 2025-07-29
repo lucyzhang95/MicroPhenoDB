@@ -619,16 +619,22 @@ class IDMapper:
         return ncits2taxids
 
 
-class NameMapper:
-    def __init__(self, email):
+class Name2IDMapper:
+    def __init__(self, email=os.getenv("EMAIL_ADDRESS")):
+        self.file_reader = FileReader()
         self.entrez_service = EntrezService(email)
-        self.ncit_service = NCItService()
-        self.ncbi_tax_service = NCBITaxonomyService()
+        self.ncbi_service = NCBITaxonomyService()
+
+    def _get_taxon_names(self, file_path=None):
+        if file_path is None:
+            file_path = os.path.join("downloads", "core_table.txt")
+        core_data = self.file_reader.read_file(file_path)
+        return sorted(list(set(line[1].lower().strip() for line in core_data if line)))
 
     def ete3_taxon_name2taxid(self, taxon_names: list) -> dict:
         """Maps taxon names to NCBI Taxonomy IDs using ETE3."""
-        self.ncbi_tax_service.initialize_local_ncbi_taxa()
-        name2taxid = self.ncbi_tax_service.ncbi_taxa.get_name_translator(list(set(taxon_names)))
+        self.ncbi_service.initialize_local_ncbi_taxa()
+        name2taxid = self.ncbi_service.ncbi_taxa.get_name_translator(list(set(taxon_names)))
         return {
             name: {"taxid": int(taxid_list[0])}
             for name, taxid_list in name2taxid.items()
@@ -800,7 +806,7 @@ class MicroPhenoDBParser:
         self.file_reader = FileReader()
         self.name_processor = OntologyNameProcessor()
         self.email = os.getenv("EMAIL_ADDRESS", "user@example.com")
-        self.name_mapper = NameMapper(self.email)
+        self.name_mapper = Name2IDMapper(self.email)
         self.info_mapper = InfoMapper()
         self.ncbi_tax_service = NCBITaxonomyService()
         self.pubmed_service = PubMedService(self.email)
