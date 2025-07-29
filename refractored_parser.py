@@ -250,7 +250,7 @@ class OntologyNameProcessor(TextStructurePreprocessor, TextSemanticPreprocessor)
         name = self.remove_leading_non_in_name(name)
         return name
 
-    def convert_preprocessed_name2dict(names: list, preprocessor_func) -> dict:
+    def convert_preprocessed_name2dict(self, names: list, preprocessor_func) -> dict:
         """
 
         :param names:
@@ -261,7 +261,7 @@ class OntologyNameProcessor(TextStructurePreprocessor, TextSemanticPreprocessor)
         return {original_name: preprocessor_func(original_name) for original_name in names}
 
 
-class NCBITaxonomyService:
+class ETE3TaxonomyService:
     """Handles interactions with local NCBI Taxonomy database files."""
 
     def __init__(self):
@@ -515,7 +515,7 @@ class DiseaseUtils:
         return d_info
 
 
-class IDMapper:
+class Ncit2TaxidMapper:
     """Handles the mapping of names to taxonomic identifiers using various services."""
 
     def __init__(self):
@@ -628,10 +628,10 @@ class IDMapper:
         return ncits2taxids
 
 
-class Name2IDMapper:
+class OntologyName2IDMapper:
     def __init__(self, email=os.getenv("EMAIL_ADDRESS")):
         self.entrez_service = EntrezService(email)
-        self.ncbi_service = NCBITaxonomyService()
+        self.ncbi_service = ETE3TaxonomyService()
 
     def ete3_taxon_name2taxid(self, taxon_names: list) -> dict:
         """Maps taxon names to NCBI Taxonomy IDs using ETE3."""
@@ -684,13 +684,13 @@ class Name2IDMapper:
         return fuzzy_matches
 
 
-class InfoMapper:
+class OntologyInfoMapper:
     """Handles the mapping of preprocessed names and NCIT codes to taxon information."""
 
     def __init__(self, email):
         self.entrez_service = EntrezService(email)
         self.ncit_service = NCItService()
-        self.ncbi_tax_service = NCBITaxonomyService()
+        self.ncbi_tax_service = ETE3TaxonomyService()
 
     def get_taxid_from_cache(self, cache_data: dict) -> dict:
         """Extracts taxid from cached data."""
@@ -768,7 +768,7 @@ class CacheManager(CacheHelper):
     def __init__(self, cache_dir="cache"):
         super().__init__(cache_dir)
         self.cache_dir = cache_dir
-        self.id_mapper = IDMapper()
+        self.id_mapper = Ncit2TaxidMapper()
 
     def get_or_cache_ncits2taxids_mapping(self):
         """Checks if the NCIT to NCBI Taxonomy ID mapping is cached."""
@@ -807,7 +807,7 @@ class MicroPhenoDBParser:
         self.data_dir = data_dir
         self.file_reader = FileReader()
         self.name_processor = OntologyNameProcessor()
-        self.name_mapper = Name2IDMapper()
+        self.name_mapper = OntologyName2IDMapper()
         self.cache_manager = CacheManager()
 
     def _get_file_path(self, filename):
@@ -828,6 +828,17 @@ class MicroPhenoDBParser:
         ncit_taxon_names = set(cached_ncit2taxids.keys())
         taxon_names_to_map = set(core_taxon_names) - ncit_taxon_names
         return sorted(list(taxon_names_to_map))
+
+    def _preprocessed_taxon_names_mapping(self):
+        """Preprocesses taxon names for mapping.
+
+        :return: A dictionary mapping preprocessed taxon names to their original names.
+        """
+        taxon_names = self._get_taxon_names_for_id_map()
+        preprocessed_taxon_names = self.name_processor.convert_preprocessed_name2dict(
+            taxon_names, self.name_processor.preprocess_taxon_name
+        )
+        return preprocessed_taxon_names
 
     def _get_organism_type(self, node) -> str:
         type_map = {
