@@ -798,9 +798,9 @@ class MicroPhenoDBParser:
         self.data_dir = data_dir
         self.file_reader = FileReader()
         self.name_processor = OntologyNameProcessor()
-        self.info_mapper = InfoMapper(email)
-        self.ncbi_tax_service = NCBITaxonomyService()
-        self.disease_utils = DiseaseUtils()
+        # self.info_mapper = InfoMapper(email)
+        # self.ncbi_tax_service = NCBITaxonomyService()
+        # self.disease_utils = DiseaseUtils()
         self.cache_manager = CacheManager()
 
     def _get_file_path(self, filename):
@@ -813,6 +813,7 @@ class MicroPhenoDBParser:
         return sorted(list(set(line[1].lower().strip() for line in core_data if line)))
 
     def _get_taxon_names_for_id_map(self):
+        # 1252 names to map after extracting names with NCIT codes
         core_taxon_names = self._get_taxon_names()
         cached_ncit2taxids = self.cache_manager.get_or_cache_ncits2taxids_mapping()
         ncit_taxon_names = set(cached_ncit2taxids.keys())
