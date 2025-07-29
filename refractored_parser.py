@@ -260,7 +260,7 @@ class OntologyNameProcessor(TextStructurePreprocessor, TextSemanticPreprocessor)
         return {original_name: preprocessor_func(original_name) for original_name in names}
 
 
-class NCItService:
+class NCItTaxonomyService:
     """Handles NCIt API services and related tasks.
     This service fetches NCIT codes and their corresponding NCBI Taxonomy IDs from the EBI OLS API.
     """
@@ -539,7 +539,7 @@ class Ncit2TaxidMapper:
     """Handles the mapping of names to taxonomic identifiers using various services."""
 
     def __init__(self):
-        self.ncit_service = NCItService()
+        self.ncit_service = NCItTaxonomyService()
 
     # names in notfound_ncit
     _MANUAL_TAXID_MAPPING_PATCHES = {
@@ -705,7 +705,7 @@ class OntologyInfoMapper:
 
     def __init__(self, email):
         self.entrez_service = EntrezTaxonomyService(email)
-        self.ncit_service = NCItService()
+        self.ncit_service = NCItTaxonomyService()
         self.ncbi_tax_service = ETE3TaxonomyService()
 
     def get_taxid_from_cache(self, cache_data: dict) -> dict:
@@ -874,7 +874,7 @@ class MicroPhenoDBParser:
         if not (taxon_map := self.cache_helper.load_pickle("original_taxon_name2taxid.pkl")):
             print("Taxon map not found in cache. Generating...")
             # 1. NCIT mapping
-            ncit_codes = NCItService().get_ncit_code(self._get_file_path("NCIT.txt"))
+            ncit_codes = NCItTaxonomyService().get_ncit_code(self._get_file_path("NCIT.txt"))
             ncit_mapped = self.name_mapper.ncit2taxid(ncit_codes)
             # 2. Other mappings
             all_taxon_names = self._get_all_taxon_names(self._get_file_path("core_table.txt"))
