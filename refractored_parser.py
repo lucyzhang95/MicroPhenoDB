@@ -261,87 +261,6 @@ class OntologyNameProcessor(TextStructurePreprocessor, TextSemanticPreprocessor)
         return {original_name: preprocessor_func(original_name) for original_name in names}
 
 
-class ETE3TaxonomyService:
-    """Handles interactions with local NCBI Taxonomy database files."""
-
-    def __init__(self):
-        self.ncbi_taxa = None
-
-    def initialize_local_ncbi_taxa(self):
-        """Initializes the NCBITaxa from ETE3.
-        This method ensures that the local NCBITaxa instance is created and updated via ETE3.
-        """
-        if self.ncbi_taxa is None:
-            ssl._create_default_https_context = ssl._create_unverified_context
-            self.ncbi_taxa = NCBITaxa()
-            self.ncbi_taxa.update_taxonomy_database()
-
-    def parse_names_dmp_from_taxdump(self, tar_path, f_name="names.dmp", keep_classes=None):
-        """Parses the names.dmp file from the NCBI Taxonomy database dump."""
-        if keep_classes is None:
-            keep_classes = {
-                "scientific name",
-                "synonym",
-                "equivalent name",
-                "genbank synonym",
-                "genbank anamorph",
-            }
-        name2taxid = {}
-        with tarfile.open(tar_path, "r:gz") as tar_f:
-            member = tar_f.getmember(f_name)
-            with tar_f.extractfile(member) as in_f:
-                for line in in_f:
-                    parts = [part.strip().decode("utf-8") for part in line.strip().split(b"|")]
-                    if len(parts) >= 4 and parts[3] in keep_classes:
-                        # parts[0] is taxid, part[1] is name, parts[3] is class
-                        name2taxid[parts[1].lower()] = int(parts[0])
-        return name2taxid
-
-
-class BioThingsService:
-    """Handles interactions with BioThings API for taxonomic information."""
-
-    def get_taxon_info_from_bt(self, taxids: list) -> dict:
-        """Fetches taxon information from BioThings API."""
-        if not taxids:
-            return {}
-        client = bt.get_client("taxon")
-        infos = client.gettaxa(
-            list(set(taxids)), fields=["scientific_name", "parent_taxid", "lineage", "rank"]
-        )
-        return {
-            info["_id"]: {
-                "id": f"NCBITaxon:{int(info['_id'])}",
-                "taxid": int(info["_id"]),
-                "name": info.get("scientific_name"),
-                "parent_taxid": info.get("parent_taxid"),
-                "lineage": info.get("lineage"),
-                "rank": info.get("rank"),
-            }
-            for info in infos
-            if "notfound" not in info
-        }
-
-
-class EntrezService:
-    """Handles interactions with NCBI Entrez API."""
-
-    def __init__(self, email=os.getenv("EMAIL_ADDRESS")):
-        Entrez.email = email
-
-    def entrez_taxon_name2taxid(self, taxon_name: str) -> dict:
-        """Queries NCBI Entrez for a taxon name and returns its taxid."""
-        try:
-            handle = Entrez.esearch(db="taxonomy", term=taxon_name, retmode="xml", retmax=1)
-            record = Entrez.read(handle)
-            handle.close()
-            if record["IdList"]:
-                return {taxon_name: {"taxid": int(record["IdList"][0])}}
-        except Exception as e:
-            print(f"Entrez query failed for '{taxon_name}': {e}")
-        return {}
-
-
 class NCItService:
     """Handles NCIt API services and related tasks.
     This service fetches NCIT codes and their corresponding NCBI Taxonomy IDs from the EBI OLS API.
@@ -420,6 +339,105 @@ class NCItService:
         """Maps NCIT codes to NCBI Taxonomy IDs."""
         ncit2taxids, notfound_ncit = asyncio.run(self.query_taxids_from_ncit_codes(ncit_codes))
         return ncit2taxids, notfound_ncit
+
+
+class ETE3TaxonomyService:
+    """Handles interactions with local NCBI Taxonomy database files."""
+
+    def __init__(self):
+        self.ncbi_taxa = None
+
+    def initialize_local_ncbi_taxa(self):
+        """Initializes the NCBITaxa from ETE3.
+        This method ensures that the local NCBITaxa instance is created and updated via ETE3.
+        """
+        if self.ncbi_taxa is None:
+            ssl._create_default_https_context = ssl._create_unverified_context
+            self.ncbi_taxa = NCBITaxa()
+            self.ncbi_taxa.update_taxonomy_database()
+
+    def parse_names_dmp_from_taxdump(self, tar_path, f_name="names.dmp", keep_classes=None):
+        """Parses the names.dmp file from the NCBI Taxonomy database dump."""
+        if keep_classes is None:
+            keep_classes = {
+                "scientific name",
+                "synonym",
+                "equivalent name",
+                "genbank synonym",
+                "genbank anamorph",
+            }
+        name2taxid = {}
+        with tarfile.open(tar_path, "r:gz") as tar_f:
+            member = tar_f.getmember(f_name)
+            with tar_f.extractfile(member) as in_f:
+                for line in in_f:
+                    parts = [part.strip().decode("utf-8") for part in line.strip().split(b"|")]
+                    if len(parts) >= 4 and parts[3] in keep_classes:
+                        # parts[0] is taxid, part[1] is name, parts[3] is class
+                        name2taxid[parts[1].lower()] = int(parts[0])
+        return name2taxid
+
+
+class EntrezTaxonomyService:
+    """Handles interactions with NCBI Entrez API."""
+
+    def __init__(self, email=os.getenv("EMAIL_ADDRESS")):
+        Entrez.email = email
+
+    async def async_query_entrez_taxon_name2taxid(self, taxon_name: str):
+        """Asynchronously queries NCBI Entrez for a taxon name."""
+
+        def blocking_entrez_call():
+            """Performs a blocking call to the Entrez API.
+            Entrez only supports synchronous calls."""
+            handle = Entrez.esearch(db="taxonomy", term=taxon_name, retmode="xml", retmax=1)
+            rec = Entrez.read(handle)
+            handle.close()
+            return rec
+
+        try:
+            record = await asyncio.to_thread(blocking_entrez_call)
+
+            if record and record.get("IdList"):
+                return taxon_name, {"taxid": int(record["IdList"][0])}
+        except Exception as e:
+            print(f"Entrez query failed for '{taxon_name}': {e}")
+        return None
+
+    async def async_query_entrez_taxon_names2taxids(self, taxon_names: list) -> list:
+        """Runs Entrez queries for a list of names concurrently."""
+        tasks = [self.async_query_entrez_taxon_name2taxid(name) for name in taxon_names]
+        results = await tqdm.gather(*tasks, desc="Querying Entrez Taxonomy Names...")
+        return dict(res for res in results if res)
+
+    def async_run_entrez_taxon_names2taxids(self, taxon_names: list) -> dict:
+        results = asyncio.run(self.async_query_entrez_taxon_names2taxids(taxon_names))
+        return results
+
+
+class BioThingsService:
+    """Handles interactions with BioThings API for taxonomic information."""
+
+    def query_bt_taxon_info(self, taxids: list) -> dict:
+        """Fetches taxon information from BioThings API."""
+        if not taxids:
+            return {}
+        client = bt.get_client("taxon")
+        infos = client.gettaxa(
+            list(set(taxids)), fields=["scientific_name", "parent_taxid", "lineage", "rank"]
+        )
+        return {
+            info["_id"]: {
+                "id": f"NCBITaxon:{int(info['_id'])}",
+                "taxid": int(info["_id"]),
+                "name": info.get("scientific_name"),
+                "parent_taxid": info.get("parent_taxid"),
+                "lineage": info.get("lineage"),
+                "rank": info.get("rank"),
+            }
+            for info in infos
+            if "notfound" not in info
+        }
 
 
 class PubMedService:
@@ -630,26 +648,22 @@ class Ncit2TaxidMapper:
 
 class OntologyName2IDMapper:
     def __init__(self, email=os.getenv("EMAIL_ADDRESS")):
-        self.entrez_service = EntrezService(email)
-        self.ncbi_service = ETE3TaxonomyService()
+        self.ete3_service = ETE3TaxonomyService()
+        self.entrez_service = EntrezTaxonomyService(email)
 
     def ete3_taxon_name2taxid(self, taxon_names: list) -> dict:
         """Maps taxon names to NCBI Taxonomy IDs using ETE3."""
-        self.ncbi_service.initialize_local_ncbi_taxa()
-        name2taxid = self.ncbi_service.ncbi_taxa.get_name_translator(list(set(taxon_names)))
+        self.ete3_service.initialize_local_ncbi_taxa()
+        name2taxid = self.ete3_service.ncbi_taxa.get_name_translator(sorted(list(set(taxon_names))))
         return {
             name: {"taxid": int(taxid_list[0])}
             for name, taxid_list in name2taxid.items()
             if taxid_list
         }
 
-    def entrez_batch_name2taxid(self, taxon_names: list, sleep=0.34) -> dict:
-        """Maps taxon names to NCBI Taxonomy IDs using Entrez in batches."""
-        mapped = {}
-        for name in set(taxon_names):
-            mapped.update(self.entrez_service.entrez_taxon_name2taxid(name))
-            time.sleep(sleep)
-        return mapped
+    def entrez_taxon_name2taxid(self, taxon_names: list) -> dict:
+        mapped_results = self.entrez_service.async_run_entrez_taxon_names2taxids(taxon_names)
+        return mapped_results
 
     def bt_name2taxid(self, taxon_names: list) -> dict:
         """Maps taxon names to NCBI Taxonomy IDs using BioThings API."""
@@ -664,7 +678,7 @@ class OntologyName2IDMapper:
         }
 
     def fuzzy_match(
-        self, query_names: list, ref_names: list, scorer=fuzz.token_sort_ratio, score_cutoff=90
+            self, query_names: list, ref_names: list, scorer=fuzz.token_sort_ratio, score_cutoff=90
     ) -> dict:
         """Performs fuzzy matching of query names against reference names."""
         matches = {}
@@ -688,7 +702,7 @@ class OntologyInfoMapper:
     """Handles the mapping of preprocessed names and NCIT codes to taxon information."""
 
     def __init__(self, email):
-        self.entrez_service = EntrezService(email)
+        self.entrez_service = EntrezTaxonomyService(email)
         self.ncit_service = NCItService()
         self.ncbi_tax_service = ETE3TaxonomyService()
 
@@ -891,7 +905,7 @@ class MicroPhenoDBParser:
             final_taxid_map.update(
                 {name: info["taxid"] for name, info in ncit_mapped.items() if "taxid" in info}
             )
-            taxon_info_dump = self.ncbi_tax_service.get_taxon_info_from_bt(
+            taxon_info_dump = self.ncbi_tax_service.query_bt_taxon_info(
                 list(final_taxid_map.values())
             )
             taxon_map = self.info_mapper.map_ncit2taxon_info(taxon_info_dump, ncit_mapped)
