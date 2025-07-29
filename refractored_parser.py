@@ -250,9 +250,15 @@ class OntologyNameProcessor(TextStructurePreprocessor, TextSemanticPreprocessor)
         name = self.remove_leading_non_in_name(name)
         return name
 
-    def convert_preprocessed_name2dict(self, names: list) -> dict:
-        """Converts a list of names to a dictionary with preprocessed names as keys."""
-        return {original_name: self.preprocess_taxon_name(original_name) for original_name in names}
+    def convert_preprocessed_name2dict(names: list, preprocessor_func) -> dict:
+        """
+
+        :param names:
+        :param preprocessor_func: a function to preprocess the names, e.g., preprocess_taxon_name or preprocess_disease_name
+        :return:
+        {"original_name": "preprocessed_name"}
+        """
+        return {original_name: preprocessor_func(original_name) for original_name in names}
 
 
 class NCBITaxonomyService:
@@ -291,6 +297,10 @@ class NCBITaxonomyService:
                         name2taxid[parts[1].lower()] = int(parts[0])
         return name2taxid
 
+
+class BioThingsService:
+    """Handles interactions with BioThings API for taxonomic information."""
+
     def get_taxon_info_from_bt(self, taxids: list) -> dict:
         """Fetches taxon information from BioThings API."""
         if not taxids:
@@ -316,7 +326,7 @@ class NCBITaxonomyService:
 class EntrezService:
     """Handles interactions with NCBI Entrez API."""
 
-    def __init__(self, email):
+    def __init__(self, email=os.getenv("EMAIL_ADDRESS")):
         Entrez.email = email
 
     def entrez_taxon_name2taxid(self, taxon_name: str) -> dict:
