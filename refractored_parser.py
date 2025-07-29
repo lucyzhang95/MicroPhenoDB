@@ -115,7 +115,7 @@ class TextStructurePreprocessor:
         return name.replace("BUTYRATEPRODUCING", "butyrate-producing").strip()
 
     def split_name_by_slash(self, name: str) -> str:
-        """ "Splits the name by slashes, keeping the first part."""
+        """Splits the name by slashes, keeping the first part."""
         return re.split(r"(?<=[a-zA-Z])/\s*(?=[a-zA-Z])", name)[0].strip()
 
     def split_on_conjunction_in_name(self, name, keyword, prefer):
