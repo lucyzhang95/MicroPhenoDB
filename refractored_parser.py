@@ -441,6 +441,28 @@ class BioThingsService:
             if "notfound" not in info
         }
 
+    def query_bt_disease_info(self, ids: list) -> dict:
+        """Fetches disease information from BioThings API using Mondo ontology."""
+        if not ids:
+            return {}
+        client = bt.get_client("disease")
+        results = client.querymany(
+            list(set(ids)),
+            scopes=["mondo.xrefs.hp", "mondo.xrefs.efo", "mondo.mondo"],
+            fields=["mondo.definition", "mondo.label"],
+        )
+        d_info = {}
+        for info in results:
+            if "notfound" not in info:
+                mondo = info.get("mondo", {})
+                d_info[info["query"]] = {
+                    "id": info["_id"],
+                    "name": mondo.get("label"),
+                    "description": mondo.get("definition"),
+                    "type": "biolink:Disease",
+                }
+        return d_info
+
 
 class PubMedService:
     """Handles interactions with NCBI PubMed service via Entrez."""
@@ -511,28 +533,6 @@ class DiseaseUtils:
                     "xrefs": {prefix: _id.upper()},
                 }
         return efo_map
-
-    def bt_get_disease_info(self, ids: list) -> dict:
-        """Fetches disease information from BioThings API using Mondo ontology."""
-        if not ids:
-            return {}
-        client = bt.get_client("disease")
-        results = client.querymany(
-            list(set(ids)),
-            scopes=["mondo.xrefs.hp", "mondo.xrefs.efo", "mondo.mondo"],
-            fields=["mondo.definition", "mondo.label"],
-        )
-        d_info = {}
-        for info in results:
-            if "notfound" not in info:
-                mondo = info.get("mondo", {})
-                d_info[info["query"]] = {
-                    "id": info["_id"],
-                    "name": mondo.get("label"),
-                    "description": mondo.get("definition"),
-                    "type": "biolink:Disease",
-                }
-        return d_info
 
 
 class Ncit2TaxidMapper:
@@ -933,7 +933,7 @@ class MicroPhenoDBParser:
                 name: self.name_processor.preprocess_disease_name(name) for name in names_to_map
             }
             name2id = self.info_mapper.text2term_name2id(list(set(preprocessed_map.values())))
-            disease_info_dump = self.disease_utils.bt_get_disease_info(list(set(name2id.values())))
+            disease_info_dump = self.disease_utils.query_bt_disease_info(list(set(name2id.values())))
             disease_map = efo_map
             disease_map.update(
                 self.info_mapper.map_bt_disease_info(name2id, preprocessed_map, disease_info_dump)
