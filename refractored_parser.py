@@ -347,21 +347,21 @@ class ETE3TaxonomyService:
     """Handles interactions with local NCBI Taxonomy database file0s via ETE3."""
 
     def __init__(self):
-        self.ncbi_taxa = None
-
-    def initialize_local_ncbi_taxa(self):
-        """Initializes the NCBITaxa from ETE3.
-        This method ensures that the local NCBITaxa instance is created and updated via ETE3.
-        """
-        if self.ncbi_taxa is None:
+        if not os.path.exists("taxdump.tar.gz"):
+            print("Taxonomy database not found. Downloading and updating...")
             ssl._create_default_https_context = ssl._create_unverified_context
             self.ncbi_taxa = NCBITaxa()
             self.ncbi_taxa.update_taxonomy_database()
+            print("NCBI Taxonomy Database update complete.")
+        else:
+            print("NCBI Taxonomy database found. Loading into memory...")
+            self.ncbi_taxa = NCBITaxa()
+        print("ETE3TaxonomyService is initialized and ready.")
 
     def ete3_taxon_name2taxid(self, taxon_names: list) -> dict:
         """Maps taxon names to NCBI Taxonomy IDs using ETE3."""
-        self.initialize_local_ncbi_taxa()
         name2taxid = self.ncbi_taxa.get_name_translator(sorted(list(set(taxon_names))))
+        print("✅ ETE3 Taxonomy Name to TaxID mapping completed!")
         return {
             name: {"taxid": int(taxid_list[0]), "mapping_tool": "ete3"}
             for name, taxid_list in name2taxid.items()
@@ -398,12 +398,13 @@ class EntrezTaxonomyService:
         self.semaphore = asyncio.Semaphore(3)
 
     async def async_query_entrez_taxon_name2taxid(
-            self, taxon_name: str, max_retries=3, initial_backoff=1
+        self, taxon_name: str, max_retries=3, initial_backoff=1
     ):
         """Asynchronously queries NCBI Entrez for a taxon name."""
         for attempt in range(max_retries):
             try:
                 async with self.semaphore:
+
                     def blocking_entrez_call():
                         """Performs a blocking call to the Entrez API."""
                         handle = Entrez.esearch(
@@ -417,7 +418,10 @@ class EntrezTaxonomyService:
                     await asyncio.sleep(1)
 
                     if rec and rec.get("IdList"):
-                        return taxon_name, {"taxid": int(rec["IdList"][0]), "mapping_tool": "entrez"}
+                        return taxon_name, {
+                            "taxid": int(rec["IdList"][0]),
+                            "mapping_tool": "entrez",
+                        }
                     else:
                         return None
 
