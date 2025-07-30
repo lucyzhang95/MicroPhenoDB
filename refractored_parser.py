@@ -417,7 +417,7 @@ class EntrezTaxonomyService:
                     await asyncio.sleep(1)
 
                     if rec and rec.get("IdList"):
-                        return taxon_name, {"taxid": int(rec["IdList"][0])}
+                        return taxon_name, {"taxid": int(rec["IdList"][0]), "mapping_tool": "entrez"}
                     else:
                         return None
 
