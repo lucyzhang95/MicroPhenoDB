@@ -446,6 +446,7 @@ class EntrezTaxonomyService:
 
     def async_run_entrez_taxon_names2taxids(self, taxon_names: list) -> dict:
         results = asyncio.run(self.async_query_entrez_taxon_names2taxids(taxon_names))
+        print("✅ Entrez Taxonomy Name to TaxID mapping completed!")
         return results
 
 
