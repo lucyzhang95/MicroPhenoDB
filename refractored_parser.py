@@ -804,10 +804,15 @@ class OntologyInfoMapper:
 
 
 class CacheManager(CacheHelper):
-    def __init__(self, cache_dir="cache"):
+    def __init__(self, cache_dir="cache", data_dir="downloads"):
+        """Initializes the CacheManager"""
         super().__init__(cache_dir)
+        self.data_dir = data_dir
         self.cache_dir = cache_dir
+        self.file_reader = FileReader()
         self.id_mapper = Ncit2TaxidMapper()
+        self.name_processor = OntologyNameProcessor()
+        self.ete3_service = ETE3TaxonomyService()
 
     def get_or_cache_ncits2taxids_mapping(self):
         """Checks if the NCIT to NCBI Taxonomy ID mapping is cached."""
@@ -822,6 +827,50 @@ class CacheManager(CacheHelper):
             ncits2taxids = self.id_mapper.ncits2taxids()
             self.save_pickle(ncits2taxids, cache_f_name)
             return ncits2taxids
+
+    # TODO: Do the name preprocessing here or in the NameMapper or in the DataCachePipeline?
+    def _get_all_taxon_names(self, file_path=None):
+        if file_path is None:
+            file_path = os.path.join(self.data_dir, "core_table.txt")
+        core_data = self.file_reader.read_file(file_path)
+        return sorted(list(set(line[1].lower().strip() for line in core_data if line)))
+
+    def _get_taxon_names_for_id_map(self):
+        # 1767 names in core table
+        # 515 names in NCIT.txt
+        # 1252 names need to map id
+        core_taxon_names = self._get_all_taxon_names()
+        cached_ncit2taxids = self.get_or_cache_ncits2taxids_mapping()
+        ncit_taxon_names = set(cached_ncit2taxids.keys())
+        taxon_names_to_map = set(core_taxon_names) - ncit_taxon_names
+        return sorted(list(taxon_names_to_map))
+
+    def _preprocessed_taxon_names_mapping(self) -> dict:
+        """Preprocesses taxon names for mapping.
+
+        :return: A dictionary mapping preprocessed taxon names to their original names.
+        """
+        taxon_names = self._get_taxon_names_for_id_map()
+        preprocessed_taxon_names = self.name_processor.convert_preprocessed_name2dict(
+            taxon_names, self.name_processor.preprocess_taxon_name
+        )
+        return preprocessed_taxon_names
+
+    def get_or_cache_ete3_taxon_name2taxid(self, taxon_names):
+        """Caches the ETE3 taxon name to NCBI Taxonomy ID mapping."""
+        cache_f_name = "ete3_taxon_name2taxid.pkl"
+        cache_f_path = os.path.join(self.cache_dir, cache_f_name)
+
+        if os.path.exists(cache_f_path):
+            print("ETE3 Taxon Name to TaxID mapping already cached. Loading...")
+            return self.load_pickle(cache_f_name)
+        else:
+            print("Caching ETE3 Taxon Name to TaxID mapping...")
+            processed_taxon_names_mapping = self._preprocessed_taxon_names_mapping()
+            taxon_names4ete3 = list(set(processed_taxon_names_mapping.values()))
+            ete3_mapped = self.ete3_service.ete3_taxon_name2taxid(taxon_names4ete3)
+            self.save_pickle(ete3_mapped, cache_f_name)
+            return ete3_mapped
 
 
 class DataCachePipeline:
@@ -851,33 +900,6 @@ class MicroPhenoDBParser:
 
     def _get_file_path(self, filename):
         return os.path.join(self.data_dir, filename)
-
-    def _get_all_taxon_names(self, file_path=None):
-        if file_path is None:
-            file_path = os.path.join(self.data_dir, "core_table.txt")
-        core_data = self.file_reader.read_file(file_path)
-        return sorted(list(set(line[1].lower().strip() for line in core_data if line)))
-
-    def _get_taxon_names_for_id_map(self):
-        # 1767 names in core table
-        # 515 names in NCIT.txt
-        # 1252 names need to map id
-        core_taxon_names = self._get_all_taxon_names()
-        cached_ncit2taxids = self.cache_manager.get_or_cache_ncits2taxids_mapping()
-        ncit_taxon_names = set(cached_ncit2taxids.keys())
-        taxon_names_to_map = set(core_taxon_names) - ncit_taxon_names
-        return sorted(list(taxon_names_to_map))
-
-    def _preprocessed_taxon_names_mapping(self):
-        """Preprocesses taxon names for mapping.
-
-        :return: A dictionary mapping preprocessed taxon names to their original names.
-        """
-        taxon_names = self._get_taxon_names_for_id_map()
-        preprocessed_taxon_names = self.name_processor.convert_preprocessed_name2dict(
-            taxon_names, self.name_processor.preprocess_taxon_name
-        )
-        return preprocessed_taxon_names
 
     def _get_organism_type(self, node) -> str:
         type_map = {
