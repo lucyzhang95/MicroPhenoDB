@@ -826,6 +826,7 @@ class CacheManager(CacheHelper):
             print("Caching NCIT to NCBI Taxonomy ID mapping...")
             ncits2taxids = self.id_mapper.ncits2taxids()
             self.save_pickle(ncits2taxids, cache_f_name)
+            print("✅ NCIT to NCBI Taxonomy ID mapping successfully cached.")
             return ncits2taxids
 
     # TODO: Do the name preprocessing here or in the NameMapper or in the DataCachePipeline?
@@ -836,9 +837,12 @@ class CacheManager(CacheHelper):
         return sorted(list(set(line[1].lower().strip() for line in core_data if line)))
 
     def _get_taxon_names_for_id_map(self):
-        # 1767 names in core table
-        # 515 names in NCIT.txt
-        # 1252 names need to map id
+        """Gets taxon names that need to be mapped to NCBI Taxonomy IDs.
+        1767 names in core table
+        515 names in NCIT.txt
+        1252 names need to map id
+        """
+
         core_taxon_names = self._get_all_taxon_names()
         cached_ncit2taxids = self.get_or_cache_ncits2taxids_mapping()
         ncit_taxon_names = set(cached_ncit2taxids.keys())
@@ -857,7 +861,8 @@ class CacheManager(CacheHelper):
         return preprocessed_taxon_names
 
     def get_or_cache_ete3_taxon_name2taxid(self, taxon_names):
-        """Caches the ETE3 taxon name to NCBI Taxonomy ID mapping."""
+        """Caches the ETE3 taxon name to NCBI Taxonomy ID mapping.
+        1030 names mapped using ETE3. 202 names left to map"""
         cache_f_name = "ete3_taxon_name2taxid.pkl"
         cache_f_path = os.path.join(self.cache_dir, cache_f_name)
 
@@ -870,6 +875,7 @@ class CacheManager(CacheHelper):
             taxon_names4ete3 = list(set(processed_taxon_names_mapping.values()))
             ete3_mapped = self.ete3_service.ete3_taxon_name2taxid(taxon_names4ete3)
             self.save_pickle(ete3_mapped, cache_f_name)
+            print("✅ ETE3 Taxon Name to TaxID mapping successfully cached.")
             return ete3_mapped
 
 
