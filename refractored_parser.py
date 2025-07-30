@@ -260,7 +260,7 @@ class OntologyNameProcessor(TextStructurePreprocessor, TextSemanticPreprocessor)
         return {original_name: preprocessor_func(original_name) for original_name in names}
 
 
-class NCItTaxonomyService:
+class EbiTaxonomyService:
     """Handles NCIt API services and related tasks.
     This service fetches NCIT codes and their corresponding NCBI Taxonomy IDs from the EBI OLS API.
     """
@@ -357,6 +357,16 @@ class ETE3TaxonomyService:
             ssl._create_default_https_context = ssl._create_unverified_context
             self.ncbi_taxa = NCBITaxa()
             self.ncbi_taxa.update_taxonomy_database()
+
+    def ete3_taxon_name2taxid(self, taxon_names: list) -> dict:
+        """Maps taxon names to NCBI Taxonomy IDs using ETE3."""
+        self.initialize_local_ncbi_taxa()
+        name2taxid = self.ncbi_taxa.get_name_translator(sorted(list(set(taxon_names))))
+        return {
+            name: {"taxid": int(taxid_list[0]), "mapping_tool": "ete3"}
+            for name, taxid_list in name2taxid.items()
+            if taxid_list
+        }
 
     def parse_names_dmp_from_taxdump(self, tar_path, f_name="names.dmp", keep_classes=None):
         """Parses the names.dmp file from the NCBI Taxonomy database dump."""
@@ -539,7 +549,7 @@ class Ncit2TaxidMapper:
     """Handles the mapping of names to taxonomic identifiers using various services."""
 
     def __init__(self):
-        self.ncit_service = NCItTaxonomyService()
+        self.ncit_service = EbiTaxonomyService()
 
     # names in notfound_ncit
     _MANUAL_TAXID_MAPPING_PATCHES = {
@@ -653,16 +663,6 @@ class OntologyName2IDMapper:
         self.ete3_service = ETE3TaxonomyService()
         self.entrez_service = EntrezTaxonomyService(email)
 
-    def ete3_taxon_name2taxid(self, taxon_names: list) -> dict:
-        """Maps taxon names to NCBI Taxonomy IDs using ETE3."""
-        self.ete3_service.initialize_local_ncbi_taxa()
-        name2taxid = self.ete3_service.ncbi_taxa.get_name_translator(sorted(list(set(taxon_names))))
-        return {
-            name: {"taxid": int(taxid_list[0])}
-            for name, taxid_list in name2taxid.items()
-            if taxid_list
-        }
-
     def entrez_taxon_name2taxid(self, taxon_names: list) -> dict:
         mapped_results = self.entrez_service.async_run_entrez_taxon_names2taxids(taxon_names)
         return mapped_results
@@ -705,7 +705,7 @@ class OntologyInfoMapper:
 
     def __init__(self, email):
         self.entrez_service = EntrezTaxonomyService(email)
-        self.ncit_service = NCItTaxonomyService()
+        self.ncit_service = EbiTaxonomyService()
         self.ncbi_tax_service = ETE3TaxonomyService()
 
     def get_taxid_from_cache(self, cache_data: dict) -> dict:
@@ -874,7 +874,7 @@ class MicroPhenoDBParser:
         if not (taxon_map := self.cache_helper.load_pickle("original_taxon_name2taxid.pkl")):
             print("Taxon map not found in cache. Generating...")
             # 1. NCIT mapping
-            ncit_codes = NCItTaxonomyService().get_ncit_code(self._get_file_path("NCIT.txt"))
+            ncit_codes = EbiTaxonomyService().get_ncit_code(self._get_file_path("NCIT.txt"))
             ncit_mapped = self.name_mapper.ncit2taxid(ncit_codes)
             # 2. Other mappings
             all_taxon_names = self._get_all_taxon_names(self._get_file_path("core_table.txt"))
@@ -933,7 +933,9 @@ class MicroPhenoDBParser:
                 name: self.name_processor.preprocess_disease_name(name) for name in names_to_map
             }
             name2id = self.info_mapper.text2term_name2id(list(set(preprocessed_map.values())))
-            disease_info_dump = self.disease_utils.query_bt_disease_info(list(set(name2id.values())))
+            disease_info_dump = self.disease_utils.query_bt_disease_info(
+                list(set(name2id.values()))
+            )
             disease_map = efo_map
             disease_map.update(
                 self.info_mapper.map_bt_disease_info(name2id, preprocessed_map, disease_info_dump)
