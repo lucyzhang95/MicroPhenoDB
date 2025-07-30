@@ -340,6 +340,7 @@ class EbiTaxonomyService:
         ncit2taxids, notfound_ncit = asyncio.run(
             self.async_query_ebi_ncit_codes_to_taxids(ncit_codes)
         )
+        print("✅ EBI NCIT Codes to TaxID mapping completed!")
         return ncit2taxids, notfound_ncit
 
 
