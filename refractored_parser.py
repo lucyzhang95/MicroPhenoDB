@@ -404,7 +404,6 @@ class EntrezTaxonomyService:
         for attempt in range(max_retries):
             try:
                 async with self.semaphore:
-
                     def blocking_entrez_call():
                         """Performs a blocking call to the Entrez API."""
                         handle = Entrez.esearch(
@@ -415,6 +414,7 @@ class EntrezTaxonomyService:
                         return rec
 
                     rec = await asyncio.to_thread(blocking_entrez_call)
+                    await asyncio.sleep(1)
 
                     if rec and rec.get("IdList"):
                         return taxon_name, {"taxid": int(rec["IdList"][0])}
