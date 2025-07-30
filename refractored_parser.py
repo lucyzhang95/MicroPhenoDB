@@ -860,7 +860,7 @@ class CacheManager(CacheHelper):
         )
         return preprocessed_taxon_names
 
-    def get_or_cache_ete3_taxon_name2taxid(self, taxon_names):
+    def get_or_cache_ete3_taxon_name2taxid(self):
         """Caches the ETE3 taxon name to NCBI Taxonomy ID mapping.
         1030 names mapped using ETE3. 202 names left to map"""
         cache_f_name = "ete3_taxon_name2taxid.pkl"
@@ -891,7 +891,8 @@ class DataCachePipeline:
     def run(self):
         """Caches the NCIT to NCBI Taxonomy ID mappings."""
         ncit2taxid_mapping = self.cache_manager.get_or_cache_ncits2taxids_mapping()
-        return ncit2taxid_mapping
+        ete3_taxon_name2taxid = self.cache_manager.get_or_cache_ete3_taxon_name2taxid()
+        return ncit2taxid_mapping, ete3_taxon_name2taxid
 
 
 class MicroPhenoDBParser:
