@@ -395,25 +395,42 @@ class EntrezTaxonomyService:
 
     def __init__(self, email=os.getenv("EMAIL_ADDRESS")):
         Entrez.email = email
+        self.semaphore = asyncio.Semaphore(3)
 
-    async def async_query_entrez_taxon_name2taxid(self, taxon_name: str):
+    async def async_query_entrez_taxon_name2taxid(
+            self, taxon_name: str, max_retries=3, initial_backoff=1
+    ):
         """Asynchronously queries NCBI Entrez for a taxon name."""
+        for attempt in range(max_retries):
+            try:
+                async with self.semaphore:
 
-        def blocking_entrez_call():
-            """Performs a blocking call to the Entrez API.
-            Entrez only supports synchronous calls."""
-            handle = Entrez.esearch(db="taxonomy", term=taxon_name, retmode="xml", retmax=1)
-            rec = Entrez.read(handle)
-            handle.close()
-            return rec
+                    def blocking_entrez_call():
+                        """Performs a blocking call to the Entrez API."""
+                        handle = Entrez.esearch(
+                            db="taxonomy", term=taxon_name, retmode="xml", retmax=1
+                        )
+                        rec = Entrez.read(handle)
+                        handle.close()
+                        return rec
 
-        try:
-            record = await asyncio.to_thread(blocking_entrez_call)
+                    rec = await asyncio.to_thread(blocking_entrez_call)
 
-            if record and record.get("IdList"):
-                return taxon_name, {"taxid": int(record["IdList"][0])}
-        except Exception as e:
-            print(f"Entrez query failed for '{taxon_name}': {e}")
+                    if rec and rec.get("IdList"):
+                        return taxon_name, {"taxid": int(rec["IdList"][0])}
+                    else:
+                        return None
+
+            except Exception as e:
+                print(f"Attempt {attempt + 1}/{max_retries} failed for '{taxon_name}': {e}")
+                if attempt + 1 == max_retries:
+                    break
+
+                backoff_time = initial_backoff * (2**attempt)
+                print(f"Retrying in {backoff_time} seconds...")
+                await asyncio.sleep(backoff_time)
+
+        print(f"All retries failed for '{taxon_name}'.")
         return None
 
     async def async_query_entrez_taxon_names2taxids(self, taxon_names: list) -> list:
