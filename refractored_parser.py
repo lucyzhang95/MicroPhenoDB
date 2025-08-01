@@ -515,6 +515,29 @@ class BioThingsService:
         return d_info
 
 
+class RapidFuzzUtils:
+    """Utilities for fuzzy string matching using RapidFuzz."""
+    def fuzzy_match(
+            self, query_names: list, ref_names: list, scorer=fuzz.token_sort_ratio, score_cutoff=90
+    ) -> dict:
+        """Performs fuzzy matching of query names against reference names."""
+        matches = {}
+        for name in query_names:
+            match = process.extractOne(name, ref_names, scorer=scorer, score_cutoff=score_cutoff)
+            if match:
+                matched_name, score, _ = match
+                matches[name] = {"matched_name": matched_name, "score": score}
+        return matches
+
+    def fuzzy_matched_name2taxid(self, fuzzy_matches: dict, ref_name_to_taxid: dict) -> dict:
+        """Maps fuzzy matched names to NCBI Taxonomy IDs."""
+        for _, match_info in fuzzy_matches.items():
+            matched_name = match_info["matched_name"]
+            if matched_name in ref_name_to_taxid:
+                match_info["taxid"] = int(ref_name_to_taxid[matched_name])
+        return fuzzy_matches
+
+
 class PubMedService:
     """Handles interactions with NCBI PubMed service via Entrez."""
 
@@ -697,32 +720,6 @@ class Ncit2TaxidMapper:
         ncits2taxids["mapping_tool"] = "ebi_ols"
 
         return ncits2taxids
-
-
-class OntologyName2IDMapper:
-    def __init__(self):
-        self.ete3_service = ETE3TaxonomyService()
-        self.entrez_service = EntrezTaxonomyService()
-
-    def fuzzy_match(
-            self, query_names: list, ref_names: list, scorer=fuzz.token_sort_ratio, score_cutoff=90
-    ) -> dict:
-        """Performs fuzzy matching of query names against reference names."""
-        matches = {}
-        for name in query_names:
-            match = process.extractOne(name, ref_names, scorer=scorer, score_cutoff=score_cutoff)
-            if match:
-                matched_name, score, _ = match
-                matches[name] = {"matched_name": matched_name, "score": score}
-        return matches
-
-    def fuzzy_matched_name2taxid(self, fuzzy_matches: dict, ref_name_to_taxid: dict) -> dict:
-        """Maps fuzzy matched names to NCBI Taxonomy IDs."""
-        for _, match_info in fuzzy_matches.items():
-            matched_name = match_info["matched_name"]
-            if matched_name in ref_name_to_taxid:
-                match_info["taxid"] = int(ref_name_to_taxid[matched_name])
-        return fuzzy_matches
 
 
 class OntologyInfoMapper:
