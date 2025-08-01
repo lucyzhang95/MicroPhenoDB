@@ -375,27 +375,6 @@ class ETE3TaxonomyService:
             if taxid_list
         }
 
-    def parse_names_dmp_from_taxdump(self, tar_path, f_name="names.dmp", keep_classes=None):
-        """Parses the names.dmp file from the NCBI Taxonomy database dump."""
-        if keep_classes is None:
-            keep_classes = {
-                "scientific name",
-                "synonym",
-                "equivalent name",
-                "genbank synonym",
-                "genbank anamorph",
-            }
-        name2taxid = {}
-        with tarfile.open(tar_path, "r:gz") as tar_f:
-            member = tar_f.getmember(f_name)
-            with tar_f.extractfile(member) as in_f:
-                for line in in_f:
-                    parts = [part.strip().decode("utf-8") for part in line.strip().split(b"|")]
-                    if len(parts) >= 4 and parts[3] in keep_classes:
-                        # parts[0] is taxid, part[1] is name, parts[3] is class
-                        name2taxid[parts[1].lower()] = int(parts[0])
-        return name2taxid
-
 
 class EntrezTaxonomyService:
     """Handles interactions with NCBI Entrez API."""
@@ -517,6 +496,28 @@ class BioThingsService:
 
 class RapidFuzzUtils:
     """Utilities for fuzzy string matching using RapidFuzz."""
+
+    def parse_names_dmp_from_taxdump(self, tar_path, f_name="names.dmp", keep_classes=None) -> dict:
+        """Parses the names.dmp file from the NCBI Taxonomy database dump."""
+        if keep_classes is None:
+            keep_classes = {
+                "scientific name",
+                "synonym",
+                "equivalent name",
+                "genbank synonym",
+                "genbank anamorph",
+            }
+        name2taxid = {}
+        with tarfile.open(tar_path, "r:gz") as tar_f:
+            member = tar_f.getmember(f_name)
+            with tar_f.extractfile(member) as in_f:
+                for line in in_f:
+                    parts = [part.strip().decode("utf-8") for part in line.strip().split(b"|")]
+                    if len(parts) >= 4 and parts[3] in keep_classes:
+                        # parts[0] is taxid, part[1] is name, parts[3] is class
+                        name2taxid[parts[1].lower()] = int(parts[0])
+        return name2taxid
+
     def fuzzy_match(
             self, query_names: list, ref_names: list, scorer=fuzz.token_sort_ratio, score_cutoff=90
     ) -> dict:
