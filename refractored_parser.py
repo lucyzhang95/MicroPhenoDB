@@ -207,6 +207,12 @@ class TextSemanticPreprocessor:
             r"\blcm\b": "lymphocytic choriomeningitis",
             r"\bcluster\b": "family",
             r"\bspirochaeta\b": "borrelia",
+            r"\bpiv\b": "parainfluenza virus",
+            r"\btm7\b": "candidatus saccharimonadota",
+            r"\brubella\b": "rubella virus",
+            r"\bmumps\b": "mumps virus",
+            r"\bntm\b": "nontuberculous mycobacteria",
+            r"\bsr1\b": "candidatus absconditibacteriota"
         }
         for pattern, replacement in expansions.items():
             name = re.sub(pattern, replacement, name)
@@ -453,6 +459,18 @@ class EntrezTaxonomyService:
 class BioThingsService:
     """Handles interactions with BioThings API for taxonomic information."""
 
+    def query_bt_taxon_name2taxid(self, taxon_names: list) -> dict:
+        """Maps taxon names to NCBI Taxonomy IDs using BioThings API."""
+        client = bt.get_client("taxon")
+        results = client.querymany(
+            list(set(taxon_names)), scopes=["scientific_name", "other_names"], fields=["taxid"]
+        )
+        return {
+            item["query"]: {"taxid": int(item["taxid"])}
+            for item in results
+            if "notfound" not in item
+        }
+
     def query_bt_taxon_info(self, taxids: list) -> dict:
         """Fetches taxon information from BioThings API."""
         if not taxids:
@@ -686,22 +704,6 @@ class OntologyName2IDMapper:
         self.ete3_service = ETE3TaxonomyService()
         self.entrez_service = EntrezTaxonomyService()
 
-    def entrez_taxon_name2taxid(self, taxon_names: list) -> dict:
-        mapped_results = self.entrez_service.async_run_entrez_taxon_names2taxids(taxon_names)
-        return mapped_results
-
-    def bt_name2taxid(self, taxon_names: list) -> dict:
-        """Maps taxon names to NCBI Taxonomy IDs using BioThings API."""
-        client = bt.get_client("taxon")
-        results = client.querymany(
-            list(set(taxon_names)), scopes=["scientific_name", "other_names"], fields=["taxid"]
-        )
-        return {
-            item["query"]: {"taxid": int(item["taxid"])}
-            for item in results
-            if "notfound" not in item
-        }
-
     def fuzzy_match(
             self, query_names: list, ref_names: list, scorer=fuzz.token_sort_ratio, score_cutoff=90
     ) -> dict:
@@ -893,7 +895,8 @@ class CacheManager(CacheHelper):
         return sorted(list(taxon_names_to_map))
 
     def get_or_cache_entrez_taxon_name2taxid(self):
-        """Caches the Entrez taxon name to NCBI Taxonomy ID mapping."""
+        """Caches the Entrez taxon name to NCBI Taxonomy ID mapping.
+        56 names mapped, 115 names left to map"""
         cache_f_name = "entrez_taxon_name2taxid.pkl"
         cache_f_path = os.path.join(self.cache_dir, cache_f_name)
 
@@ -907,6 +910,33 @@ class CacheManager(CacheHelper):
             self.save_pickle(entrez_mapped, cache_f_name)
             print("✅ Entrez Taxon Name to TaxID mapping successfully cached.")
             return entrez_mapped
+
+    def _get_taxon_names_for_bt_mapping(self):
+        """Gets taxon names that need to be mapped to NCBI Taxonomy IDs using BioThings."""
+        taxon_names = self._get_taxon_names_for_entrez_mapping()
+        cached_ete3_taxon_names = self.get_or_cache_ete3_taxon_name2taxid()
+        ete3_taxon_names = set(cached_ete3_taxon_names.keys())
+        cached_entrez_taxon_names = self.get_or_cache_entrez_taxon_name2taxid()
+        entrez_taxon_names = set(cached_entrez_taxon_names.keys())
+
+        taxon_names_to_map = set(taxon_names) - ete3_taxon_names - entrez_taxon_names
+        return sorted(list(taxon_names_to_map))
+
+    def get_or_cache_bt_taxon_name2taxid(self):
+        """Caches the BioThings taxon name to NCBI Taxonomy ID mapping."""
+        cache_f_name = "bt_taxon_name2taxid.pkl"
+        cache_f_path = os.path.join(self.cache_dir, cache_f_name)
+
+        if os.path.exists(cache_f_path):
+            print("BioThings Taxon Name to TaxID mapping already cached. Loading...")
+            return self.load_pickle(cache_f_name)
+        else:
+            print("Caching BioThings Taxon Name to TaxID mapping...")
+            taxon_names_to_map = self._get_taxon_names_for_bt_mapping()
+            bt_mapped = BioThingsService().query_bt_taxon_name2taxid(taxon_names_to_map)
+            self.save_pickle(bt_mapped, cache_f_name)
+            print("✅ BioThings Taxon Name to TaxID mapping successfully cached.")
+            return bt_mapped
 
 
 class DataCachePipeline:
@@ -923,7 +953,8 @@ class DataCachePipeline:
         ncit2taxid_mapping = self.cache_manager.get_or_cache_ncits2taxids_mapping()
         ete3_taxon_name2taxid = self.cache_manager.get_or_cache_ete3_taxon_name2taxid()
         entrez_taxon_name2taxid = self.cache_manager.get_or_cache_entrez_taxon_name2taxid()
-        return ncit2taxid_mapping, ete3_taxon_name2taxid, entrez_taxon_name2taxid
+        bt_taxon_name2taxid = self.cache_manager.get_or_cache_bt_taxon_name2taxid()
+        return ncit2taxid_mapping, ete3_taxon_name2taxid, entrez_taxon_name2taxid, bt_taxon_name2taxid
 
 
 class MicroPhenoDBParser:
