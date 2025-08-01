@@ -399,7 +399,7 @@ class EntrezTaxonomyService:
         self.semaphore = asyncio.Semaphore(3)
 
     async def async_query_entrez_taxon_name2taxid(
-        self, taxon_name: str, max_retries=3, initial_backoff=1
+            self, taxon_name: str, max_retries=3, initial_backoff=1
     ):
         """Asynchronously queries NCBI Entrez for a taxon name."""
         for attempt in range(max_retries):
@@ -682,9 +682,9 @@ class Ncit2TaxidMapper:
 
 
 class OntologyName2IDMapper:
-    def __init__(self, email=os.getenv("EMAIL_ADDRESS")):
+    def __init__(self):
         self.ete3_service = ETE3TaxonomyService()
-        self.entrez_service = EntrezTaxonomyService(email)
+        self.entrez_service = EntrezTaxonomyService()
 
     def entrez_taxon_name2taxid(self, taxon_names: list) -> dict:
         mapped_results = self.entrez_service.async_run_entrez_taxon_names2taxids(taxon_names)
@@ -703,7 +703,7 @@ class OntologyName2IDMapper:
         }
 
     def fuzzy_match(
-        self, query_names: list, ref_names: list, scorer=fuzz.token_sort_ratio, score_cutoff=90
+            self, query_names: list, ref_names: list, scorer=fuzz.token_sort_ratio, score_cutoff=90
     ) -> dict:
         """Performs fuzzy matching of query names against reference names."""
         matches = {}
@@ -813,6 +813,7 @@ class CacheManager(CacheHelper):
         self.id_mapper = Ncit2TaxidMapper()
         self.name_processor = OntologyNameProcessor()
         self.ete3_service = ETE3TaxonomyService()
+        self.entrez_service = EntrezTaxonomyService()
 
     def get_or_cache_ncits2taxids_mapping(self):
         """Checks if the NCIT to NCBI Taxonomy ID mapping is cached."""
@@ -840,9 +841,8 @@ class CacheManager(CacheHelper):
         """Gets taxon names that need to be mapped to NCBI Taxonomy IDs.
         1767 names in core table
         515 names in NCIT.txt
-        1252 names need to map id
+        1252 names left
         """
-
         core_taxon_names = self._get_all_taxon_names()
         cached_ncit2taxids = self.get_or_cache_ncits2taxids_mapping()
         ncit_taxon_names = set(cached_ncit2taxids.keys())
@@ -851,18 +851,25 @@ class CacheManager(CacheHelper):
 
     def _preprocessed_taxon_names_mapping(self) -> dict:
         """Preprocesses taxon names for mapping.
+        1201 names after preprocessing, 51 names merged
 
         :return: A dictionary mapping preprocessed taxon names to their original names.
         """
-        taxon_names = self._get_taxon_names_for_id_map()
+        taxon_names = self._get_taxon_names_for_id_map()  # already extracted ncit mapped named
         preprocessed_taxon_names = self.name_processor.convert_preprocessed_name2dict(
             taxon_names, self.name_processor.preprocess_taxon_name
         )
         return preprocessed_taxon_names
 
+    def _get_taxon_names_for_ete3_mapping(self):
+        """Gets taxon names that need to be mapped to NCBI Taxonomy IDs using ETE3."""
+        processed_taxon_names_mapping = self._preprocessed_taxon_names_mapping()
+        taxon_names4ete3 = list(set(processed_taxon_names_mapping.values()))
+        return sorted(taxon_names4ete3)
+
     def get_or_cache_ete3_taxon_name2taxid(self):
         """Caches the ETE3 taxon name to NCBI Taxonomy ID mapping.
-        1030 names mapped using ETE3. 202 names left to map"""
+        1030 names mapped using ETE3. 171 names left to map"""
         cache_f_name = "ete3_taxon_name2taxid.pkl"
         cache_f_path = os.path.join(self.cache_dir, cache_f_name)
 
@@ -871,12 +878,35 @@ class CacheManager(CacheHelper):
             return self.load_pickle(cache_f_name)
         else:
             print("Caching ETE3 Taxon Name to TaxID mapping...")
-            processed_taxon_names_mapping = self._preprocessed_taxon_names_mapping()
-            taxon_names4ete3 = list(set(processed_taxon_names_mapping.values()))
+            taxon_names4ete3 = self._get_taxon_names_for_ete3_mapping()
             ete3_mapped = self.ete3_service.ete3_taxon_name2taxid(taxon_names4ete3)
             self.save_pickle(ete3_mapped, cache_f_name)
             print("✅ ETE3 Taxon Name to TaxID mapping successfully cached.")
             return ete3_mapped
+
+    def _get_taxon_names_for_entrez_mapping(self):
+        """Gets taxon names that need to be mapped to NCBI Taxonomy IDs using Entrez."""
+        taxon_names = self._get_taxon_names_for_ete3_mapping()
+        cached_ete3_taxon_names = self.get_or_cache_ete3_taxon_name2taxid()
+        ete3_taxon_names = set(cached_ete3_taxon_names.keys())
+        taxon_names_to_map = set(taxon_names) - ete3_taxon_names
+        return sorted(list(taxon_names_to_map))
+
+    def get_or_cache_entrez_taxon_name2taxid(self):
+        """Caches the Entrez taxon name to NCBI Taxonomy ID mapping."""
+        cache_f_name = "entrez_taxon_name2taxid.pkl"
+        cache_f_path = os.path.join(self.cache_dir, cache_f_name)
+
+        if os.path.exists(cache_f_path):
+            print("Entrez Taxon Name to TaxID mapping already cached. Loading...")
+            return self.load_pickle(cache_f_name)
+        else:
+            print("Caching Entrez Taxon Name to TaxID mapping...")
+            taxon_names_to_map = self._get_taxon_names_for_entrez_mapping()
+            entrez_mapped = self.entrez_service.async_run_entrez_taxon_names2taxids(taxon_names_to_map)
+            self.save_pickle(entrez_mapped, cache_f_name)
+            print("✅ Entrez Taxon Name to TaxID mapping successfully cached.")
+            return entrez_mapped
 
 
 class DataCachePipeline:
@@ -892,7 +922,8 @@ class DataCachePipeline:
         """Caches the NCIT to NCBI Taxonomy ID mappings."""
         ncit2taxid_mapping = self.cache_manager.get_or_cache_ncits2taxids_mapping()
         ete3_taxon_name2taxid = self.cache_manager.get_or_cache_ete3_taxon_name2taxid()
-        return ncit2taxid_mapping, ete3_taxon_name2taxid
+        entrez_taxon_name2taxid = self.cache_manager.get_or_cache_entrez_taxon_name2taxid()
+        return ncit2taxid_mapping, ete3_taxon_name2taxid, entrez_taxon_name2taxid
 
 
 class MicroPhenoDBParser:
