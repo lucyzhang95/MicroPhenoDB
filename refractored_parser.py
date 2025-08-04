@@ -877,7 +877,7 @@ class CacheManager(CacheHelper):
 
     def get_or_cache_ete3_taxon_name2taxid(self):
         """Caches the ETE3 taxon name to NCBI Taxonomy ID mapping.
-        1030 names mapped using ETE3. 171 names left to map"""
+        1031 names mapped using ETE3. 170 names left to map"""
         cache_f_name = "ete3_taxon_name2taxid.pkl"
         cache_f_path = os.path.join(self.cache_dir, cache_f_name)
 
@@ -902,7 +902,7 @@ class CacheManager(CacheHelper):
 
     def get_or_cache_entrez_taxon_name2taxid(self):
         """Caches the Entrez taxon name to NCBI Taxonomy ID mapping.
-        56 names mapped, 115 names left to map"""
+        55 names mapped, 115 names left to map"""
         cache_f_name = "entrez_taxon_name2taxid.pkl"
         cache_f_path = os.path.join(self.cache_dir, cache_f_name)
 
@@ -918,7 +918,9 @@ class CacheManager(CacheHelper):
             return entrez_mapped
 
     def _get_taxon_names_for_rapidfuzz_mapping(self):
-        """Gets taxon names that need to be mapped to NCBI Taxonomy IDs using BioThings."""
+        """Gets taxon names that need to be mapped to NCBI Taxonomy IDs using Rapidfuzz.
+        61 names mapped, 54 names left to map
+        """
         taxon_names = self._get_taxon_names_for_entrez_mapping()
         cached_ete3_taxon_names = self.get_or_cache_ete3_taxon_name2taxid()
         ete3_taxon_names = set(cached_ete3_taxon_names.keys())
