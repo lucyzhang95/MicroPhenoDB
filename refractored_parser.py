@@ -218,6 +218,18 @@ class TextSemanticPreprocessor:
             name = re.sub(pattern, replacement, name)
         return re.sub(r"\s{2,}", " ", name).strip()
 
+    def replace_taxon_name(self, name: str) -> str:
+        """Standardizes plural or variant taxon names to their singular form."""
+        replacements = {
+            "streptococci": "streptococcus",
+            "lactobacilli": "lactobacillus",
+            "enterococci": "enterococcus",
+            "staphylococci": "staphylococcus",
+        }
+        for old, new in replacements.items():
+            name = re.sub(rf"\b{old}\b", new, name, flags=re.IGNORECASE)
+        return name.strip()
+
 
 class OntologyNameProcessor(TextStructurePreprocessor, TextSemanticPreprocessor):
     """Applies a series of rules to clean and standardize ontology names."""
@@ -240,6 +252,7 @@ class OntologyNameProcessor(TextStructurePreprocessor, TextSemanticPreprocessor)
         name = self.remove_pre_postfix_in_taxon_name(name)
         name = self.remove_spp_in_name(name)
         name = self.expand_taxon_name_abbrev(name)
+        name = self.replace_taxon_name(name)
         return name
 
     def preprocess_disease_name(self, name: str) -> str:
@@ -946,6 +959,32 @@ class CacheManager(CacheHelper):
             print("✅ RapidFuzz Taxon Name to TaxID mapping successfully cached.")
             return rapidfuzz_mapped
 
+    def _convert_preprocessed_name2original_name(self):
+        """Converts preprocessed taxon names to their original names and updates the mapping with taxid."""
+        processed_taxon_name_mapping = self._preprocessed_taxon_names_mapping()
+        cached_ete3_taxon_names = self.get_or_cache_ete3_taxon_name2taxid()
+        cached_entrez_taxon_names = self.get_or_cache_entrez_taxon_name2taxid()
+        cached_rapidfuzz_taxon_names = self.get_or_cache_rapidfuzz_taxon_name2taxid()
+
+        mapped_names = {**cached_ete3_taxon_names, **cached_entrez_taxon_names, **cached_rapidfuzz_taxon_names}
+        original_name_mapping = {}
+        for original_name, preprocessed_name in processed_taxon_name_mapping.items():
+            if preprocessed_name in mapped_names:
+                info = mapped_names[preprocessed_name]
+                original_name_mapping[original_name] = {
+                    **info,
+                    "name": preprocessed_name,
+                }
+        return original_name_mapping
+
+    def _get_unmapped_taxon_names(self):
+        """Gets taxon names that were not mapped by any service."""
+        original_names = self._get_all_taxon_names()
+        cached_ncit2taxids = self.get_or_cache_ncits2taxids_mapping()
+        mapped_original_names = self._convert_preprocessed_name2original_name()
+        unmapped_taxon_names = set(original_names) - set(cached_ncit2taxids.keys()) - set(mapped_original_names.keys())
+        return sorted(list(unmapped_taxon_names))
+
 
 class DataCachePipeline:
     """Pipeline for caching data for the parser."""
@@ -973,6 +1012,7 @@ class MicroPhenoDBParser:
         self.file_reader = FileReader()
         self.name_processor = OntologyNameProcessor()
         self.cache_manager = CacheManager()
+        self.cache_pipeline = DataCachePipeline()
 
     def _get_file_path(self, filename):
         return os.path.join(self.data_dir, filename)
@@ -988,6 +1028,12 @@ class MicroPhenoDBParser:
             if taxid in node.get("lineage", []):
                 return biolink_type
         return "biolink:OrganismalEntity"
+
+    def load_cached_data(self):
+        """Loads cached data."""
+        ncit2taxid_mapped, ete3_mapped, entrez_mapped, rapidfuzz_mapped = self.cache_pipeline.run()
+
+
 
     def _cache_and_load_data(self):
         """Manages the caching and loading of all intermediate and final data."""
@@ -1141,3 +1187,8 @@ class RecordCacheManager:
 if __name__ == "__main__":
     pipeline = DataCachePipeline()
     data = pipeline.run()
+
+    cache_mgr = CacheManager()
+    unmapped_t_names = cache_mgr._get_unmapped_taxon_names()
+    print(f"Unmapped taxon names: {set(unmapped_t_names)}")
+    print(len(set(unmapped_t_names)))
