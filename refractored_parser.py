@@ -219,12 +219,15 @@ class TextSemanticPreprocessor:
         return re.sub(r"\s{2,}", " ", name).strip()
 
     def replace_taxon_name(self, name: str) -> str:
-        """Standardizes plural or variant taxon names to their singular form."""
+        """Standardizes plural or variant taxon names to their singular form and correct spelling."""
         replacements = {
-            "streptococci": "streptococcus",
-            "lactobacilli": "lactobacillus",
-            "enterococci": "enterococcus",
-            "staphylococci": "staphylococcus",
+            r"streptococci": "streptococcus",
+            r"lactobacilli": "lactobacillus",
+            r"enterococci": "enterococcus",
+            r"staphylococci": "staphylococcus",
+            r"coxsackie": "coxsackievirus",
+            r"gemellales": "gemella",
+            r"\bparainfluenza\b": "orthorubulavirus"  # make rank broader to include all parainfluenza viruses
         }
         for old, new in replacements.items():
             name = re.sub(rf"\b{old}\b", new, name, flags=re.IGNORECASE)
@@ -929,6 +932,35 @@ class CacheManager(CacheHelper):
             self.save_pickle(entrez_mapped, cache_f_name)
             print("✅ Entrez Taxon Name to TaxID mapping successfully cached.")
             return entrez_mapped
+
+
+    def _get_taxon_names_for_bt_mapping(self):
+        """Gets taxon names that need to be mapped to NCBI Taxonomy IDs using BioThings."""
+        taxon_names = self._get_taxon_names_for_entrez_mapping()
+        cached_ete3_taxon_names = self.get_or_cache_ete3_taxon_name2taxid()
+        ete3_taxon_names = set(cached_ete3_taxon_names.keys())
+        cached_entrez_taxon_names = self.get_or_cache_entrez_taxon_name2taxid()
+        entrez_taxon_names = set(cached_entrez_taxon_names.keys())
+
+        taxon_names_to_map = set(taxon_names) - ete3_taxon_names - entrez_taxon_names
+        return sorted(list(taxon_names_to_map))
+
+    def get_or_cache_bt_taxon_name2taxid(self):
+        """Caches the BioThings taxon name to NCBI Taxonomy ID mapping.
+        """
+        cache_f_name = "bt_taxon_name2taxid.pkl"
+        cache_f_path = os.path.join(self.cache_dir, cache_f_name)
+
+        if os.path.exists(cache_f_path):
+            print("BioThings Taxon Name to TaxID mapping already cached. Loading...")
+            return self.load_pickle(cache_f_name)
+        else:
+            print("Caching BioThings Taxon Name to TaxID mapping...")
+            taxon_names_to_map = self._get_taxon_names_for_bt_mapping()
+            bt_mapped = BioThingsService().query_bt_taxon_name2taxid(taxon_names_to_map)
+            self.save_pickle(bt_mapped, cache_f_name)
+            print("✅ BioThings Taxon Name to TaxID mapping successfully cached.")
+            return bt_mapped
 
     def _get_taxon_names_for_rapidfuzz_mapping(self):
         """Gets taxon names that need to be mapped to NCBI Taxonomy IDs using Rapidfuzz.
