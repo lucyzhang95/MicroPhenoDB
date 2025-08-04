@@ -497,7 +497,7 @@ class BioThingsService:
 class RapidFuzzUtils:
     """Utilities for fuzzy string matching using RapidFuzz."""
 
-    def parse_names_dmp_from_taxdump(self, tar_path, f_name="names.dmp", keep_classes=None) -> dict:
+    def _parse_names_dmp_from_taxdump(self, tar_path, f_name="names.dmp", keep_classes=None) -> dict:
         """Parses the names.dmp file from the NCBI Taxonomy database dump."""
         if keep_classes is None:
             keep_classes = {
@@ -518,11 +518,18 @@ class RapidFuzzUtils:
                         name2taxid[parts[1].lower()] = int(parts[0])
         return name2taxid
 
-    def fuzzy_match(
-            self, query_names: list, ref_names: list, scorer=fuzz.token_sort_ratio, score_cutoff=90
+    def _get_taxon_ref_names(self):
+        tar_path = "taxdump.tar.gz"
+        ref_names = [self._parse_names_dmp_from_taxdump(tar_path).keys()]
+        return sorted(list(set(ref_names)))
+
+    def _fuzzy_match(
+            self, query_names: list, scorer=fuzz.token_sort_ratio, score_cutoff=90
     ) -> dict:
         """Performs fuzzy matching of query names against reference names."""
         matches = {}
+        ref_names = self._get_taxon_ref_names()
+
         for name in query_names:
             match = process.extractOne(name, ref_names, scorer=scorer, score_cutoff=score_cutoff)
             if match:
@@ -530,13 +537,14 @@ class RapidFuzzUtils:
                 matches[name] = {"matched_name": matched_name, "score": score}
         return matches
 
-    def fuzzy_matched_name2taxid(self, fuzzy_matches: dict, ref_name_to_taxid: dict) -> dict:
+    def fuzzy_matched_name2taxid(self, query_names: list, ref_name_to_taxid: dict) -> dict:
         """Maps fuzzy matched names to NCBI Taxonomy IDs."""
-        for _, match_info in fuzzy_matches.items():
+        fuzzy_matched = self._fuzzy_match(query_names)
+        for _, match_info in fuzzy_matched.items():
             matched_name = match_info["matched_name"]
             if matched_name in ref_name_to_taxid:
                 match_info["taxid"] = int(ref_name_to_taxid[matched_name])
-        return fuzzy_matches
+        return fuzzy_matched
 
 
 class PubMedService:
@@ -1009,7 +1017,7 @@ class MicroPhenoDBParser:
             taxdump_path = os.path.join(os.getcwd(), "taxdump.tar.gz")
             if not os.path.exists(taxdump_path):
                 self.ncbi_tax_service.download_ncbi_taxdump()
-            ref_map = self.ncbi_tax_service.parse_names_dmp_from_taxdump(taxdump_path)
+            ref_map = self.ncbi_tax_service._parse_names_dmp_from_taxdump(taxdump_path)
             fuzzy_matches = self.name_mapper.fuzzy_match(remaining, list(ref_map.keys()))
             all_mappings.update(self.name_mapper.fuzzy_matched_name2taxid(fuzzy_matches, ref_map))
             # 5. Finalize
