@@ -497,54 +497,55 @@ class BioThingsService:
 class RapidFuzzUtils:
     """Utilities for fuzzy string matching using RapidFuzz."""
 
-    def _parse_names_dmp_from_taxdump(self, tar_path, f_name="names.dmp", keep_classes=None) -> dict:
+    def __init__(self, tar_path="taxdump.tar.gz"):
+        """Loads and parses the NCBI taxonomy data upon initialization."""
+        print(f"Initializing RapidFuzzUtils and loading data from '{tar_path}'...")
+
+        self.ref_name_to_taxid = self._parse_names_dmp_from_taxdump(tar_path)
+        self.ref_names = list(self.ref_name_to_taxid.keys())
+        print(f"Ready. Loaded {len(self.ref_names)} reference names.")
+
+    def _parse_names_dmp_from_taxdump(self, tar_path, f_name="names.dmp") -> dict:
         """Parses the names.dmp file from the NCBI Taxonomy database dump."""
-        if keep_classes is None:
-            keep_classes = {
-                "scientific name",
-                "synonym",
-                "equivalent name",
-                "genbank synonym",
-                "genbank anamorph",
-            }
+        keep_classes = {
+            "scientific name", "synonym", "equivalent name",
+            "genbank synonym", "genbank anamorph"
+        }
         name2taxid = {}
         with tarfile.open(tar_path, "r:gz") as tar_f:
             member = tar_f.getmember(f_name)
             with tar_f.extractfile(member) as in_f:
                 for line in in_f:
                     parts = [part.strip().decode("utf-8") for part in line.strip().split(b"|")]
-                    if len(parts) >= 4 and parts[3] in keep_classes:
-                        # parts[0] is taxid, part[1] is name, parts[3] is class
+                    if len(parts) >= 4 and parts[3] in keep_classes:  # parts[0] == taxid, parts[1] == name
                         name2taxid[parts[1].lower()] = int(parts[0])
         return name2taxid
 
-    def _get_taxon_ref_names(self):
-        tar_path = "taxdump.tar.gz"
-        ref_names = [self._parse_names_dmp_from_taxdump(tar_path).keys()]
-        return sorted(list(set(ref_names)))
-
-    def _fuzzy_match(
-            self, query_names: list, scorer=fuzz.token_sort_ratio, score_cutoff=90
-    ) -> dict:
-        """Performs fuzzy matching of query names against reference names."""
+    def fuzzy_match(self, query_names: list, scorer=fuzz.token_sort_ratio, score_cutoff=90) -> dict:
+        """
+        Performs fuzzy matching of query names against the pre-loaded reference names.
+        """
         matches = {}
-        ref_names = self._get_taxon_ref_names()
-
         for name in query_names:
-            match = process.extractOne(name, ref_names, scorer=scorer, score_cutoff=score_cutoff)
+            match = process.extractOne(name, self.ref_names, scorer=scorer, score_cutoff=score_cutoff)
             if match:
                 matched_name, score, _ = match
-                matches[name] = {"matched_name": matched_name, "score": score}
+                matches[name] = {"matched_name": matched_name, "score": score, "mapping_tool": "rapidfuzz"}
         return matches
 
-    def fuzzy_matched_name2taxid(self, query_names: list, ref_name_to_taxid: dict) -> dict:
-        """Maps fuzzy matched names to NCBI Taxonomy IDs."""
-        fuzzy_matched = self._fuzzy_match(query_names)
-        for _, match_info in fuzzy_matched.items():
+    def fuzzy_matched_name2taxid(self, query_names: list) -> dict:
+        """
+        Finds the best fuzzy match for each query name and returns its corresponding taxid.
+        """
+        fuzzy_matches = self.fuzzy_match(query_names)
+
+        for original_name, match_info in fuzzy_matches.items():
             matched_name = match_info["matched_name"]
-            if matched_name in ref_name_to_taxid:
-                match_info["taxid"] = int(ref_name_to_taxid[matched_name])
-        return fuzzy_matched
+            taxid = self.ref_name_to_taxid.get(matched_name)
+            if taxid:
+                match_info["taxid"] = taxid
+
+        return fuzzy_matches
 
 
 class PubMedService:
@@ -838,7 +839,6 @@ class CacheManager(CacheHelper):
             print("✅ NCIT to NCBI Taxonomy ID mapping successfully cached.")
             return ncits2taxids
 
-    # TODO: Do the name preprocessing here or in the NameMapper or in the DataCachePipeline?
     def _get_all_taxon_names(self, file_path=None):
         if file_path is None:
             file_path = os.path.join(self.data_dir, "core_table.txt")
@@ -917,7 +917,7 @@ class CacheManager(CacheHelper):
             print("✅ Entrez Taxon Name to TaxID mapping successfully cached.")
             return entrez_mapped
 
-    def _get_taxon_names_for_bt_mapping(self):
+    def _get_taxon_names_for_rapidfuzz_mapping(self):
         """Gets taxon names that need to be mapped to NCBI Taxonomy IDs using BioThings."""
         taxon_names = self._get_taxon_names_for_entrez_mapping()
         cached_ete3_taxon_names = self.get_or_cache_ete3_taxon_name2taxid()
@@ -928,21 +928,21 @@ class CacheManager(CacheHelper):
         taxon_names_to_map = set(taxon_names) - ete3_taxon_names - entrez_taxon_names
         return sorted(list(taxon_names_to_map))
 
-    def get_or_cache_bt_taxon_name2taxid(self):
+    def get_or_cache_rapidfuzz_taxon_name2taxid(self):
         """Caches the BioThings taxon name to NCBI Taxonomy ID mapping."""
-        cache_f_name = "bt_taxon_name2taxid.pkl"
+        cache_f_name = "rapidfuzz_taxon_name2taxid.pkl"
         cache_f_path = os.path.join(self.cache_dir, cache_f_name)
 
         if os.path.exists(cache_f_path):
-            print("BioThings Taxon Name to TaxID mapping already cached. Loading...")
+            print("RapidFuzz Taxon Name to TaxID mapping already cached. Loading...")
             return self.load_pickle(cache_f_name)
         else:
-            print("Caching BioThings Taxon Name to TaxID mapping...")
-            taxon_names_to_map = self._get_taxon_names_for_bt_mapping()
-            bt_mapped = BioThingsService().query_bt_taxon_name2taxid(taxon_names_to_map)
-            self.save_pickle(bt_mapped, cache_f_name)
-            print("✅ BioThings Taxon Name to TaxID mapping successfully cached.")
-            return bt_mapped
+            print("Caching RapidFuzz Taxon Name to TaxID mapping...")
+            taxon_names_to_map = self._get_taxon_names_for_rapidfuzz_mapping()
+            rapidfuzz_mapped = RapidFuzzUtils().fuzzy_matched_name2taxid(taxon_names_to_map)
+            self.save_pickle(rapidfuzz_mapped, cache_f_name)
+            print("✅ RapidFuzz Taxon Name to TaxID mapping successfully cached.")
+            return rapidfuzz_mapped
 
 
 class DataCachePipeline:
@@ -959,18 +959,17 @@ class DataCachePipeline:
         ncit2taxid_mapping = self.cache_manager.get_or_cache_ncits2taxids_mapping()
         ete3_taxon_name2taxid = self.cache_manager.get_or_cache_ete3_taxon_name2taxid()
         entrez_taxon_name2taxid = self.cache_manager.get_or_cache_entrez_taxon_name2taxid()
-        bt_taxon_name2taxid = self.cache_manager.get_or_cache_bt_taxon_name2taxid()
-        return ncit2taxid_mapping, ete3_taxon_name2taxid, entrez_taxon_name2taxid, bt_taxon_name2taxid
+        rapidfuzz_taxon_name2taxid = self.cache_manager.get_or_cache_rapidfuzz_taxon_name2taxid()
+        return ncit2taxid_mapping, ete3_taxon_name2taxid, entrez_taxon_name2taxid, rapidfuzz_taxon_name2taxid
 
 
 class MicroPhenoDBParser:
     """Orchestrates the entire data processing pipeline for MicroPhenoDB."""
 
-    def __init__(self, data_dir="downloads", email=os.getenv("EMAIL_ADDRESS")):
+    def __init__(self, data_dir="downloads"):
         self.data_dir = data_dir
         self.file_reader = FileReader()
         self.name_processor = OntologyNameProcessor()
-        self.name_mapper = OntologyName2IDMapper()
         self.cache_manager = CacheManager()
 
     def _get_file_path(self, filename):
@@ -1128,7 +1127,7 @@ class RecordCacheManager:
         self.cache_helper = cache_helper
 
     def cache_microphenodb_entire_records(
-        self, records, filename_base="microphenodb_parsed_records.pkl"
+            self, records, filename_base="microphenodb_parsed_records.pkl"
     ):
         """Caches the list of records to both pickle and JSON formats."""
         print(f"Caching {len(records)} final records...")
