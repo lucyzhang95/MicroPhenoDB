@@ -398,12 +398,14 @@ class ETE3TaxonomyService:
 class EntrezTaxonomyService:
     """Handles interactions with NCBI Entrez API."""
 
-    def __init__(self, email=os.getenv("EMAIL_ADDRESS")):
-        Entrez.email = email
+    EMAIL = os.getenv("EMAIL_ADDRESS")
+
+    def __init__(self):
+        Entrez.email = self.EMAIL
         self.semaphore = asyncio.Semaphore(3)
 
     async def async_query_entrez_taxon_name2taxid(
-            self, taxon_name: str, max_retries=3, initial_backoff=1
+        self, taxon_name: str, max_retries=3, initial_backoff=1
     ):
         """Asynchronously queries NCBI Entrez for a taxon name."""
         for attempt in range(max_retries):
@@ -527,8 +529,11 @@ class RapidFuzzUtils:
     def _parse_names_dmp_from_taxdump(self, tar_path, f_name="names.dmp") -> dict:
         """Parses the names.dmp file from the NCBI Taxonomy database dump."""
         keep_classes = {
-            "scientific name", "synonym", "equivalent name",
-            "genbank synonym", "genbank anamorph"
+            "scientific name",
+            "synonym",
+            "equivalent name",
+            "genbank synonym",
+            "genbank anamorph",
         }
         name2taxid = {}
         with tarfile.open(tar_path, "r:gz") as tar_f:
@@ -536,7 +541,9 @@ class RapidFuzzUtils:
             with tar_f.extractfile(member) as in_f:
                 for line in in_f:
                     parts = [part.strip().decode("utf-8") for part in line.strip().split(b"|")]
-                    if len(parts) >= 4 and parts[3] in keep_classes:  # parts[0] == taxid, parts[1] == name
+                    if (
+                        len(parts) >= 4 and parts[3] in keep_classes
+                    ):  # parts[0] == taxid, parts[1] == name
                         name2taxid[parts[1].lower()] = int(parts[0])
         return name2taxid
 
@@ -546,10 +553,16 @@ class RapidFuzzUtils:
         """
         matches = {}
         for name in query_names:
-            match = process.extractOne(name, self.ref_names, scorer=scorer, score_cutoff=score_cutoff)
+            match = process.extractOne(
+                name, self.ref_names, scorer=scorer, score_cutoff=score_cutoff
+            )
             if match:
                 matched_name, score, _ = match
-                matches[name] = {"matched_name": matched_name, "score": score, "mapping_tool": "rapidfuzz"}
+                matches[name] = {
+                    "matched_name": matched_name,
+                    "score": score,
+                    "mapping_tool": "rapidfuzz",
+                }
         return matches
 
     def fuzzy_matched_name2taxid(self, query_names: list) -> dict:
@@ -558,7 +571,7 @@ class RapidFuzzUtils:
         """
         fuzzy_matches = self.fuzzy_match(query_names)
 
-        for original_name, match_info in fuzzy_matches.items():
+        for _original_name, match_info in fuzzy_matches.items():
             matched_name = match_info["matched_name"]
             taxid = self.ref_name_to_taxid.get(matched_name)
             if taxid:
@@ -931,7 +944,9 @@ class CacheManager(CacheHelper):
         else:
             print("Caching Entrez Taxon Name to TaxID mapping...")
             taxon_names_to_map = self._get_taxon_names_for_entrez_mapping()
-            entrez_mapped = self.entrez_service.async_run_entrez_taxon_names2taxids(taxon_names_to_map)
+            entrez_mapped = self.entrez_service.async_run_entrez_taxon_names2taxids(
+                taxon_names_to_map
+            )
             self.save_pickle(entrez_mapped, cache_f_name)
             print("✅ Entrez Taxon Name to TaxID mapping successfully cached.")
             return entrez_mapped
@@ -975,12 +990,13 @@ class CacheManager(CacheHelper):
         cached_rapid_fuzz_taxon_names = self.get_or_cache_rapidfuzz_taxon_name2taxid()
         rapidfuzz_taxon_names = set(cached_rapid_fuzz_taxon_names.keys())
 
-        taxon_names_to_map = set(taxon_names) - ete3_taxon_names - entrez_taxon_names - rapidfuzz_taxon_names
+        taxon_names_to_map = (
+            set(taxon_names) - ete3_taxon_names - entrez_taxon_names - rapidfuzz_taxon_names
+        )
         return sorted(list(taxon_names_to_map))
 
     def get_or_cache_bt_taxon_name2taxid(self):
-        """Caches the BioThings taxon name to NCBI Taxonomy ID mapping.
-        """
+        """Caches the BioThings taxon name to NCBI Taxonomy ID mapping."""
         cache_f_name = "bt_taxon_name2taxid.pkl"
         cache_f_path = os.path.join(self.cache_dir, cache_f_name)
 
@@ -1003,7 +1019,12 @@ class CacheManager(CacheHelper):
         cached_rapidfuzz_taxon_names = self.get_or_cache_rapidfuzz_taxon_name2taxid()
         cached_bt_taxon_names = self.get_or_cache_bt_taxon_name2taxid()
 
-        mapped_names = {**cached_ete3_taxon_names, **cached_entrez_taxon_names, **cached_rapidfuzz_taxon_names, **cached_bt_taxon_names}
+        mapped_names = {
+            **cached_ete3_taxon_names,
+            **cached_entrez_taxon_names,
+            **cached_rapidfuzz_taxon_names,
+            **cached_bt_taxon_names,
+        }
         original_name_mapping = {}
         for original_name, preprocessed_name in processed_taxon_name_mapping.items():
             if preprocessed_name in mapped_names:
@@ -1019,8 +1040,61 @@ class CacheManager(CacheHelper):
         original_names = self._get_all_taxon_names()
         cached_ncit2taxids = self.get_or_cache_ncits2taxids_mapping()
         mapped_original_names = self._convert_preprocessed_name2original_name()
-        unmapped_taxon_names = set(original_names) - set(cached_ncit2taxids.keys()) - set(mapped_original_names.keys())
+        unmapped_taxon_names = (
+            set(original_names) - set(cached_ncit2taxids.keys()) - set(mapped_original_names.keys())
+        )
         return sorted(list(unmapped_taxon_names))
+
+    _MANUAL_MAP_UNMAPPED_TAXON_NAMES = {
+        "clostridium xivb": 543317,
+        "actinomyces radingae": 131110,
+        "creutzfeldt-jakob disease": 36469,
+        "candidate division tm7 single cell isolate tm7b": 447455,
+        "uncultured clostridiales ii": 186801,
+        "candidate division tm7 single cell isolate tm7c": 447456,
+        "cysticercosis": 6204,
+        "syphilis": 160,
+        "ovine jaagziekte virus": 11746,
+        "actinomyces turicensis": 131111,
+        "hookworms cestodes": 6157,
+        "actinomyces neuii subspecies neuii": 144053,
+        "clostridium lituseburense": 1537,
+        "butyrate-producing bacterium sr1/1": 245019,
+        "prevotella multisaccharivorax": 310514,
+        "vulvovaginal candidiasis": 5476,
+        "clostridia cluster i": 186801,
+        "trophyrema": 2039,
+        "clostridium group xi": 186804,
+        "coxsackie a virus": 12066,
+        "escherichia vulneris": 566,
+        "cryptococcus albidus": 100951,
+        "parainfluenza virus 1?c4": 2560526,
+        "prevotella nanceiensis": 425941,
+        "candidate division tm7 genomosp": 239137,
+        "clostridium cluster xviii": 189325,
+        "butyrate-producing bacterium sr1/5": 245020,
+        "eubacterium tortuosum": 39494,
+        "neisseriagonorrhoeae": 485,
+        "clostridium cluster xiva": 543317,
+        "saccharomyces castellii": 27288,
+    }
+
+    def get_or_cache_manual_taxon_name2taxid(self):
+        """Caches the manual mapping of taxon names to NCBI Taxonomy IDs."""
+        cache_f_name = "manual_taxon_name2taxid.pkl"
+        cache_f_path = os.path.join(self.cache_dir, cache_f_name)
+
+        if os.path.exists(cache_f_path):
+            print("Manual Taxon Name to TaxID mapping already cached. Loading...")
+            return self.load_pickle(cache_f_name)
+        else:
+            print("Caching Manual Taxon Name to TaxID mapping...")
+            manual_mapping = {
+                name: {"taxid": taxid, "mapping_tool": "manual"}
+                for name, taxid in self._MANUAL_MAP_UNMAPPED_TAXON_NAMES.items()
+            }
+            self.save_pickle(manual_mapping, cache_f_name)
+            return manual_mapping
 
 
 class DataCachePipeline:
@@ -1039,7 +1113,15 @@ class DataCachePipeline:
         entrez_taxon_name2taxid = self.cache_manager.get_or_cache_entrez_taxon_name2taxid()
         rapidfuzz_taxon_name2taxid = self.cache_manager.get_or_cache_rapidfuzz_taxon_name2taxid()
         bt_taxon_name2taxid = self.cache_manager.get_or_cache_bt_taxon_name2taxid()
-        return ncit2taxid_mapping, ete3_taxon_name2taxid, entrez_taxon_name2taxid, rapidfuzz_taxon_name2taxid, bt_taxon_name2taxid
+        manual_taxon_name2taxid = self.cache_manager.get_or_cache_manual_taxon_name2taxid()
+        return (
+            ncit2taxid_mapping,
+            ete3_taxon_name2taxid,
+            entrez_taxon_name2taxid,
+            rapidfuzz_taxon_name2taxid,
+            bt_taxon_name2taxid,
+            manual_taxon_name2taxid,
+        )
 
 
 class MicroPhenoDBParser:
@@ -1069,9 +1151,13 @@ class MicroPhenoDBParser:
 
     def load_cached_data(self):
         """Loads cached data."""
-        ncit2taxid_mapped, ete3_mapped, entrez_mapped, rapidfuzz_mapped, bt_mapped = self.cache_pipeline.run()
-
-
+        (
+            ncit2taxid_mapped,
+            ete3_mapped,
+            entrez_mapped,
+            rapidfuzz_mapped,
+            bt_mapped,
+        ) = self.cache_pipeline.run()
 
     def _cache_and_load_data(self):
         """Manages the caching and loading of all intermediate and final data."""
@@ -1213,7 +1299,7 @@ class RecordCacheManager:
         self.cache_helper = cache_helper
 
     def cache_microphenodb_entire_records(
-            self, records, filename_base="microphenodb_parsed_records.pkl"
+        self, records, filename_base="microphenodb_parsed_records.pkl"
     ):
         """Caches the list of records to both pickle and JSON formats."""
         print(f"Caching {len(records)} final records...")
@@ -1225,8 +1311,3 @@ class RecordCacheManager:
 if __name__ == "__main__":
     pipeline = DataCachePipeline()
     data = pipeline.run()
-
-    cache_mgr = CacheManager()
-    unmapped_t_names = cache_mgr._get_unmapped_taxon_names()
-    print(f"Unmapped taxon names: {set(unmapped_t_names)}")
-    print(len(set(unmapped_t_names)))
