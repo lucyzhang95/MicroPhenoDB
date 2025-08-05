@@ -212,7 +212,7 @@ class TextSemanticPreprocessor:
             r"\brubella\b": "rubella virus",
             r"\bmumps\b": "mumps virus",
             r"\bntm\b": "mycobacteriales",  # changed from "non-tuberculous mycobacteria" to "mycobacteriales"
-            r"\bsr1\b": "candidatus absconditibacteriota",
+            r"^\bsr1\b$": "candidatus absconditibacteriota",
             r"zygomycetes": "mucoromycota",  # zygomycetes is an obsolete term for mucoromycota and zoopagomycota.
         }
         for pattern, replacement in expansions.items():
@@ -955,7 +955,7 @@ class CacheManager(CacheHelper):
         """Gets taxon names that need to be mapped to NCBI Taxonomy IDs using Rapidfuzz.
         61 names mapped, 54 names left to map
         """
-        taxon_names = self._get_taxon_names_for_entrez_mapping()
+        taxon_names = self._get_taxon_names_for_ete3_mapping()
         cached_ete3_taxon_names = self.get_or_cache_ete3_taxon_name2taxid()
         ete3_taxon_names = set(cached_ete3_taxon_names.keys())
         cached_entrez_taxon_names = self.get_or_cache_entrez_taxon_name2taxid()
@@ -982,7 +982,7 @@ class CacheManager(CacheHelper):
 
     def _get_taxon_names_for_bt_mapping(self):
         """Gets taxon names that need to be mapped to NCBI Taxonomy IDs using BioThings."""
-        taxon_names = self._get_taxon_names_for_entrez_mapping()
+        taxon_names = self._get_taxon_names_for_ete3_mapping()
         cached_ete3_taxon_names = self.get_or_cache_ete3_taxon_name2taxid()
         ete3_taxon_names = set(cached_ete3_taxon_names.keys())
         cached_entrez_taxon_names = self.get_or_cache_entrez_taxon_name2taxid()
@@ -1011,37 +1011,24 @@ class CacheManager(CacheHelper):
             print("✅ BioThings Taxon Name to TaxID mapping successfully cached.")
             return bt_mapped
 
-    def _convert_preprocessed_name2original_name(self):
-        """Converts preprocessed taxon names to their original names and updates the mapping with taxid."""
-        processed_taxon_name_mapping = self._preprocessed_taxon_names_mapping()
-        cached_ete3_taxon_names = self.get_or_cache_ete3_taxon_name2taxid()
-        cached_entrez_taxon_names = self.get_or_cache_entrez_taxon_name2taxid()
-        cached_rapidfuzz_taxon_names = self.get_or_cache_rapidfuzz_taxon_name2taxid()
-        cached_bt_taxon_names = self.get_or_cache_bt_taxon_name2taxid()
-
-        mapped_names = {
-            **cached_ete3_taxon_names,
-            **cached_entrez_taxon_names,
-            **cached_rapidfuzz_taxon_names,
-            **cached_bt_taxon_names,
-        }
-        original_name_mapping = {}
-        for original_name, preprocessed_name in processed_taxon_name_mapping.items():
-            if preprocessed_name in mapped_names:
-                info = mapped_names[preprocessed_name]
-                original_name_mapping[original_name] = {
-                    **info,
-                    "name": preprocessed_name,
-                }
-        return original_name_mapping
-
     def _get_unmapped_taxon_names(self):
         """Gets taxon names that were not mapped by any service."""
-        original_names = self._get_all_taxon_names()
-        cached_ncit2taxids = self.get_or_cache_ncits2taxids_mapping()
-        mapped_original_names = self._convert_preprocessed_name2original_name()
+        taxon_names = self._get_taxon_names_for_ete3_mapping()
+        cached_ete3_taxon_names = self.get_or_cache_ete3_taxon_name2taxid()
+        ete3_taxon_names = set(cached_ete3_taxon_names.keys())
+        cached_entrez_taxon_names = self.get_or_cache_entrez_taxon_name2taxid()
+        entrez_taxon_names = set(cached_entrez_taxon_names.keys())
+        cached_rapid_fuzz_taxon_names = self.get_or_cache_rapidfuzz_taxon_name2taxid()
+        rapidfuzz_taxon_names = set(cached_rapid_fuzz_taxon_names.keys())
+        cached_bt_taxon_names = self.get_or_cache_bt_taxon_name2taxid()
+        bt_taxon_names = set(cached_bt_taxon_names.keys())
+
         unmapped_taxon_names = (
-            set(original_names) - set(cached_ncit2taxids.keys()) - set(mapped_original_names.keys())
+            set(taxon_names)
+            - set(ete3_taxon_names)
+            - set(entrez_taxon_names)
+            - set(rapidfuzz_taxon_names)
+            - set(bt_taxon_names)
         )
         return sorted(list(unmapped_taxon_names))
 
@@ -1096,6 +1083,35 @@ class CacheManager(CacheHelper):
             self.save_pickle(manual_mapping, cache_f_name)
             return manual_mapping
 
+    def get_or_cache_all_mapped_taxon_names(self):
+        """Caches all mapped taxon names."""
+        cache_f_name = "all_taxon_name2taxid.pkl"
+        cache_f_path = os.path.join(self.cache_dir, cache_f_name)
+
+        if os.path.exists(cache_f_path):
+            print("All Mapped Taxon Names already cached. Loading...")
+            return self.load_pickle(cache_f_name)
+        else:
+            print("Caching All Mapped Taxon Names...")
+            ncit2taxid_mapping = self.get_or_cache_ncits2taxids_mapping()
+            ete3_taxon_name2taxid = self.get_or_cache_ete3_taxon_name2taxid()
+            entrez_taxon_name2taxid = self.get_or_cache_entrez_taxon_name2taxid()
+            rapidfuzz_taxon_name2taxid = self.get_or_cache_rapidfuzz_taxon_name2taxid()
+            bt_taxon_name2taxid = self.get_or_cache_bt_taxon_name2taxid()
+            manual_taxon_name2taxid = self.get_or_cache_manual_taxon_name2taxid()
+
+            all_mapped_taxon_names = {
+                **ncit2taxid_mapping,
+                **ete3_taxon_name2taxid,
+                **entrez_taxon_name2taxid,
+                **rapidfuzz_taxon_name2taxid,
+                **bt_taxon_name2taxid,
+                **manual_taxon_name2taxid,
+            }
+            self.save_pickle(all_mapped_taxon_names, cache_f_name)
+            print("✅ All Mapped Taxon Names successfully cached.")
+            return all_mapped_taxon_names
+
 
 class DataCachePipeline:
     """Pipeline for caching data for the parser."""
@@ -1105,8 +1121,9 @@ class DataCachePipeline:
         self.cache_dir = cache_dir
         self.ncit_path = os.path.join(self.downloads_dir, "NCIT.txt")
         self.cache_manager = CacheManager(cache_dir)
+        self.bt_service = BioThingsService()
 
-    def run(self):
+    def run_cache_taxon_names2taxids(self):
         """Caches the NCIT to NCBI Taxonomy ID mappings."""
         ncit2taxid_mapping = self.cache_manager.get_or_cache_ncits2taxids_mapping()
         ete3_taxon_name2taxid = self.cache_manager.get_or_cache_ete3_taxon_name2taxid()
@@ -1122,6 +1139,63 @@ class DataCachePipeline:
             bt_taxon_name2taxid,
             manual_taxon_name2taxid,
         )
+
+    def load_cached_data(self):
+        """Loads cached data."""
+        (
+            ncit2taxid_mapped,
+            ete3_mapped,
+            entrez_mapped,
+            rapidfuzz_mapped,
+            bt_mapped,
+            manual_mapped,
+        ) = self.run_cache_taxon_names2taxids()
+
+        all_mapped_taxon_names = {
+            **ncit2taxid_mapped,
+            **ete3_mapped,
+            **entrez_mapped,
+            **rapidfuzz_mapped,
+            **bt_mapped,
+            **manual_mapped,
+        }
+        return all_mapped_taxon_names
+
+    def _convert_preprocessed_name2original_name(self):
+        """Converts preprocessed taxon names to their original names and updates the mapping with taxid."""
+        processed_taxon_name_mapping = self._preprocessed_taxon_names_mapping()
+        cached_ete3_taxon_names = self.get_or_cache_ete3_taxon_name2taxid()
+        cached_entrez_taxon_names = self.get_or_cache_entrez_taxon_name2taxid()
+        cached_rapidfuzz_taxon_names = self.get_or_cache_rapidfuzz_taxon_name2taxid()
+        cached_bt_taxon_names = self.get_or_cache_bt_taxon_name2taxid()
+
+        mapped_names = {
+            **cached_ete3_taxon_names,
+            **cached_entrez_taxon_names,
+            **cached_rapidfuzz_taxon_names,
+            **cached_bt_taxon_names,
+        }
+        original_name_mapping = {}
+        for original_name, preprocessed_name in processed_taxon_name_mapping.items():
+            if preprocessed_name in mapped_names:
+                info = mapped_names[preprocessed_name]
+                original_name_mapping[original_name] = {
+                    **info,
+                    "name": preprocessed_name,
+                }
+        return original_name_mapping
+
+    def _get_taxids_for_taxon_info(self) -> list:
+        """Extracts taxids from the taxon information."""
+        mapped_taxon_names = self.load_cached_data()
+        taxids = [info["taxid"] for info in mapped_taxon_names.values() if "taxid" in info]
+        return sorted(list(set(taxids)))
+
+    def query_bt_taxon_info(self) -> dict:
+        """Queries BioThings for taxon information based on taxids."""
+        taxids = self._get_taxids_for_taxon_info()
+        taxon_info = self.bt_service.query_bt_taxon_info(taxids)
+        return taxon_info
 
 
 class MicroPhenoDBParser:
@@ -1157,7 +1231,8 @@ class MicroPhenoDBParser:
             entrez_mapped,
             rapidfuzz_mapped,
             bt_mapped,
-        ) = self.cache_pipeline.run()
+            manual_mapped,
+        ) = self.cache_pipeline.run_cache_taxon_names2taxids()
 
     def _cache_and_load_data(self):
         """Manages the caching and loading of all intermediate and final data."""
@@ -1310,4 +1385,9 @@ class RecordCacheManager:
 
 if __name__ == "__main__":
     pipeline = DataCachePipeline()
-    data = pipeline.run()
+    data = pipeline.run_cache_taxon_names2taxids()
+
+    cache_mgr = CacheManager()
+    unmapped_taxon_names = cache_mgr._get_unmapped_taxon_names()
+    print(len(unmapped_taxon_names))
+    print(unmapped_taxon_names)
