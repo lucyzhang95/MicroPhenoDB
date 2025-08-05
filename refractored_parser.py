@@ -753,13 +753,12 @@ class Ncit2TaxidMapper:
                     {
                         "id": f"NCBITaxon:{override_taxid['taxid']}",
                         "taxid": override_taxid["taxid"],
-                        "description": ncits2taxids[name]["description"]
+                        "description": ncits2taxids[name]["description"],
+                        "mapping_tool": "ebi_ols"
                         if ncits2taxids[name]["description"]
                         else override_taxid.get("description", ""),
                     }
                 )
-
-        ncits2taxids["mapping_tool"] = "ebi_ols"
 
         return ncits2taxids
 
@@ -855,6 +854,7 @@ class CacheManager(CacheHelper):
         self.name_processor = OntologyNameProcessor()
         self.ete3_service = ETE3TaxonomyService()
         self.entrez_service = EntrezTaxonomyService()
+        self.bt_service = BioThingsService()
 
     def get_or_cache_ncits2taxids_mapping(self):
         """Checks if the NCIT to NCBI Taxonomy ID mapping is cached."""
@@ -908,8 +908,7 @@ class CacheManager(CacheHelper):
         return sorted(taxon_names4ete3)
 
     def get_or_cache_ete3_taxon_name2taxid(self):
-        """Caches the ETE3 taxon name to NCBI Taxonomy ID mapping.
-        1031 names mapped using ETE3. 170 names left to map"""
+        """Caches the ETE3 taxon name to NCBI Taxonomy ID mapping."""
         cache_f_name = "ete3_taxon_name2taxid.pkl"
         cache_f_path = os.path.join(self.cache_dir, cache_f_name)
 
@@ -933,8 +932,7 @@ class CacheManager(CacheHelper):
         return sorted(list(taxon_names_to_map))
 
     def get_or_cache_entrez_taxon_name2taxid(self):
-        """Caches the Entrez taxon name to NCBI Taxonomy ID mapping.
-        55 names mapped, 115 names left to map"""
+        """Caches the Entrez taxon name to NCBI Taxonomy ID mapping."""
         cache_f_name = "entrez_taxon_name2taxid.pkl"
         cache_f_path = os.path.join(self.cache_dir, cache_f_name)
 
@@ -952,9 +950,7 @@ class CacheManager(CacheHelper):
             return entrez_mapped
 
     def _get_taxon_names_for_rapidfuzz_mapping(self):
-        """Gets taxon names that need to be mapped to NCBI Taxonomy IDs using Rapidfuzz.
-        61 names mapped, 54 names left to map
-        """
+        """Gets taxon names that need to be mapped to NCBI Taxonomy IDs using Rapidfuzz."""
         taxon_names = self._get_taxon_names_for_ete3_mapping()
         cached_ete3_taxon_names = self.get_or_cache_ete3_taxon_name2taxid()
         ete3_taxon_names = set(cached_ete3_taxon_names.keys())
@@ -1006,7 +1002,7 @@ class CacheManager(CacheHelper):
         else:
             print("Caching BioThings Taxon Name to TaxID mapping...")
             taxon_names_to_map = self._get_taxon_names_for_bt_mapping()
-            bt_mapped = BioThingsService().query_bt_taxon_name2taxid(taxon_names_to_map)
+            bt_mapped = self.bt_service.query_bt_taxon_name2taxid(taxon_names_to_map)
             self.save_pickle(bt_mapped, cache_f_name)
             print("✅ BioThings Taxon Name to TaxID mapping successfully cached.")
             return bt_mapped
@@ -1033,37 +1029,35 @@ class CacheManager(CacheHelper):
         return sorted(list(unmapped_taxon_names))
 
     _MANUAL_MAP_UNMAPPED_TAXON_NAMES = {
-        "clostridium xivb": 543317,
-        "actinomyces radingae": 131110,
-        "creutzfeldt-jakob disease": 36469,
-        "candidate division tm7 single cell isolate tm7b": 447455,
-        "uncultured clostridiales ii": 186801,
-        "candidate division tm7 single cell isolate tm7c": 447456,
-        "cysticercosis": 6204,
-        "syphilis": 160,
-        "ovine jaagziekte virus": 11746,
-        "actinomyces turicensis": 131111,
-        "hookworms cestodes": 6157,
         "actinomyces neuii subspecies neuii": 144053,
+        "actinomyces radingae": 131110,
+        "actinomyces turicensis": 131111,
+        "candidate division candidatus saccharimonadota genomosp": 239137,
+        "candidate division candidatus saccharimonadota single cell isolate tm7b": 447455,
+        "candidate division candidatus saccharimonadota single cell isolate tm7c": 447456,
+        "clostridia family i": 31979,
+        "clostridium family xiva": 543317,
+        "clostridium family xviii": 189325,
         "clostridium lituseburense": 1537,
-        "butyrate-producing bacterium sr1/1": 245019,
-        "prevotella multisaccharivorax": 310514,
-        "vulvovaginal candidiasis": 5476,
-        "clostridia cluster i": 186801,
-        "trophyrema": 2039,
-        "clostridium group xi": 186804,
-        "coxsackie a virus": 12066,
-        "escherichia vulneris": 566,
+        "clostridium xi": 186804,
+        "clostridium xivb": 543317,
+        "coxsackievirus a virus": 12066,
+        "creutzfeldt jakob disease": 36469,
         "cryptococcus albidus": 100951,
-        "parainfluenza virus 1?c4": 2560526,
-        "prevotella nanceiensis": 425941,
-        "candidate division tm7 genomosp": 239137,
-        "clostridium cluster xviii": 189325,
-        "butyrate-producing bacterium sr1/5": 245020,
+        "cysticercosis": 6204,
+        "escherichia vulneris": 566,
         "eubacterium tortuosum": 39494,
+        "hookworms cestodes": 6157,
         "neisseriagonorrhoeae": 485,
-        "clostridium cluster xiva": 543317,
+        "orthorubulavirus 1c4": 2560526,
+        "ovine jaagziekte virus": 11746,
+        "prevotella multisaccharivorax": 310514,
+        "prevotella nanceiensis": 425941,
         "saccharomyces castellii": 27288,
+        "syphilis": 160,
+        "trophyrema": 2039,
+        "uncultured clostridiales ii": 186801,
+        "vulvovaginal candidiasis": 5476,
     }
 
     def get_or_cache_manual_taxon_name2taxid(self):
@@ -1083,84 +1077,7 @@ class CacheManager(CacheHelper):
             self.save_pickle(manual_mapping, cache_f_name)
             return manual_mapping
 
-    def get_or_cache_all_mapped_taxon_names(self):
-        """Caches all mapped taxon names."""
-        cache_f_name = "all_taxon_name2taxid.pkl"
-        cache_f_path = os.path.join(self.cache_dir, cache_f_name)
-
-        if os.path.exists(cache_f_path):
-            print("All Mapped Taxon Names already cached. Loading...")
-            return self.load_pickle(cache_f_name)
-        else:
-            print("Caching All Mapped Taxon Names...")
-            ncit2taxid_mapping = self.get_or_cache_ncits2taxids_mapping()
-            ete3_taxon_name2taxid = self.get_or_cache_ete3_taxon_name2taxid()
-            entrez_taxon_name2taxid = self.get_or_cache_entrez_taxon_name2taxid()
-            rapidfuzz_taxon_name2taxid = self.get_or_cache_rapidfuzz_taxon_name2taxid()
-            bt_taxon_name2taxid = self.get_or_cache_bt_taxon_name2taxid()
-            manual_taxon_name2taxid = self.get_or_cache_manual_taxon_name2taxid()
-
-            all_mapped_taxon_names = {
-                **ncit2taxid_mapping,
-                **ete3_taxon_name2taxid,
-                **entrez_taxon_name2taxid,
-                **rapidfuzz_taxon_name2taxid,
-                **bt_taxon_name2taxid,
-                **manual_taxon_name2taxid,
-            }
-            self.save_pickle(all_mapped_taxon_names, cache_f_name)
-            print("✅ All Mapped Taxon Names successfully cached.")
-            return all_mapped_taxon_names
-
-
-class DataCachePipeline:
-    """Pipeline for caching data for the parser."""
-
-    def __init__(self, cache_dir="cache", downloads_dir="downloads"):
-        self.downloads_dir = downloads_dir
-        self.cache_dir = cache_dir
-        self.ncit_path = os.path.join(self.downloads_dir, "NCIT.txt")
-        self.cache_manager = CacheManager(cache_dir)
-        self.bt_service = BioThingsService()
-
-    def run_cache_taxon_names2taxids(self):
-        """Caches the NCIT to NCBI Taxonomy ID mappings."""
-        ncit2taxid_mapping = self.cache_manager.get_or_cache_ncits2taxids_mapping()
-        ete3_taxon_name2taxid = self.cache_manager.get_or_cache_ete3_taxon_name2taxid()
-        entrez_taxon_name2taxid = self.cache_manager.get_or_cache_entrez_taxon_name2taxid()
-        rapidfuzz_taxon_name2taxid = self.cache_manager.get_or_cache_rapidfuzz_taxon_name2taxid()
-        bt_taxon_name2taxid = self.cache_manager.get_or_cache_bt_taxon_name2taxid()
-        manual_taxon_name2taxid = self.cache_manager.get_or_cache_manual_taxon_name2taxid()
-        return (
-            ncit2taxid_mapping,
-            ete3_taxon_name2taxid,
-            entrez_taxon_name2taxid,
-            rapidfuzz_taxon_name2taxid,
-            bt_taxon_name2taxid,
-            manual_taxon_name2taxid,
-        )
-
-    def load_cached_data(self):
-        """Loads cached data."""
-        (
-            ncit2taxid_mapped,
-            ete3_mapped,
-            entrez_mapped,
-            rapidfuzz_mapped,
-            bt_mapped,
-            manual_mapped,
-        ) = self.run_cache_taxon_names2taxids()
-
-        all_mapped_taxon_names = {
-            **ncit2taxid_mapped,
-            **ete3_mapped,
-            **entrez_mapped,
-            **rapidfuzz_mapped,
-            **bt_mapped,
-            **manual_mapped,
-        }
-        return all_mapped_taxon_names
-
+    # TODO: count the output record of this function
     def _convert_preprocessed_name2original_name(self):
         """Converts preprocessed taxon names to their original names and updates the mapping with taxid."""
         processed_taxon_name_mapping = self._preprocessed_taxon_names_mapping()
@@ -1168,13 +1085,16 @@ class DataCachePipeline:
         cached_entrez_taxon_names = self.get_or_cache_entrez_taxon_name2taxid()
         cached_rapidfuzz_taxon_names = self.get_or_cache_rapidfuzz_taxon_name2taxid()
         cached_bt_taxon_names = self.get_or_cache_bt_taxon_name2taxid()
+        cached_manual_taxon_names = self.get_or_cache_manual_taxon_name2taxid()
 
         mapped_names = {
             **cached_ete3_taxon_names,
             **cached_entrez_taxon_names,
             **cached_rapidfuzz_taxon_names,
             **cached_bt_taxon_names,
+            **cached_manual_taxon_names,
         }
+
         original_name_mapping = {}
         for original_name, preprocessed_name in processed_taxon_name_mapping.items():
             if preprocessed_name in mapped_names:
@@ -1187,8 +1107,10 @@ class DataCachePipeline:
 
     def _get_taxids_for_taxon_info(self) -> list:
         """Extracts taxids from the taxon information."""
-        mapped_taxon_names = self.load_cached_data()
-        taxids = [info["taxid"] for info in mapped_taxon_names.values() if "taxid" in info]
+        mapped_taxon_names = self._convert_preprocessed_name2original_name()
+        ncit2taxid = self.get_or_cache_ncits2taxids_mapping()
+        all_mapped_taxon_names = {**ncit2taxid, **mapped_taxon_names}
+        taxids = [info["taxid"] for info in all_mapped_taxon_names.values() if "taxid" in info]
         return sorted(list(set(taxids)))
 
     def query_bt_taxon_info(self) -> dict:
@@ -1196,6 +1118,99 @@ class DataCachePipeline:
         taxids = self._get_taxids_for_taxon_info()
         taxon_info = self.bt_service.query_bt_taxon_info(taxids)
         return taxon_info
+
+    def map_original_name2taxon_info(self) -> dict:
+        """
+
+        taxon_info:
+        '42862': {'id': 'NCBITaxon:42862',
+        'taxid': 42862,
+        'name': 'rickettsia felis',
+        'parent_taxid': 114277,
+        'lineage': [42862,
+                    114277,
+                    780,
+                    33988,
+                    775,
+                    766,
+                    28211,
+                    1224,
+                    3379134,
+                    2,
+                    131567,
+                    1],
+        'rank': 'species'},
+
+        ncit2taxid:
+        'clostridiales xiii': {'description': 'A bacterial family of uncertain placement in the phylum Firmicutes and the order Clostridiales that is used to classify the genus Mogibacterium.[NCIT]',
+        'xrefs': {'ncit': 'C85925'},
+        'id': 'NCBITaxon:189325',
+        'taxid': 189325},
+        'mapping_tool': 'ebi_ols'}
+
+        """
+        taxon_info = self.query_bt_taxon_info()
+
+        mapped_taxon_names = self._convert_preprocessed_name2original_name()
+        ncit2taxid = self.get_or_cache_ncits2taxids_mapping()
+        all_name_mappings = {**mapped_taxon_names, **ncit2taxid}
+
+        final_mapping = {}
+        for original_name, source_info in all_name_mappings.items():
+            taxid = source_info.get("taxid")
+            if taxid and str(taxid) in taxon_info:
+                enriched_info = {
+                    **taxon_info[str(taxid)],
+                    **source_info,
+                    "original_name": original_name,
+                }
+                final_mapping[original_name] = enriched_info
+
+        return final_mapping
+
+    def get_or_cache_taxon_info(self):
+        """Caches and retrieves taxon information."""
+        cache_f_name = "original_taxon_name_and_taxon_info.pkl"
+        cache_f_path = os.path.join(self.cache_dir, cache_f_name)
+
+        if os.path.exists(cache_f_path):
+            print("Original taxon name and info already cached. Loading...")
+            return self.load_pickle(cache_f_name)
+        else:
+            print("Caching original taxon name and info...")
+            taxon_info = self.map_original_name2taxon_info()
+            self.save_pickle(taxon_info, cache_f_name)
+            print("✅ Original taxon name and info successfully cached.")
+            return taxon_info
+
+
+class DataCachePipeline:
+    """Pipeline for caching data for the parser."""
+
+    def __init__(self, cache_dir="cache", downloads_dir="downloads"):
+        self.downloads_dir = downloads_dir
+        self.cache_dir = cache_dir
+        self.ncit_path = os.path.join(self.downloads_dir, "NCIT.txt")
+        self.cache_manager = CacheManager(cache_dir)
+
+    def run_cache_taxon_names2taxids(self):
+        """Caches the NCIT to NCBI Taxonomy ID mappings."""
+        ncit2taxid_mapping = self.cache_manager.get_or_cache_ncits2taxids_mapping()
+        ete3_taxon_name2taxid = self.cache_manager.get_or_cache_ete3_taxon_name2taxid()
+        entrez_taxon_name2taxid = self.cache_manager.get_or_cache_entrez_taxon_name2taxid()
+        rapidfuzz_taxon_name2taxid = self.cache_manager.get_or_cache_rapidfuzz_taxon_name2taxid()
+        bt_taxon_name2taxid = self.cache_manager.get_or_cache_bt_taxon_name2taxid()
+        manual_taxon_name2taxid = self.cache_manager.get_or_cache_manual_taxon_name2taxid()
+        taxon_info = self.cache_manager.get_or_cache_taxon_info()
+        return (
+            ncit2taxid_mapping,
+            ete3_taxon_name2taxid,
+            entrez_taxon_name2taxid,
+            rapidfuzz_taxon_name2taxid,
+            bt_taxon_name2taxid,
+            manual_taxon_name2taxid,
+            taxon_info,
+        )
 
 
 class MicroPhenoDBParser:
@@ -1222,17 +1237,6 @@ class MicroPhenoDBParser:
             if taxid in node.get("lineage", []):
                 return biolink_type
         return "biolink:OrganismalEntity"
-
-    def load_cached_data(self):
-        """Loads cached data."""
-        (
-            ncit2taxid_mapped,
-            ete3_mapped,
-            entrez_mapped,
-            rapidfuzz_mapped,
-            bt_mapped,
-            manual_mapped,
-        ) = self.cache_pipeline.run_cache_taxon_names2taxids()
 
     def _cache_and_load_data(self):
         """Manages the caching and loading of all intermediate and final data."""
@@ -1387,7 +1391,7 @@ if __name__ == "__main__":
     pipeline = DataCachePipeline()
     data = pipeline.run_cache_taxon_names2taxids()
 
-    cache_mgr = CacheManager()
-    unmapped_taxon_names = cache_mgr._get_unmapped_taxon_names()
-    print(len(unmapped_taxon_names))
-    print(unmapped_taxon_names)
+    # cache_mgr = CacheManager()
+    # unmapped_taxon_names = cache_mgr._get_unmapped_taxon_names()
+    # print(len(unmapped_taxon_names))
+    # print(unmapped_taxon_names)
