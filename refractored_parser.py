@@ -230,7 +230,7 @@ class TextSemanticPreprocessor:
             r"gemellales": "gemella",
             r"\bparainfluenza virus\b": "orthorubulavirus",
             r"\bparainfluenza\b": "orthorubulavirus",  # make rank broader to include all parainfluenza viruses
-            r"\bpapovavirus\b": "papillomavirus",  # papovavirus is an obsolete term for both papillomavirus and polyomavirus
+            r"\bpapovavirus\b": "papillomavirus", # papovavirus obsolete term for both papillomavirus and polyomavirus
         }
         for old, new in replacements.items():
             name = re.sub(rf"\b{old}\b", new, name, flags=re.IGNORECASE)
@@ -278,7 +278,8 @@ class OntologyNameProcessor(TextStructurePreprocessor, TextSemanticPreprocessor)
         """
 
         :param names:
-        :param preprocessor_func: a function to preprocess the names, e.g., preprocess_taxon_name or preprocess_disease_name
+        :param preprocessor_func: a function to preprocess the names,
+        e.g., preprocess_taxon_name or preprocess_disease_name
         :return:
         {"original_name": "preprocessed_name"}
         """
@@ -340,9 +341,9 @@ class EbiTaxonomyService:
 
         :param ncit_codes: a list of NCIT codes e.g., ["C85924", "C83526", ...]
         :return ncit2taxid: a dictionary mapping NCIT codes to taxids
-        {'Trichostrongylus colubriformis': {'taxid': 6319, 'ncit': 'C125969', 'description': 'A species of parasitic...'}}
+        {'Trichostrongylus colubriformis': {'taxid': 6319, 'ncit': 'C125969', 'description': 'A species of...'}}
         :return notfound_ncit: a dictionary with NCIT codes failed to map taxid
-        {'Trypanosoma brucei gambiense': {'ncit': 'C125975', 'description': 'A species of parasitic flagellate protozoa...'}}
+        {'Trypanosoma brucei gambiense': {'ncit': 'C125975', 'description': 'A species of parasitic protozoa...'}}
         """
         ncit2taxids, notfound_ncit = {}, {}
         async with aiohttp.ClientSession() as session:
@@ -722,7 +723,7 @@ class Ncit2TaxidMapper:
         :param ncit_path: Path to the NCIT.txt file.
         :return: A dictionary mapping NCIT codes to NCBI Taxonomy IDs.
         e.g.,
-        'clostridiales xiii': {'description': 'A bacterial family of uncertain placement in the phylum Firmicutes and the order Clostridiales that is used to classify the genus Mogibacterium.[NCIT]',
+        'clostridiales xiii': {'description': 'A bacterial family of uncertain placement in the phylum...[NCIT]',
         'xrefs': {'ncit': 'C85925'},
         'id': 'NCBITaxon:189325',
         'taxid': 189325},
@@ -816,7 +817,7 @@ class OntologyInfoMapper:
         return ncit2taxon_info
 
     def text2term_name2id(
-        self, disease_names, ontology="MONDO", url="http://purl.obolibrary.org/obo/mondo.owl"
+            self, disease_names, ontology="MONDO", url="http://purl.obolibrary.org/obo/mondo.owl"
     ):
         """Maps disease names to ontology identifiers using text2term."""
         if not text2term.cache_exists(ontology):
@@ -830,7 +831,7 @@ class OntologyInfoMapper:
         return dict(zip(df["Source Term"], df["Mapped Term CURIE"]))
 
     def map_bt_disease_info(
-        self, disease_name2id: dict, disease_name_map: dict, disease_info: dict
+            self, disease_name2id: dict, disease_name_map: dict, disease_info: dict
     ) -> dict:
         """Maps disease names to their information using BioThings API."""
         final_d_mapping = {}
@@ -1020,11 +1021,11 @@ class CacheManager(CacheHelper):
         bt_taxon_names = set(cached_bt_taxon_names.keys())
 
         unmapped_taxon_names = (
-            set(taxon_names)
-            - set(ete3_taxon_names)
-            - set(entrez_taxon_names)
-            - set(rapidfuzz_taxon_names)
-            - set(bt_taxon_names)
+                set(taxon_names)
+                - set(ete3_taxon_names)
+                - set(entrez_taxon_names)
+                - set(rapidfuzz_taxon_names)
+                - set(bt_taxon_names)
         )
         return sorted(list(unmapped_taxon_names))
 
