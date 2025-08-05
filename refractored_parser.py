@@ -988,7 +988,7 @@ class CacheManager(CacheHelper):
         rapidfuzz_taxon_names = set(cached_rapid_fuzz_taxon_names.keys())
 
         taxon_names_to_map = (
-            set(taxon_names) - ete3_taxon_names - entrez_taxon_names - rapidfuzz_taxon_names
+                set(taxon_names) - ete3_taxon_names - entrez_taxon_names - rapidfuzz_taxon_names
         )
         return sorted(list(taxon_names_to_map))
 
@@ -1079,7 +1079,7 @@ class CacheManager(CacheHelper):
             return manual_mapping
 
     # TODO: count the output record of this function
-    def _convert_preprocessed_name2original_name(self):
+    def _convert_preprocessed_name2original_name(self) -> dict:
         """Converts preprocessed taxon names to their original names and updates the mapping with taxid."""
         processed_taxon_name_mapping = self._preprocessed_taxon_names_mapping()
         cached_ete3_taxon_names = self.get_or_cache_ete3_taxon_name2taxid()
@@ -1161,8 +1161,8 @@ class CacheManager(CacheHelper):
             taxid = source_info.get("taxid")
             if taxid and str(taxid) in taxon_info:
                 enriched_info = {
-                    **taxon_info[str(taxid)],
                     **source_info,
+                    **taxon_info[str(taxid)],
                     "original_name": original_name,
                 }
                 final_mapping[original_name] = enriched_info
@@ -1195,7 +1195,10 @@ class DataCachePipeline:
         self.cache_manager = CacheManager(cache_dir)
 
     def run_cache_taxon_names2taxids(self):
-        """Caches the NCIT to NCBI Taxonomy ID mappings."""
+        """Caches the NCIT to NCBI Taxonomy ID mappings.
+        1700 taxids in total combined from all sources. 1615 unique taxids.
+        2 has no taxids
+        """
         ncit2taxid_mapping = self.cache_manager.get_or_cache_ncits2taxids_mapping()
         ete3_taxon_name2taxid = self.cache_manager.get_or_cache_ete3_taxon_name2taxid()
         entrez_taxon_name2taxid = self.cache_manager.get_or_cache_entrez_taxon_name2taxid()
