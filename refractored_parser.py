@@ -992,6 +992,15 @@ class CacheManager(CacheHelper):
         )
         return sorted(list(taxon_names_to_map))
 
+    OVERRIDE_BT_mapped_TAXID = {
+        "influenza": {"taxid": 11320},  # influenza a virus
+        "bifidobacterium infantis": {"taxid": 1682},
+        "powassan": {"taxid": 11083},  # powassan virus
+        "rubella virus virus": {"taxid": 11041},  # rubella virus
+        "st louis encephalitis": {"taxid": 11080},  # st. louis encephalitis virus
+        "yeasts": {"taxid": 5206},  # cryptococcus
+    }
+
     def get_or_cache_bt_taxon_name2taxid(self):
         """Caches the BioThings taxon name to NCBI Taxonomy ID mapping."""
         cache_f_name = "bt_taxon_name2taxid.pkl"
@@ -1004,6 +1013,14 @@ class CacheManager(CacheHelper):
             print("Caching BioThings Taxon Name to TaxID mapping...")
             taxon_names_to_map = self._get_taxon_names_for_bt_mapping()
             bt_mapped = self.bt_service.query_bt_taxon_name2taxid(taxon_names_to_map)
+
+            # override some taxids with manual mapping
+            for name, override_info in self.OVERRIDE_BT_mapped_TAXID.items():
+                if name in bt_mapped:
+                    bt_mapped[name].update({"taxid": override_info["taxid"]})
+
+            if "microorganism" in bt_mapped:
+                del bt_mapped["microorganism"]  # remove "microorganism" as it is too generic
             self.save_pickle(bt_mapped, cache_f_name)
             print("✅ BioThings Taxon Name to TaxID mapping successfully cached.")
             return bt_mapped
