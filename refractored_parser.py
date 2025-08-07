@@ -652,7 +652,7 @@ class DiseaseUtils:
         return efo_map
 
 
-class Ncit2TaxidMapper:
+class NCIt2TaxidMapper:
     """Handles the mapping of names to taxonomic identifiers using various services."""
 
     def __init__(self):
@@ -851,7 +851,7 @@ class CacheManager(CacheHelper):
         self.data_dir = data_dir
         self.cache_dir = cache_dir
         self.file_reader = FileReader()
-        self.id_mapper = Ncit2TaxidMapper()
+        self.id_mapper = NCIt2TaxidMapper()
         self.name_processor = OntologyNameProcessor()
         self.ete3_service = ETE3TaxonomyService()
         self.entrez_service = EntrezTaxonomyService()
@@ -1216,6 +1216,7 @@ class DataCachePipeline:
         1700 taxids in total combined from all sources. 1615 unique taxids.
         2 has no taxids
         """
+        # taxon preprocessing and mapping
         ncit2taxid_mapping = self.cache_manager.get_or_cache_ncits2taxids_mapping()
         ete3_taxon_name2taxid = self.cache_manager.get_or_cache_ete3_taxon_name2taxid()
         entrez_taxon_name2taxid = self.cache_manager.get_or_cache_entrez_taxon_name2taxid()
@@ -1223,6 +1224,9 @@ class DataCachePipeline:
         bt_taxon_name2taxid = self.cache_manager.get_or_cache_bt_taxon_name2taxid()
         manual_taxon_name2taxid = self.cache_manager.get_or_cache_manual_taxon_name2taxid()
         taxon_info = self.cache_manager.get_or_cache_taxon_info()
+
+        # disease mapping
+
         return (
             ncit2taxid_mapping,
             ete3_taxon_name2taxid,
