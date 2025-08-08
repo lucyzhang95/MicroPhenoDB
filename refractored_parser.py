@@ -230,7 +230,7 @@ class TextSemanticPreprocessor:
             r"gemellales": "gemella",
             r"\bparainfluenza virus\b": "orthorubulavirus",
             r"\bparainfluenza\b": "orthorubulavirus",  # make rank broader to include all parainfluenza viruses
-            r"\bpapovavirus\b": "papillomavirus", # papovavirus obsolete term for both papillomavirus and polyomavirus
+            r"\bpapovavirus\b": "papillomavirus",  # papovavirus obsolete term for both papillomavirus and polyomavirus
         }
         for old, new in replacements.items():
             name = re.sub(rf"\b{old}\b", new, name, flags=re.IGNORECASE)
@@ -581,6 +581,32 @@ class RapidFuzzUtils:
         return fuzzy_matches
 
 
+class Text2TermUtils:
+    def text2term_name2id(
+        self, disease_names, ontology="MONDO", url="http://purl.obolibrary.org/obo/mondo.owl"
+    ):
+        """Maps disease names to ontology identifiers using text2term."""
+        if not text2term.cache_exists(ontology):
+            text2term.cache_ontology(ontology_url=url, ontology_acronym=ontology)
+        df = text2term.map_terms(
+            list(set(disease_names)), ontology, use_cache=True, min_score=0.8, max_mappings=1
+        )
+        if df is None or df.empty:
+            return {}
+        df = df[~df["Mapped Term CURIE"].astype(str).str.contains("NCBITAXON", na=False)]
+
+        text2term_mapped = {}
+        for _, row in df.iterrows():
+            source_term = row["Source Term"]
+            mapped_curie = row["Mapped Term CURIE"]
+
+            text2term_mapped[source_term] = {
+                "id": mapped_curie,
+                "mapping_tool": "text2term",
+            }
+        return text2term_mapped
+
+
 class PubMedService:
     """Handles interactions with NCBI PubMed service via Entrez."""
 
@@ -622,34 +648,6 @@ class PubMedService:
             except (KeyError, IndexError) as e:
                 print(f"Failed to parse PubMed article: {e}")
         return result
-
-
-class DiseaseUtils:
-    """Utilities for fetching and processing disease information."""
-
-    def get_efo_disease_info(self, efo_file_path):
-        """Reads the EFO file and returns a mapping of scientific names to disease information."""
-        reader = FileReader()
-        efo_map = {}
-        for line in reader.read_file(efo_file_path):
-            d_name, sci_d_name, _id, desc = (
-                line[0].lower().strip(),
-                line[1].lower().strip(),
-                line[2],
-                line[3].strip(),
-            )
-            _id = _id.replace("_", ":")
-            if ":" in _id:
-                prefix = _id.split(":")[0].strip().lower()
-                efo_map[sci_d_name] = {
-                    "id": _id.upper(),
-                    "name": sci_d_name,
-                    "original_name": d_name,
-                    "description": f"{desc}[{prefix.upper()}]",
-                    "type": "biolink:Disease",
-                    "xrefs": {prefix: _id.upper()},
-                }
-        return efo_map
 
 
 class NCIt2TaxidMapper:
@@ -764,86 +762,6 @@ class NCIt2TaxidMapper:
         return ncits2taxids
 
 
-class OntologyInfoMapper:
-    """Handles the mapping of preprocessed names and NCIT codes to taxon information."""
-
-    def __init__(self, email):
-        self.entrez_service = EntrezTaxonomyService(email)
-        self.ncit_service = EbiTaxonomyService()
-        self.ncbi_tax_service = ETE3TaxonomyService()
-
-    def get_taxid_from_cache(self, cache_data: dict) -> dict:
-        """Extracts taxid from cached data."""
-        return {
-            original_name: taxon_map_d["taxid"]
-            for original_name, taxon_map_d in cache_data.items()
-            if "taxid" in taxon_map_d
-        }
-
-    def map_preprocessed_name2taxon_info(self, taxid_dict: dict, bt_taxon_info: dict) -> dict:
-        """Maps preprocessed names to taxon information."""
-        return {
-            name: bt_taxon_info[str(taxid)]
-            for name, taxid in taxid_dict.items()
-            if str(taxid) in bt_taxon_info
-        }
-
-    def map_original_name2taxon_info(
-        self, name_map: dict, preprocessed_name2taxon_info: dict
-    ) -> dict:
-        """Maps original names to taxon information based on preprocessed names."""
-        original_name2taxon_info = {}
-        for ori_name, pre_name in name_map.items():
-            key = pre_name if pre_name in preprocessed_name2taxon_info else ori_name
-            if key in preprocessed_name2taxon_info:
-                original_name2taxon_info[ori_name] = {
-                    **preprocessed_name2taxon_info[key],
-                    "original_name": ori_name,
-                }
-        return original_name2taxon_info
-
-    def map_ncit2taxon_info(self, bt_taxon_info: dict, cached_ncit2taxid: dict) -> dict:
-        """Maps NCIT codes to taxon information using BioThings API."""
-        ncit2taxon_info = {}
-        for name, ncit_entry in cached_ncit2taxid.items():
-            taxid = ncit_entry.get("taxid")
-            taxon_info = bt_taxon_info.get(str(taxid)) if taxid else None
-            if taxon_info:
-                combined = {**ncit_entry, **taxon_info}
-                if "ncit" in combined:
-                    combined["xrefs"] = {"ncit": combined.pop("ncit")}
-                combined.pop("mapping_tool", None)
-                ncit2taxon_info[name] = combined
-        return ncit2taxon_info
-
-    def text2term_name2id(
-            self, disease_names, ontology="MONDO", url="http://purl.obolibrary.org/obo/mondo.owl"
-    ):
-        """Maps disease names to ontology identifiers using text2term."""
-        if not text2term.cache_exists(ontology):
-            text2term.cache_ontology(ontology_url=url, ontology_acronym=ontology)
-        df = text2term.map_terms(
-            list(set(disease_names)), ontology, use_cache=True, min_score=0.8, max_mappings=1
-        )
-        if df is None or df.empty:
-            return {}
-        df = df[~df["Mapped Term CURIE"].astype(str).str.contains("NCBITAXON", na=False)]
-        return dict(zip(df["Source Term"], df["Mapped Term CURIE"]))
-
-    def map_bt_disease_info(
-            self, disease_name2id: dict, disease_name_map: dict, disease_info: dict
-    ) -> dict:
-        """Maps disease names to their information using BioThings API."""
-        final_d_mapping = {}
-        for old_name, new_name in disease_name_map.items():
-            _id = disease_name2id.get(new_name)
-            if _id and _id in disease_info:
-                d_info = disease_info[_id].copy()
-                d_info["original_name"] = old_name
-                final_d_mapping[old_name] = d_info
-        return final_d_mapping
-
-
 class CacheManager(CacheHelper):
     def __init__(self, cache_dir="cache", data_dir="downloads"):
         """Initializes the CacheManager"""
@@ -856,6 +774,7 @@ class CacheManager(CacheHelper):
         self.ete3_service = ETE3TaxonomyService()
         self.entrez_service = EntrezTaxonomyService()
         self.bt_service = BioThingsService()
+        self.t2t_utils = Text2TermUtils()
 
     def get_or_cache_ncits2taxids_mapping(self):
         """Checks if the NCIT to NCBI Taxonomy ID mapping is cached."""
@@ -988,7 +907,7 @@ class CacheManager(CacheHelper):
         rapidfuzz_taxon_names = set(cached_rapid_fuzz_taxon_names.keys())
 
         taxon_names_to_map = (
-                set(taxon_names) - ete3_taxon_names - entrez_taxon_names - rapidfuzz_taxon_names
+            set(taxon_names) - ete3_taxon_names - entrez_taxon_names - rapidfuzz_taxon_names
         )
         return sorted(list(taxon_names_to_map))
 
@@ -1038,11 +957,11 @@ class CacheManager(CacheHelper):
         bt_taxon_names = set(cached_bt_taxon_names.keys())
 
         unmapped_taxon_names = (
-                set(taxon_names)
-                - set(ete3_taxon_names)
-                - set(entrez_taxon_names)
-                - set(rapidfuzz_taxon_names)
-                - set(bt_taxon_names)
+            set(taxon_names)
+            - set(ete3_taxon_names)
+            - set(entrez_taxon_names)
+            - set(rapidfuzz_taxon_names)
+            - set(bt_taxon_names)
         )
         return sorted(list(unmapped_taxon_names))
 
@@ -1188,7 +1107,7 @@ class CacheManager(CacheHelper):
 
     def get_or_cache_taxon_info(self):
         """Caches and retrieves taxon information."""
-        cache_f_name = "original_taxon_name_and_taxon_info.pkl"
+        cache_f_name = "original_taxon_name_and_info.pkl"
         cache_f_path = os.path.join(self.cache_dir, cache_f_name)
 
         if os.path.exists(cache_f_path):
@@ -1200,6 +1119,112 @@ class CacheManager(CacheHelper):
             self.save_pickle(taxon_info, cache_f_name)
             print("✅ Original taxon name and info successfully cached.")
             return taxon_info
+
+    def _get_disease_efo_mapping(self, efo_f_path=None):
+        """Reads the EFO file and returns a mapping of scientific names to disease information."""
+        if efo_f_path is None:
+            efo_f_path = os.path.join(self.data_dir, "EFO.txt")
+        reader = FileReader()
+        efo_map = {}
+        for line in reader.read_file(efo_f_path):
+            d_name, sci_d_name, _id, desc = (
+                line[0].lower().strip(),
+                line[1].lower().strip(),
+                line[2],
+                line[3].strip(),
+            )
+            _id = _id.replace("_", ":")
+            if ":" in _id:
+                prefix = _id.split(":")[0].strip().lower()
+                efo_map[sci_d_name] = {
+                    "id": _id.upper(),
+                    "name": sci_d_name,
+                    "original_name": d_name,
+                    "description": f"{desc}[{prefix.upper()}]",
+                    "type": "biolink:Disease",
+                    "xrefs": {prefix: _id.upper()},
+                }
+        return efo_map
+
+    def get_or_cache_disease_name2efo(self):
+        """Caches and retrieves the disease name to EFO mapping."""
+        cache_f_name = "efo_disease_name2id.pkl"
+        cache_f_path = os.path.join(self.cache_dir, cache_f_name)
+
+        if os.path.exists(cache_f_path):
+            print("Disease name to EFO mapping already cached. Loading...")
+            return self.load_pickle(cache_f_name)
+        else:
+            print("Caching disease name to EFO mapping...")
+            efo_map = self._get_disease_efo_mapping()
+            self.save_pickle(efo_map, cache_f_name)
+            print("✅ Disease name to EFO mapping successfully cached.")
+            return efo_map
+
+    def get_or_cache_text2term_disease_name2id(self, disease_names_to_map):
+        """Caches the Text2Term disease name to ID mapping."""
+        cache_f_name = "text2term_disease_name2id.pkl"
+        cache_f_path = os.path.join(self.cache_dir, cache_f_name)
+
+        if os.path.exists(cache_f_path):
+            print("Text2Term Disease Name to ID mapping already cached. Loading...")
+            return self.load_pickle(cache_f_name)
+        else:
+            print("Caching Text2Term Disease Name to ID mapping...")
+            text2term_mapped = self.t2t_utils.text2term_name2id(disease_names_to_map)
+            self.save_pickle(text2term_mapped, cache_f_name)
+            print("✅ Text2Term Disease Name to ID mapping successfully cached.")
+            return text2term_mapped
+
+    def get_text2term_disease_id_and_bt_info(self) -> dict:
+        """Map disease names to disease ontology and info."""
+        core_data = self.file_reader.read_file(os.path.join(self.data_dir, "core_table.txt"))
+        core_disease_names = [
+            line[2].lower().strip()
+            for line in core_data
+            if line[2].lower() != "null" and line[2].lower() != "not foundthogenic"
+        ]
+        efo_mapped = self.get_or_cache_disease_name2efo()
+        initial_disease_names = sorted(list(set(core_disease_names) - set(efo_mapped.keys())))
+
+        original_to_preprocessed_map = self.name_processor.convert_preprocessed_name2dict(
+            initial_disease_names, self.name_processor.preprocess_disease_name
+        )
+        preprocessed_names_to_map = sorted(list(set(original_to_preprocessed_map.values())))
+
+        preprocessed_name_to_id_map = self.get_or_cache_text2term_disease_name2id(preprocessed_names_to_map)
+        unique_disease_ids = sorted(list(set(
+            v['id'] for v in preprocessed_name_to_id_map.values() if v.get('id')
+        )))
+        disease_info = self.bt_service.query_bt_disease_info(unique_disease_ids)
+
+        final_mapping = {}
+        for original_name, preprocessed_name in original_to_preprocessed_map.items():
+            id_info = preprocessed_name_to_id_map.get(preprocessed_name)
+            disease_id = id_info.get('id') if id_info else None
+            if disease_id and disease_id in disease_info:
+                info = disease_info[disease_id].copy()
+                info["original_name"] = original_name
+                final_mapping[original_name] = info
+
+        return final_mapping
+
+    def get_or_cache_disease_info(self):
+        """Caches total mapped disease with descriptions."""
+        cache_f_name = "original_disease_name_and_info.pkl"
+        cache_f_path = os.path.join(self.cache_dir, cache_f_name)
+
+        if os.path.exists(cache_f_path):
+            print("Disease Info already cached. Loading...")
+            return self.load_pickle(cache_f_name)
+        else:
+            print("Caching Disease Info...")
+            t2t_mapped = self.get_text2term_disease_id_and_bt_info()
+            efo_mapped = self.get_or_cache_disease_name2efo()
+            final_disease_info = {**t2t_mapped, **efo_mapped}
+            self.save_pickle(final_disease_info, cache_f_name)
+            print("✅ Disease Info successfully cached.")
+            return final_disease_info
 
 
 class DataCachePipeline:
@@ -1226,6 +1251,9 @@ class DataCachePipeline:
         taxon_info = self.cache_manager.get_or_cache_taxon_info()
 
         # disease mapping
+        efo_disease_name2id = self.cache_manager.get_or_cache_disease_name2efo()
+        t2t_disease_name2id = self.cache_manager.get_or_cache_text2term_disease_name2id
+        disease_info = self.cache_manager.get_or_cache_disease_info()
 
         return (
             ncit2taxid_mapping,
@@ -1235,6 +1263,9 @@ class DataCachePipeline:
             bt_taxon_name2taxid,
             manual_taxon_name2taxid,
             taxon_info,
+            efo_disease_name2id,
+            t2t_disease_name2id,
+            disease_info
         )
 
 
