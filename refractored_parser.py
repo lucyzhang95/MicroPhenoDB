@@ -613,7 +613,7 @@ class PubMedService:
     def __init__(self, email):
         Entrez.email = email
 
-    def get_pubmed_metadata(self, pmids):
+    def query_pubmed_metadata(self, pmids):
         """Fetches PubMed metadata for a list of PMIDs."""
         if not pmids:
             return {}
@@ -775,6 +775,7 @@ class CacheManager(CacheHelper):
         self.entrez_service = EntrezTaxonomyService()
         self.bt_service = BioThingsService()
         self.t2t_utils = Text2TermUtils()
+        self.pubmed_service = PubMedService(email=os.getenv("EMAIL_ADDRESS"))
 
     def get_or_cache_ncits2taxids_mapping(self):
         """Checks if the NCIT to NCBI Taxonomy ID mapping is cached."""
@@ -1311,6 +1312,30 @@ class CacheManager(CacheHelper):
             print("✅ Disease Info successfully cached.")
             return final_disease_info
 
+    def _get_pubmed_metadata(self, file_path=None):
+        """Reads the PubMed metadata file and returns a mapping of PMIDs to metadata."""
+        if file_path is None:
+            file_path = os.path.join(self.data_dir, "core_table.txt")
+        core_data = self.file_reader.read_file(file_path)
+        pmids = [line[4] for line in core_data if re.match(r"\b\d+\b", line[4])]
+        pub_metadata = self.pubmed_service.query_pubmed_metadata(pmids)
+        return pub_metadata
+
+    def get_or_cache_pubmed_metadata(self):
+        """Caches and retrieves PubMed metadata."""
+        cache_f_name = "pubmed_metadata.pkl"
+        cache_f_path = os.path.join(self.cache_dir, cache_f_name)
+
+        if os.path.exists(cache_f_path):
+            print("PubMed metadata already cached. Loading...")
+            return self.load_pickle(cache_f_name)
+        else:
+            print("Caching PubMed metadata...")
+            pub_metadata = self._get_pubmed_metadata()
+            self.save_pickle(pub_metadata, cache_f_name)
+            print("✅ PubMed metadata successfully cached.")
+            return pub_metadata
+
 
 class DataCachePipeline:
     """Pipeline for caching data for the parser."""
@@ -1339,6 +1364,9 @@ class DataCachePipeline:
         efo_disease_name2id = self.cache_manager.get_or_cache_disease_name2efo()
         disease_info = self.cache_manager.get_or_cache_disease_info()
 
+        # pubmed metadata
+        pubmed_metadata = self.cache_manager.get_or_cache_pubmed_metadata()
+
         return (
             ncit2taxid_mapping,
             ete3_taxon_name2taxid,
@@ -1349,6 +1377,7 @@ class DataCachePipeline:
             taxon_info,
             efo_disease_name2id,
             disease_info,
+            pubmed_metadata,
         )
 
 
@@ -1459,7 +1488,7 @@ class MicroPhenoDBParser:
                 for line in self.file_reader.read_file(self._get_file_path("core_table.txt"))
                 if re.match(r"^\d+$", line[4])
             }
-            pub_map = self.pubmed_service.get_pubmed_metadata(list(pmids))
+            pub_map = self.pubmed_service.query_pubmed_metadata(list(pmids))
             self.cache_helper.save_pickle(pub_map, "publication_metadata.pkl")
 
         return taxon_map, disease_map, pub_map
