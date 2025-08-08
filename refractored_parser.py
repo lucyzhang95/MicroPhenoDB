@@ -638,7 +638,6 @@ class PubMedService:
                     "",
                 )
                 result[pmid] = {
-                    "id": f"PMID:{pmid}",
                     "pmid": int(pmid),
                     "name": title,
                     "summary": f"{abstract} [abstract]" if abstract else "",
@@ -1397,132 +1396,30 @@ class MicroPhenoDBParser:
     def _get_organism_type(self, node) -> str:
         type_map = {
             2: "biolink:Bacterium",
-            2157: "biolink:Archaea",
-            2759: "biolink:Eukaryote",
+            2157: "Archaea",
+            2759: "Eukaryote",
             10239: "biolink:Virus",
         }
         for taxid, biolink_type in type_map.items():
             if taxid in node.get("lineage", []):
                 return biolink_type
-        return "biolink:OrganismalEntity"
-
-    def _cache_and_load_data(self):
-        """Manages the caching and loading of all intermediate and final data."""
-        # Taxon Mapping
-        if not (taxon_map := self.cache_helper.load_pickle("original_taxon_name2taxid.pkl")):
-            print("Taxon map not found in cache. Generating...")
-            # 1. NCIT mapping
-            ncit_codes = EbiTaxonomyService().get_ncit_code(self._get_file_path("NCIT.txt"))
-            ncit_mapped = self.name_mapper.ncit2taxid(ncit_codes)
-            # 2. Other mappings
-            all_taxon_names = self._get_all_taxon_names(self._get_file_path("core_table.txt"))
-            names_to_map = self._get_taxon_names_for_id_map(all_taxon_names, ncit_mapped)
-            preprocessed_map = self.name_processor.convert_preprocessed_name2dict(names_to_map)
-            unique_preprocessed = list(set(preprocessed_map.values()))
-            # 3. Pipeline
-            pipeline = {
-                "ete3": self.name_mapper.ete3_taxon_name2taxid,
-                "entrez": self.name_mapper.entrez_batch_name2taxid,
-                "bt": self.name_mapper.bt_name2taxid,
-            }
-            all_mappings = {}
-            remaining = unique_preprocessed
-            for _, func in pipeline.items():
-                results = func(remaining)
-                all_mappings.update(results)
-                remaining = [name for name in remaining if name not in results]
-            # 4. Fuzzy
-            taxdump_path = os.path.join(os.getcwd(), "taxdump.tar.gz")
-            if not os.path.exists(taxdump_path):
-                self.ncbi_tax_service.download_ncbi_taxdump()
-            ref_map = self.ncbi_tax_service._parse_names_dmp_from_taxdump(taxdump_path)
-            fuzzy_matches = self.name_mapper.fuzzy_match(remaining, list(ref_map.keys()))
-            all_mappings.update(self.name_mapper.fuzzy_matched_name2taxid(fuzzy_matches, ref_map))
-            # 5. Finalize
-            final_taxid_map = {
-                name: info["taxid"] for name, info in all_mappings.items() if "taxid" in info
-            }
-            final_taxid_map.update(
-                {name: info["taxid"] for name, info in ncit_mapped.items() if "taxid" in info}
-            )
-            taxon_info_dump = self.ncbi_tax_service.query_bt_taxon_info(
-                list(final_taxid_map.values())
-            )
-            taxon_map = self.info_mapper.map_ncit2taxon_info(taxon_info_dump, ncit_mapped)
-            preprocessed_info = self.info_mapper.map_preprocessed_name2taxon_info(
-                final_taxid_map, taxon_info_dump
-            )
-            taxon_map.update(
-                self.info_mapper.map_original_name2taxon_info(preprocessed_map, preprocessed_info)
-            )
-            self.cache_helper.save_pickle(taxon_map, "original_taxon_name2taxid.pkl")
-
-        # Disease Mapping
-        if not (disease_map := self.cache_helper.load_pickle("original_disease_name2id.pkl")):
-            print("Disease map not found in cache. Generating...")
-            efo_map = self.disease_utils.get_efo_disease_info(self._get_file_path("EFO.txt"))
-            core_disease_names = {
-                line[2].lower().strip()
-                for line in self.file_reader.read_file(self._get_file_path("core_table.txt"))
-                if line[2].lower() not in ["null", "not foundthogenic"]
-            }
-            names_to_map = list(core_disease_names - set(efo_map.keys()))
-            preprocessed_map = {
-                name: self.name_processor.preprocess_disease_name(name) for name in names_to_map
-            }
-            name2id = self.info_mapper.text2term_name2id(list(set(preprocessed_map.values())))
-            disease_info_dump = self.disease_utils.query_bt_disease_info(
-                list(set(name2id.values()))
-            )
-            disease_map = efo_map
-            disease_map.update(
-                self.info_mapper.map_bt_disease_info(name2id, preprocessed_map, disease_info_dump)
-            )
-            self.cache_helper.save_pickle(disease_map, "original_disease_name2id.pkl")
-
-        # Publication Info
-        if not (pub_map := self.cache_helper.load_pickle("publication_metadata.pkl")):
-            print("Publication metadata not found in cache. Generating...")
-            pmids = {
-                line[4]
-                for line in self.file_reader.read_file(self._get_file_path("core_table.txt"))
-                if re.match(r"^\d+$", line[4])
-            }
-            pub_map = self.pubmed_service.query_pubmed_metadata(list(pmids))
-            self.cache_helper.save_pickle(pub_map, "publication_metadata.pkl")
-
-        return taxon_map, disease_map, pub_map
-
-    def load_microphenodb_data(self):
-        """Loads and yields the final processed data records."""
-        taxon_map, disease_map, pub_map = self._cache_and_load_data()
-        core_f_path = self._get_file_path("core_table.txt")
-        for line in self.file_reader.read_file(core_f_path):
-            organism_name, disease_name, score, pmid, _, _, position, qualifier = (
-                part.strip() for part in line
-            )
-            subject_node = self._get_microbe_node(organism_name, taxon_map)
-            object_node = self._get_disease_node(disease_name, disease_map)
-            if not subject_node or not object_node:
-                continue
-            association_node = self._get_association_node(score, position, qualifier, pmid, pub_map)
-            yield {
-                "_id": str(uuid.uuid4()),
-                "subject": subject_node,
-                "object": object_node,
-                "association": association_node,
-            }
+        return "Other"
 
     def _get_microbe_node(self, name, taxon_map):
         node = taxon_map.get(name.lower())
         if node:
             node = node.copy()
-            node["type"] = self._get_organism_type(node)
+            node["type"] = "biolink:OrganismTaxon"
+            node["organism_type"] = self._get_organism_type(node)
             return node
         return None
 
     def _get_disease_node(self, name, disease_map):
-        return disease_map.get(name.lower())
+        return (
+            disease_map.get(name.lower())
+            if name.lower() != "null" and name.lower() != "not foundthogenic"
+            else {"original_name": name, "type": "biolink:Disease"}
+        )
 
     def _get_association_node(self, score, position, qualifier, pmid, pub_map):
         assoc = {
@@ -1531,12 +1428,70 @@ class MicroPhenoDBParser:
             "score": float(score),
             "anatomical_entity": position.lower(),
             "aggregator_knowledge_source": "infores:MicroPhenoDB",
-            "evidence_type": "ECO:0000305",
-            "publication": pub_map.get(pmid, {"id": f"PMID:{pmid}", "type": "biolink:Publication"}),
+            "evidence_type": "ECO:0000305",  # manual assertion
+            "publication": pub_map.get(pmid)
+            if pmid in pub_map
+            else {
+                "pmid": int(pmid) if "NCIT" not in pmid and pmid != "#N/A" else None,
+                "type": "biolink:Publication",
+            },
         }
         if qualifier and qualifier.lower() != "tendency":
             assoc["qualifier"] = qualifier.lower()
         return assoc
+
+    def _remove_empty_none_values(self, obj):
+        if isinstance(obj, dict):
+            cleaned = {}
+            for k, v in obj.items():
+                v_clean = self._remove_empty_none_values(v)
+                if v_clean not in (None, {}, []):
+                    cleaned[k] = v_clean
+            return cleaned
+
+        if isinstance(obj, list):
+            cleaned_list = []
+            for v in obj:
+                v_clean = self._remove_empty_none_values(v)
+                if v_clean not in (None, {}, []):
+                    cleaned_list.append(v_clean)
+            return cleaned_list
+        return obj
+
+    def load_microphenodb_data(self):
+        """Loads and yields the final processed data records."""
+        (
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            taxon_map,
+            _,
+            disease_map,
+            pub_map,
+        ) = self.cache_pipeline.run_cache_taxon_names2taxids()
+
+        core_f_path = self._get_file_path("core_table.txt")
+        for line in self.file_reader.read_file(core_f_path):
+            _, organism_name, disease_name, score, pmid, _, position, qualifier = (
+                part.strip() for part in line
+            )
+            subject_node = self._get_microbe_node(organism_name, taxon_map)
+            self._remove_empty_none_values(subject_node)
+            object_node = self._get_disease_node(disease_name, disease_map)
+            self._remove_empty_none_values(object_node)
+            if not subject_node or not object_node:
+                continue
+            association_node = self._get_association_node(score, position, qualifier, pmid, pub_map)
+            self._remove_empty_none_values(association_node)
+            yield {
+                "_id": str(uuid.uuid4()),
+                "subject": subject_node,
+                "object": object_node,
+                "association": association_node,
+            }
 
 
 class RecordCacheManager:
@@ -1544,22 +1499,38 @@ class RecordCacheManager:
 
     def __init__(self, cache_helper: CacheHelper):
         self.cache_helper = cache_helper
+        self.parser = MicroPhenoDBParser()
 
-    def cache_microphenodb_entire_records(
-        self, records, filename_base="microphenodb_parsed_records.pkl"
-    ):
-        """Caches the list of records to both pickle and JSON formats."""
-        print(f"Caching {len(records)} final records...")
-        self.cache_helper.save_pickle(records, f"{filename_base}.pkl")
-        self.cache_helper.save_json(records, f"{filename_base}.json")
-        print("Final records cached successfully.")
+    def cache_records(self, records: list, filename_base="microphenodb"):
+        """
+        Caches a given list of records to both pickle and JSON formats.
+        This method is now only responsible for SAVING, not generating.
+        """
+        if not records:
+            print("Warning: No records provided to cache.")
+            return
+
+        print(f"Caching {len(records)} records...")
+        pickle_filename = f"{filename_base}.pkl"
+        json_filename = f"{filename_base}.json"
+
+        self.cache_helper.save_pickle(records, pickle_filename)
+        self.cache_helper.save_json(records, json_filename)
+        print("✅ Final records cached successfully.")
+
+    @staticmethod
+    def run_data_pipeline():
+        """
+        Orchestrates the entire process of parsing and caching data.
+        """
+        cache_helper = CacheHelper(cache_dir="cache")
+        parser = MicroPhenoDBParser(data_dir="downloads")
+        record_cacher = RecordCacheManager(cache_helper)
+
+        final_records = list(parser.load_microphenodb_data())
+        record_cacher.cache_records(final_records)
 
 
 if __name__ == "__main__":
-    pipeline = DataCachePipeline()
-    data = pipeline.run_cache_taxon_names2taxids()
-
-    # cache_mgr = CacheManager()
-    # unmapped_taxon_names = cache_mgr._get_unmapped_taxon_names()
-    # print(len(unmapped_taxon_names))
-    # print(unmapped_taxon_names)
+    RecordCacheManager.run_data_pipeline()
+    print("Full MicroPhenoDB parsed records cached successfully.")
