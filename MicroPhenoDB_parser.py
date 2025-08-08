@@ -1014,7 +1014,6 @@ class CacheManager(CacheHelper):
             self.save_pickle(manual_mapping, cache_f_name)
             return manual_mapping
 
-    # TODO: count the output record of this function
     def _convert_preprocessed_name2original_name(self) -> dict:
         """Converts preprocessed taxon names to their original names and updates the mapping with taxid."""
         processed_taxon_name_mapping = self._preprocessed_taxon_names_mapping()
