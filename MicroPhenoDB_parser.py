@@ -1419,7 +1419,7 @@ class MicroPhenoDBParser:
         return (
             disease_map.get(name.lower())
             if name.lower() != "null" and name.lower() != "not foundthogenic"
-            else {"original_name": name, "type": "biolink:Disease"}
+            else None
         )
 
     def _get_association_node(self, score, position, qualifier, pmid, pub_map):
