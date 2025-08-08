@@ -1176,6 +1176,89 @@ class CacheManager(CacheHelper):
             print("✅ Text2Term Disease Name to ID mapping successfully cached.")
             return text2term_mapped
 
+    MANUAL_MAP_DISEASE_INFO = {
+        "arthritis": {
+            "id": "HP:0001369",
+            "name": "arthritis",
+            "original_name": "arthritis",
+            "description": "Inflammation of a joint.[HP]",
+            "type": "biolink:Disease",
+            "xrefs": {"hp": "HP:0001369"},
+        },
+        "virus respiratory tract infection": {
+            "id": "HP:0011947",
+            "name": "respiratory tract infection",
+            "original_name": "virus respiratory tract infection",
+            "description": "An infection of the upper or lower respiratory tract.[HP]",
+            "type": "biolink:Disease",
+            "xrefs": {"hp": "HP:0011947"},
+        },
+        "urethritis": {
+            "id": "HP:0500006",
+            "name": "urethritis",
+            "original_name": "urethritis",
+            "description": "Urethritis is characterized by discharge, dysuria and/or urethral discomfort but may be asymptomatic. Common etiologies include gonococcal urethritis as well as infection by chlamydia trachomatis, mycoplasma genitalium, ureaplasma urealyticum, trichomonas vaginalis, anaerobes, herpes simplex virus, and adenovirus.[HP]",
+            "type": "biolink:Disease",
+            "xrefs": {"hp": "HP:0500006"},
+        },
+        "lungsaspergillosis": {
+            "id": "MONDO:0000266",
+            "name": "pulmonary aspergilloma",
+            "original_name": "lungsaspergillosis",
+            "description": "Aspergillosis is an infection, growth, or allergic response caused by the Aspergillus fungus. There are several different kinds of aspergillosis. One kind is allergic bronchopulmonary aspergillosis (also called ABPA), a condition where the fungus causes allergic respiratory symptoms similar to asthma, such as wheezing and coughing, but does not actually invade and destroy tissue. Another kind of aspergillosis is invasive aspergillosis. This infection usually affects people with weakened immune systems due to cancer, AIDS, leukemia, organ transplantation, chemotherapy, or other conditions or events that reduce the number of normal white blood cells. In this condition, the fungus invades and damages tissues in the body. Invasive aspergillosis most commonly affects the lungs, but can also cause infection in many other organs and can spread throughout the body (commonly affecting the kidneys and brain). Aspergilloma, a growth (fungus ball) that develops in an area of previous lung disease such as tuberculosis or lung abscess, is a third kind of aspergillosis. This type of aspergillosis is composed of a tangled mass of fungus fibers, blood clots, and white blood cells. The fungus ball gradually enlarges, destroying lung tissue in the process, but usually does not spread to other areas.[MONDO]",
+            "type": "biolink:Disease",
+            "xrefs": {"mondo": "MONDO:0000266"},
+        },
+        "gastric cancer": {
+            "id": "MONDO:0001056",
+            "name": "gastric cancer",
+            "original_name": "gastric cancer",
+            "description": "A primary or metastatic malignant neoplasm involving the stomach.[MONDO]",
+            "type": "biolink:Disease",
+            "xrefs": {"mondo": "MONDO:0001056"},
+        },
+        "vincent angina bacteria": {
+            "id": "MONDO:0006865",
+            "name": "necrotizing ulcerative gingivitis",
+            "original_name": "vincent angina bacteria",
+            "description": "A bacterial infectious process affecting the gums. It is characterized by the development of necrotic, ulcerated, and painful lesions with creation of pseudomembranes extending along the gingival margins.[MONDO]",
+            "type": "biolink:Disease",
+            "xrefs": {"mondo": "MONDO:0006865"},
+        },
+        "juvenile idiopathic arthritis": {
+            "id": "MONDO:0011429",
+            "name": "juvenile idiopathic arthritis",
+            "original_name": "juvenile idiopathic arthritis",
+            "description": "Juvenile idiopathic arthritis (JIA) is the term used to describe a group of inflammatory articular disorders of unknown cause that begin before the age of 16 and last over 6 weeks. The term juvenile idiopathic arthritis was chosen to signify the absence of any known mechanism underlying the disorder and to highlight the necessity of excluding other types of arthritis occurring in well defined diseases (in particular arthritis occurring in association with infectious, inflammatory and haematooncologic diseases).[MONDO]",
+            "type": "biolink:Disease",
+            "xrefs": {"mondo": "MONDO:0011429"},
+        },
+        "cryptosporidiosis": {
+            "id": "MONDO:0015474",
+            "name": "cryptosporidiosis",
+            "original_name": "cryptosporidiosis",
+            "description": "Intestinal infection with organisms of the genus Cryptosporidium. It occurs in both animals and humans. Symptoms include severe diarrhea.[MONDO]",
+            "type": "biolink:Disease",
+            "xrefs": {"mondo": "MONDO:0015474"},
+        },
+        "hemoglobinopathies": {
+            "id": "MONDO:0019050",
+            "name": "inherited hemoglobinopathy",
+            "original_name": "hemoglobinopathies",
+            "description": "An inherited disorder characterized by structural alterations of a globin chain within the hemoglobin molecule.[MONDO]",
+            "type": "biolink:Disease",
+            "xrefs": {"mondo": "MONDO:0019050"},
+        },
+        "acute hepatitis a virus infection": {
+            "id": "MONDO:0005790",
+            "name": "hepatitis a virus infection",
+            "original_name": "acute hepatitis a virus infection",
+            "description": "Acute inflammation of the liver caused by the hepatitis A virus. It is highly contagious and usually contracted through close contact with an infected individual or their feces, contaminated food or water.[MONDO]",
+            "type": "biolink:Disease",
+            "xrefs": {"mondo": "MONDO:0005790"},
+        },
+    }
+
     def get_text2term_disease_id_and_bt_info(self) -> dict:
         """Map disease names to disease ontology and info."""
         core_data = self.file_reader.read_file(os.path.join(self.data_dir, "core_table.txt"))
@@ -1192,16 +1275,18 @@ class CacheManager(CacheHelper):
         )
         preprocessed_names_to_map = sorted(list(set(original_to_preprocessed_map.values())))
 
-        preprocessed_name_to_id_map = self.get_or_cache_text2term_disease_name2id(preprocessed_names_to_map)
-        unique_disease_ids = sorted(list(set(
-            v['id'] for v in preprocessed_name_to_id_map.values() if v.get('id')
-        )))
+        preprocessed_name_to_id_map = self.get_or_cache_text2term_disease_name2id(
+            preprocessed_names_to_map
+        )
+        unique_disease_ids = sorted(
+            list(set(v["id"] for v in preprocessed_name_to_id_map.values() if v.get("id")))
+        )
         disease_info = self.bt_service.query_bt_disease_info(unique_disease_ids)
 
         final_mapping = {}
         for original_name, preprocessed_name in original_to_preprocessed_map.items():
             id_info = preprocessed_name_to_id_map.get(preprocessed_name)
-            disease_id = id_info.get('id') if id_info else None
+            disease_id = id_info.get("id") if id_info else None
             if disease_id and disease_id in disease_info:
                 info = disease_info[disease_id].copy()
                 info["original_name"] = original_name
@@ -1221,7 +1306,7 @@ class CacheManager(CacheHelper):
             print("Caching Disease Info...")
             t2t_mapped = self.get_text2term_disease_id_and_bt_info()
             efo_mapped = self.get_or_cache_disease_name2efo()
-            final_disease_info = {**t2t_mapped, **efo_mapped}
+            final_disease_info = {**t2t_mapped, **efo_mapped, **self.MANUAL_MAP_DISEASE_INFO}
             self.save_pickle(final_disease_info, cache_f_name)
             print("✅ Disease Info successfully cached.")
             return final_disease_info
@@ -1252,7 +1337,6 @@ class DataCachePipeline:
 
         # disease mapping
         efo_disease_name2id = self.cache_manager.get_or_cache_disease_name2efo()
-        t2t_disease_name2id = self.cache_manager.get_or_cache_text2term_disease_name2id
         disease_info = self.cache_manager.get_or_cache_disease_info()
 
         return (
@@ -1264,8 +1348,7 @@ class DataCachePipeline:
             manual_taxon_name2taxid,
             taxon_info,
             efo_disease_name2id,
-            t2t_disease_name2id,
-            disease_info
+            disease_info,
         )
 
 
