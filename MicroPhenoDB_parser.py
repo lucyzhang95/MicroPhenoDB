@@ -1411,6 +1411,7 @@ class MicroPhenoDBParser:
             node = node.copy()
             node["type"] = "biolink:OrganismTaxon"
             node["organism_type"] = self._get_organism_type(node)
+            node.pop("mapping_tool", None)
             return node
         return None
 
@@ -1430,32 +1431,28 @@ class MicroPhenoDBParser:
             "aggregator_knowledge_source": "infores:MicroPhenoDB",
             "evidence_type": "ECO:0000305",  # manual assertion
             "publication": pub_map.get(pmid)
-            if pmid in pub_map
-            else {
-                "pmid": int(pmid) if "NCIT" not in pmid and pmid != "#N/A" else None,
-                "type": "biolink:Publication",
-            },
         }
         if qualifier and qualifier.lower() != "tendency":
             assoc["qualifier"] = qualifier.lower()
         return assoc
 
-    def _remove_empty_none_values(self, obj):
+    def _remove_empty_values(self, obj):
+        """
+        Recursively removes keys/items that have None or "empty" values
+        (e.g., '', {}, []).
+        """
         if isinstance(obj, dict):
-            cleaned = {}
-            for k, v in obj.items():
-                v_clean = self._remove_empty_none_values(v)
-                if v_clean not in (None, {}, []):
-                    cleaned[k] = v_clean
-            return cleaned
-
+            return {
+                k: self._remove_empty_values(v)
+                for k, v in obj.items()
+                if v not in (None, {}, [], '')
+            }
         if isinstance(obj, list):
-            cleaned_list = []
-            for v in obj:
-                v_clean = self._remove_empty_none_values(v)
-                if v_clean not in (None, {}, []):
-                    cleaned_list.append(v_clean)
-            return cleaned_list
+            return [
+                self._remove_empty_values(v)
+                for v in obj
+                if v not in (None, {}, [], '')
+            ]
         return obj
 
     def load_microphenodb_data(self):
@@ -1478,19 +1475,28 @@ class MicroPhenoDBParser:
             _, organism_name, disease_name, score, pmid, _, position, qualifier = (
                 part.strip() for part in line
             )
+
             subject_node = self._get_microbe_node(organism_name, taxon_map)
-            self._remove_empty_none_values(subject_node)
+            subject_node = self._remove_empty_values(subject_node)
+
             object_node = self._get_disease_node(disease_name, disease_map)
-            self._remove_empty_none_values(object_node)
+            object_node = self._remove_empty_values(object_node)
+            if object_node:
+                description = object_node.get("description")
+                if description and "null" in str(description).lower():
+                    del object_node["description"]
+
             if not subject_node or not object_node:
                 continue
+
             association_node = self._get_association_node(score, position, qualifier, pmid, pub_map)
-            self._remove_empty_none_values(association_node)
+            association_node = self._remove_empty_values(association_node)
+
             yield {
                 "_id": str(uuid.uuid4()),
-                "subject": subject_node,
-                "object": object_node,
                 "association": association_node,
+                "object": object_node,
+                "subject": subject_node,
             }
 
 
@@ -1501,13 +1507,13 @@ class RecordCacheManager:
         self.cache_helper = cache_helper
         self.parser = MicroPhenoDBParser()
 
-    def cache_records(self, records: list, filename_base="microphenodb"):
+    def cache_records(self, records: list, filename_base="microphenodb_parsed_records"):
         """
         Caches a given list of records to both pickle and JSON formats.
         This method is now only responsible for SAVING, not generating.
         """
         if not records:
-            print("Warning: No records provided to cache.")
+            print("❗️Warning: No records provided to cache.")
             return
 
         print(f"Caching {len(records)} records...")
@@ -1526,8 +1532,8 @@ class RecordCacheManager:
         cache_helper = CacheHelper(cache_dir="cache")
         parser = MicroPhenoDBParser(data_dir="downloads")
         record_cacher = RecordCacheManager(cache_helper)
-
-        final_records = list(parser.load_microphenodb_data())
+        records_list = list(parser.load_microphenodb_data())
+        final_records = sorted(records_list, key=lambda record: record["_id"])
         record_cacher.cache_records(final_records)
 
 
