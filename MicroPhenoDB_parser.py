@@ -1,13 +1,11 @@
-import csv
-import json
 import os
-import pickle
 import re
 import uuid
 
-import chardet
 from dotenv import load_dotenv
 
+from utils.cache_helper import CacheHelper
+from utils.file_reader import FileReader
 from utils.ontology_mapper import RapidFuzzUtils, Text2TermUtils
 from utils.ontology_services import (
     BioThingsService,
@@ -17,73 +15,6 @@ from utils.ontology_services import (
     PubMedService,
 )
 from utils.text_preprocessors import TextSemanticPreprocessor, TextStructurePreprocessor
-
-load_dotenv()
-
-
-class CacheHelper:
-    """Handles low-level saving and loading of data to/from the filesystem."""
-
-    def __init__(self, cache_dir="cache"):
-        self.cache_dir = os.path.join(os.getcwd(), cache_dir)
-        os.makedirs(self.cache_dir, exist_ok=True)
-
-    def save_pickle(self, obj, f_name):
-        """Saves an object to a pickle file."""
-        with open(os.path.join(self.cache_dir, f_name), "wb") as out_f:
-            pickle.dump(obj, out_f)
-
-    def load_pickle(self, f_name):
-        """Loads an object from a pickle file."""
-        path = os.path.join(self.cache_dir, f_name)
-        if os.path.exists(path):
-            with open(path, "rb") as in_f:
-                return pickle.load(in_f)
-        return None
-
-    def save_json(self, obj, f_name):
-        """Saves an object to a JSON file."""
-        with open(os.path.join(self.cache_dir, f_name), "w") as out_f:
-            json.dump(obj, out_f, indent=4)
-
-    def load_json(self, f_name):
-        """Loads an object from a JSON file."""
-        path = os.path.join(self.cache_dir, f_name)
-        if os.path.exists(path):
-            with open(path, "r") as in_f:
-                return json.load(in_f)
-        return None
-
-
-class FileReader:
-    """Handles reading and decoding of input files."""
-
-    def _detect_encoding(self, in_file_path):
-        """Detects the character encoding of a file."""
-        with open(in_file_path, "rb") as f:
-            raw = f.read(5000)
-        return chardet.detect(raw)["encoding"]
-
-    def read_file(self, in_file_path, has_header=True):
-        """Reads a file and yields its lines, handling encoding issues.
-        Does not handle ill-formatted file with inconsistent number of lines/columns."""
-        encoding = self._detect_encoding(in_file_path)
-        if encoding == "ascii":
-            encoding = "utf-8"
-        try:
-            with open(in_file_path, "r", encoding=encoding, errors="ignore") as in_f:
-                reader = csv.reader(in_f, delimiter="\t")
-                if has_header:
-                    try:
-                        next(reader)
-                    except StopIteration:
-                        return
-                for line in reader:
-                    yield line
-        except UnicodeDecodeError as e:
-            print(f"Unicode error with {encoding} on file {in_file_path}: {e}")
-        except FileNotFoundError:
-            print(f"Error: File not found at {in_file_path}")
 
 
 class OntologyNameProcessor(TextStructurePreprocessor, TextSemanticPreprocessor):
@@ -259,6 +190,8 @@ class NCIt2TaxidMapper:
 
 
 class CacheManager(CacheHelper):
+    load_dotenv(dotenv_path=".env")
+
     def __init__(self, cache_dir="cache", data_dir="downloads"):
         """Initializes the CacheManager"""
         super().__init__(cache_dir)
