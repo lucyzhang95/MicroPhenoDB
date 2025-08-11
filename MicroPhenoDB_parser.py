@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 from manual_annotations.disease_name2id import MANUAL_MAP_DISEASE_INFO
 from manual_annotations.ncit2taxid import MANUAL_TAXID_MAPPING_OVERRIDES, MANUAL_TAXID_MAPPING_PATCHES
-from manual_annotations.taxon_name2taxid import MANUAL_MAP_UNMAPPED_TAXON_NAMES
+from manual_annotations.taxon_name2taxid import MANUAL_MAP_UNMAPPED_TAXON_NAMES, OVERRIDE_BT_mapped_TAXID
 from utils.cache_helper import CacheHelper
 from utils.file_reader import FileReader
 from utils.ontology_mapper import RapidFuzzUtils, Text2TermUtils
@@ -285,15 +285,6 @@ class CacheManager(CacheHelper):
         )
         return sorted(list(taxon_names_to_map))
 
-    OVERRIDE_BT_mapped_TAXID = {
-        "influenza": {"taxid": 11320},  # influenza a virus
-        "bifidobacterium infantis": {"taxid": 1682},
-        "powassan": {"taxid": 11083},  # powassan virus
-        "rubella virus virus": {"taxid": 11041},  # rubella virus
-        "st louis encephalitis": {"taxid": 11080},  # st. louis encephalitis virus
-        "yeasts": {"taxid": 5206},  # cryptococcus
-    }
-
     def get_or_cache_bt_taxon_name2taxid(self):
         """Caches the BioThings taxon name to NCBI Taxonomy ID mapping."""
         cache_f_name = "bt_taxon_name2taxid.pkl"
@@ -308,7 +299,7 @@ class CacheManager(CacheHelper):
             bt_mapped = self.bt_service.query_bt_taxon_name2taxid(taxon_names_to_map)
 
             # override some taxids with manual mapping
-            for name, override_info in self.OVERRIDE_BT_mapped_TAXID.items():
+            for name, override_info in OVERRIDE_BT_mapped_TAXID.items():
                 if name in bt_mapped:
                     bt_mapped[name].update({"taxid": override_info["taxid"]})
 

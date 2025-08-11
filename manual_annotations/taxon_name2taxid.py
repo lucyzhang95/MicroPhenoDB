@@ -33,3 +33,13 @@ MANUAL_MAP_UNMAPPED_TAXON_NAMES = {
     "uncultured clostridiales ii": 186801,
     "vulvovaginal candidiasis": 5476,
 }
+
+OVERRIDE_BT_mapped_TAXID = {
+    "influenza": {"taxid": 11320},  # influenza a virus
+    "bifidobacterium infantis": {"taxid": 1682},
+    "powassan": {"taxid": 11083},  # powassan virus
+    "rubella virus virus": {"taxid": 11041},  # rubella virus
+    "st louis encephalitis": {"taxid": 11080},  # st. louis encephalitis virus
+    "yeasts": {"taxid": 5206},  # cryptococcus
+}
+
