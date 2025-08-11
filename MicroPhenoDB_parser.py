@@ -65,7 +65,8 @@ class FileReader:
         return chardet.detect(raw)["encoding"]
 
     def read_file(self, in_file_path, has_header=True):
-        """Reads a file and yields its lines, handling encoding issues."""
+        """Reads a file and yields its lines, handling encoding issues.
+        Does not handle ill-formatted file with inconsistent number of lines/columns."""
         encoding = self._detect_encoding(in_file_path)
         if encoding == "ascii":
             encoding = "utf-8"
