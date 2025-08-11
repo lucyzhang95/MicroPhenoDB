@@ -1,22 +1,22 @@
-import asyncio
 import csv
 import json
 import os
 import pickle
 import re
-import ssl
-import tarfile
 import uuid
 
-import aiohttp
-import biothings_client as bt
 import chardet
-import text2term
-from Bio import Entrez
 from dotenv import load_dotenv
-from ete3 import NCBITaxa
-from rapidfuzz import fuzz, process
-from tqdm.asyncio import tqdm
+
+from utils.ontology_mapper import RapidFuzzUtils, Text2TermUtils
+from utils.ontology_services import (
+    BioThingsService,
+    EbiTaxonomyService,
+    EntrezTaxonomyService,
+    ETE3TaxonomyService,
+    PubMedService,
+)
+from utils.text_preprocessors import TextSemanticPreprocessor, TextStructurePreprocessor
 
 load_dotenv()
 
@@ -86,158 +86,6 @@ class FileReader:
             print(f"Error: File not found at {in_file_path}")
 
 
-class TextStructurePreprocessor:
-    """Rules for cleaning the structure of text strings."""
-
-    def remove_special_char(self, name: str) -> str:
-        """Removes special characters from the name."""
-        return re.sub(r"[?!#*&+]", "", name).strip()
-
-    def remove_colon4name(self, name: str) -> str:
-        """Replaces colons with spaces in the name."""
-        return re.sub(r":", " ", name).strip()
-
-    def remove_dot4name_except_in_sp(self, name: str) -> str:
-        """Removes dots from the name except in 'sp.' or 'spp.'."""
-        name = re.sub(r"\b(sp|spp)\.", r"\1__dot__", name)
-        numeric_matches = re.findall(r"\d+(?:\.\d+)+", name)
-        for match in numeric_matches:
-            protected = match.replace(".", "__dot__")
-            name = name.replace(match, protected)
-        name = name.replace(".", "")
-        return name.replace("__dot__", ".").strip()
-
-    def remove_hyphen4name(self, name: str) -> str:
-        """Replaces hyphens with spaces in the name, handling specific cases."""
-        name = name.replace("butyrate-producing", "BUTYRATEPRODUCING")
-        name = re.sub(r"(?<=[a-z])-(?=\d)", " ", name)
-        name = re.sub(r"(?<=[a-z])-(?=(like|associated|related|positive|negative|)\b)", " ", name)
-        return name.replace("BUTYRATEPRODUCING", "butyrate-producing").strip()
-
-    def split_name_by_slash(self, name: str) -> str:
-        """Splits the name by slashes, keeping the first part."""
-        return re.split(r"(?<=[a-zA-Z])/\s*(?=[a-zA-Z])", name)[0].strip()
-
-    def split_on_conjunction_in_name(self, name, keyword, prefer):
-        """Splits the name on a conjunction, returning the preferred part."""
-        pattern = r"\b" + re.escape(keyword) + r"\b"
-        parts = [p.strip() for p in re.split(pattern, name, maxsplit=1) if p.strip()]
-        if not parts:
-            return name.strip()
-        if prefer == "left":
-            return parts[0]
-        if prefer == "right":
-            return parts[1] if len(parts) > 1 else parts[0]
-        return name
-
-    def remove_parentheses(self, name: str) -> str:
-        """Removes parentheses and their contents from the name."""
-        return re.sub(r"\s*\(.+\)", "", name).strip()
-
-    def process_comma(self, name: str) -> str:
-        """Processes commas in the name, removing trailing words."""
-        name = re.sub(r",\s*(and\s+)?[a-z]{1,3}\b", "", name)
-        return name.split(",")[0].strip()
-
-
-class TextSemanticPreprocessor:
-    """Rules for cleaning the semantics of text strings."""
-
-    def remove_non_english_chars_in_name(self, name: str) -> str:
-        """Removes non-ASCII characters from the name."""
-        return re.sub(r"[^\x00-\x7F]+", "", name)
-
-    def remove_and_in_name(self, name: str) -> str:
-        """Removes 'and' from the name, keeping the first part."""
-        return name.split(" and ")[0].strip()
-
-    def remove_in_and_one_word_after_in_name(self, name: str) -> str:
-        """Removes 'in' followed by a single word from the name."""
-        name = re.sub(r"\bin\b\s+\w+\b", "", name)
-        return re.sub(r"\s{2,}", " ", name).strip()
-
-    def remove_word_related_in_name(self, name: str) -> str:
-        """Removes 'related' and similar terms from the name."""
-        return re.sub(r"\b\w+-related\s*", "", name).strip()
-
-    def remove_leading_non_in_name(self, name: str) -> str:
-        """Removes leading non-taxonomic terms from the name."""
-        return re.sub(r"^(?:non\w+\s+)+", "", name).strip()
-
-    def remove_spp_in_name(self, name: str) -> str:
-        """Removes 'sp.' or 'spp.' from the name."""
-        return re.sub(r"\bspps?\b.*", "", name).strip()
-
-    def remove_strain_in_taxon_name(self, name: str) -> str:
-        """Removes 'strain' or 'strains' from the name."""
-        return re.sub(r"\s{2,}", " ", re.sub(r"\bstrains?\b", "", name).strip())
-
-    def remove_type_in_taxon_name(self, name: str) -> str:
-        """Removes 'type' or 'types' from the name."""
-        return re.sub(r"\btypes?\b", "", name).strip()
-
-    def remove_group_in_taxon_name(self, name: str) -> str:
-        """Removes 'group' or 'groups' from the name."""
-        name = re.sub(r"\bgroups?\s+[a-z]\b", "", name)
-        name = re.sub(r"\b(groups?|subgroup)\b$", "", name)
-        return re.sub(r"\b(groups?|subgroup)\b(?=\s+[a-z])", "", name).strip()
-
-    def remove_serovar_in_taxon_name(self, name: str) -> str:
-        """Removes 'serovar' or 'serovars' from the name."""
-        return re.sub(r"\bserovars?.*\b", "", name).strip()
-
-    def remove_pre_postfix_in_taxon_name(self, name: str) -> str:
-        """Removes common prefixes and suffixes from the name."""
-        name = re.sub(r"^\s*b\s+", "", name)
-        name = re.sub(r"\bstains?\b", "", name)
-        name = re.sub(
-            r"(coagulase negative|(?:non)?hemolytic|sensu lato|complex(?:es)?|incertae sedis|rapid growers)",
-            "",
-            name,
-        )
-        return re.sub(r"\s{2,}", " ", name).strip()
-
-    def expand_taxon_name_abbrev(self, name: str) -> str:
-        """Expands common abbreviations in taxon names."""
-        expansions = {
-            r"\be histolytica\b": "entamoeba histolytica",
-            r"\bp multocida\b": "pasteurella multocida",
-            r"\bhsv\b": "herpes simplex virus",
-            r"\bhpv\b": "human papillomavirus",
-            r"\bhiv\b": "human immunodeficiency virus",
-            r"\blcm\b": "lymphocytic choriomeningitis",
-            r"\bcluster\b": "family",
-            r"\bspirochaeta\b": "borrelia",
-            r"\bpiv\b": "parainfluenza virus",
-            r"\btm7\b": "candidatus saccharimonadota",
-            r"\brubella\b": "rubella virus",
-            r"\bmumps\b": "mumps virus",
-            r"\bntm\b": "mycobacteriales",  # changed from "non-tuberculous mycobacteria" to "mycobacteriales"
-            r"^\bsr1\b$": "candidatus absconditibacteriota",
-            r"zygomycetes": "mucoromycota",  # zygomycetes is an obsolete term for mucoromycota and zoopagomycota.
-        }
-        for pattern, replacement in expansions.items():
-            name = re.sub(pattern, replacement, name)
-        return re.sub(r"\s{2,}", " ", name).strip()
-
-    def replace_taxon_name(self, name: str) -> str:
-        """Standardizes plural or variant taxon names to their singular form and correct spelling."""
-        replacements = {
-            r"streptococci": "streptococcus",
-            r"lactobacilli": "lactobacillus",
-            r"enterococci": "enterococcus",
-            r"staphylococci": "staphylococcus",
-            r"coxsackie": "coxsackievirus",
-            r"gemellales": "gemella",
-            r"\bparainfluenza virus\b": "orthorubulavirus",
-            r"\bparainfluenza\b": "orthorubulavirus",  # make rank broader to include all parainfluenza viruses
-            r"\bpapovavirus\b": "papillomavirus",  # papovavirus obsolete term for both papillomavirus and polyomavirus
-        }
-        for old, new in replacements.items():
-            name = re.sub(rf"\b{old}\b", new, name, flags=re.IGNORECASE)
-        return name.strip()
-
-
 class OntologyNameProcessor(TextStructurePreprocessor, TextSemanticPreprocessor):
     """Applies a series of rules to clean and standardize ontology names."""
 
@@ -285,369 +133,6 @@ class OntologyNameProcessor(TextStructurePreprocessor, TextSemanticPreprocessor)
         {"original_name": "preprocessed_name"}
         """
         return {original_name: preprocessor_func(original_name) for original_name in names}
-
-
-class EbiTaxonomyService:
-    """Handles NCIt API services and related tasks.
-    This service fetches NCIT codes and their corresponding NCBI Taxonomy IDs from the EBI OLS API.
-    """
-
-    def get_ncit_code(self, ncit_file_path) -> list:
-        """Extracts NCIT codes from NCIT.txt file."""
-        reader = FileReader()
-        return sorted(
-            [
-                line[2].split("_")[1]
-                for line in reader.read_file(ncit_file_path, has_header=False)
-                if "NCIT" in line[2]
-            ]
-        )
-
-    async def async_query_ebi_ncit_code_to_taxid(self, session, ncit_code: str):
-        """Map NCIT identifier to NCBI Taxid using EBI API.
-
-        :param session: aiohttp session for making requests
-        :param ncit_code: a NCIT code e.g., "C125969"
-        :return:
-        """
-        url = f"https://www.ebi.ac.uk/ols4/api/ontologies/ncit/terms?iri=http://purl.obolibrary.org/obo/NCIT_{ncit_code}"
-        try:
-            async with session.get(url, timeout=10) as resp:
-                if resp.status != 200:
-                    print(f"Failed to connect ebi API: status {resp.status}")
-                    return None
-                data = await resp.json()
-                terms = data.get("_embedded", {}).get("terms", [{}])[0]
-                name = terms.get("label", "").lower()
-                description = next(iter(terms.get("description", [])), "")
-                annot = terms.get("annotation", {})
-                if "NCBI_Taxon_ID" in annot:
-                    taxid = annot["NCBI_Taxon_ID"][0]
-                    return name, {
-                        "id": f"NCBITaxon:{int(taxid)}",
-                        "taxid": int(taxid),
-                        "description": f"{description}[NCIT]" if description else "",
-                        "xrefs": {"ncit": ncit_code},
-                    }
-                return name, {
-                    "description": f"{description}[NCIT]" if description else "",
-                    "xrefs": {"ncit": ncit_code},
-                }
-        except aiohttp.ClientError as e:
-            print(f"EBI API request failed for NCIT_{ncit_code}: {e}")
-            return None
-
-    async def async_query_ebi_ncit_codes_to_taxids(self, ncit_codes: list):
-        """Map NCIT identifiers to NCBI Taxids using EBI API
-
-        :param ncit_codes: a list of NCIT codes e.g., ["C85924", "C83526", ...]
-        :return ncit2taxid: a dictionary mapping NCIT codes to taxids
-        {'Trichostrongylus colubriformis': {'taxid': 6319, 'ncit': 'C125969', 'description': 'A species of...'}}
-        :return notfound_ncit: a dictionary with NCIT codes failed to map taxid
-        {'Trypanosoma brucei gambiense': {'ncit': 'C125975', 'description': 'A species of parasitic protozoa...'}}
-        """
-        ncit2taxids, notfound_ncit = {}, {}
-        async with aiohttp.ClientSession() as session:
-            tasks = [
-                self.async_query_ebi_ncit_code_to_taxid(session, ncit_code)
-                for ncit_code in ncit_codes
-            ]
-            results = await tqdm.gather(*tasks, desc="Querying taxids from NCIT codes...")
-        for result in results:
-            if result:
-                name, info = result
-                if "taxid" in info:
-                    ncit2taxids[name] = info
-                else:
-                    notfound_ncit[name] = info
-        return ncit2taxids, notfound_ncit
-
-    def async_run_ncit_codes_to_taxids(self, ncit_codes: list):
-        """Maps NCIT codes to NCBI Taxonomy IDs."""
-        ncit2taxids, notfound_ncit = asyncio.run(
-            self.async_query_ebi_ncit_codes_to_taxids(ncit_codes)
-        )
-        print("✅ EBI NCIT Codes to TaxID mapping completed!")
-        return ncit2taxids, notfound_ncit
-
-
-class ETE3TaxonomyService:
-    """Handles interactions with local NCBI Taxonomy database file0s via ETE3."""
-
-    def __init__(self):
-        if not os.path.exists("taxdump.tar.gz"):
-            print("Taxonomy database not found. Downloading and updating...")
-            ssl._create_default_https_context = ssl._create_unverified_context
-            self.ncbi_taxa = NCBITaxa()
-            self.ncbi_taxa.update_taxonomy_database()
-            print("NCBI Taxonomy Database update complete.")
-        else:
-            print("NCBI Taxonomy database found. Loading into memory...")
-            self.ncbi_taxa = NCBITaxa()
-        print("ETE3TaxonomyService is initialized and ready.")
-
-    def ete3_taxon_name2taxid(self, taxon_names: list) -> dict:
-        """Maps taxon names to NCBI Taxonomy IDs using ETE3."""
-        name2taxid = self.ncbi_taxa.get_name_translator(sorted(list(set(taxon_names))))
-        print("✅ ETE3 Taxonomy Name to TaxID mapping completed!")
-        return {
-            name: {"taxid": int(taxid_list[0]), "mapping_tool": "ete3"}
-            for name, taxid_list in name2taxid.items()
-            if taxid_list
-        }
-
-
-class EntrezTaxonomyService:
-    """Handles interactions with NCBI Entrez API."""
-
-    EMAIL = os.getenv("EMAIL_ADDRESS")
-
-    def __init__(self):
-        Entrez.email = self.EMAIL
-        self.semaphore = asyncio.Semaphore(3)
-
-    async def async_query_entrez_taxon_name2taxid(
-        self, taxon_name: str, max_retries=3, initial_backoff=1
-    ):
-        """Asynchronously queries NCBI Entrez for a taxon name."""
-        for attempt in range(max_retries):
-            try:
-                async with self.semaphore:
-
-                    def blocking_entrez_call():
-                        """Performs a blocking call to the Entrez API."""
-                        handle = Entrez.esearch(
-                            db="taxonomy", term=taxon_name, retmode="xml", retmax=1
-                        )
-                        rec = Entrez.read(handle)
-                        handle.close()
-                        return rec
-
-                    rec = await asyncio.to_thread(blocking_entrez_call)
-                    await asyncio.sleep(1)
-
-                    if rec and rec.get("IdList"):
-                        return taxon_name, {
-                            "taxid": int(rec["IdList"][0]),
-                            "mapping_tool": "entrez",
-                        }
-                    else:
-                        return None
-
-            except Exception as e:
-                print(f"Attempt {attempt + 1}/{max_retries} failed for '{taxon_name}': {e}")
-                if attempt + 1 == max_retries:
-                    break
-
-                backoff_time = initial_backoff * (2**attempt)
-                print(f"Retrying in {backoff_time} seconds...")
-                await asyncio.sleep(backoff_time)
-
-        print(f"All retries failed for '{taxon_name}'.")
-        return None
-
-    async def async_query_entrez_taxon_names2taxids(self, taxon_names: list) -> list:
-        """Runs Entrez queries for a list of names concurrently."""
-        tasks = [self.async_query_entrez_taxon_name2taxid(name) for name in taxon_names]
-        results = await tqdm.gather(*tasks, desc="Querying Entrez Taxonomy Names...")
-        return dict(res for res in results if res)
-
-    def async_run_entrez_taxon_names2taxids(self, taxon_names: list) -> dict:
-        results = asyncio.run(self.async_query_entrez_taxon_names2taxids(taxon_names))
-        print("✅ Entrez Taxonomy Name to TaxID mapping completed!")
-        return results
-
-
-class BioThingsService:
-    """Handles interactions with BioThings API for taxonomic information."""
-
-    def query_bt_taxon_name2taxid(self, taxon_names: list) -> dict:
-        """Maps taxon names to NCBI Taxonomy IDs using BioThings API."""
-        client = bt.get_client("taxon")
-        results = client.querymany(
-            list(set(taxon_names)), scopes=["scientific_name", "other_names"], fields=["taxid"]
-        )
-        return {
-            item["query"]: {"taxid": int(item["taxid"]), "mapping_tool": "biothings"}
-            for item in results
-            if "notfound" not in item
-        }
-
-    def query_bt_taxon_info(self, taxids: list) -> dict:
-        """Fetches taxon information from BioThings API."""
-        if not taxids:
-            return {}
-        client = bt.get_client("taxon")
-        infos = client.gettaxa(
-            list(set(taxids)), fields=["scientific_name", "parent_taxid", "lineage", "rank"]
-        )
-        return {
-            info["_id"]: {
-                "id": f"NCBITaxon:{int(info['_id'])}",
-                "taxid": int(info["_id"]),
-                "name": info.get("scientific_name"),
-                "parent_taxid": info.get("parent_taxid"),
-                "lineage": info.get("lineage"),
-                "rank": info.get("rank"),
-            }
-            for info in infos
-            if "notfound" not in info
-        }
-
-    def query_bt_disease_info(self, ids: list) -> dict:
-        """Fetches disease information from BioThings API using Mondo ontology."""
-        if not ids:
-            return {}
-        client = bt.get_client("disease")
-        results = client.querymany(
-            list(set(ids)),
-            scopes=["mondo.xrefs.hp", "mondo.xrefs.efo", "mondo.mondo"],
-            fields=["mondo.definition", "mondo.label"],
-        )
-        d_info = {}
-        for info in results:
-            if "notfound" not in info:
-                mondo = info.get("mondo", {})
-                d_info[info["query"]] = {
-                    "id": info["_id"],
-                    "name": mondo.get("label"),
-                    "description": mondo.get("definition"),
-                    "type": "biolink:Disease",
-                }
-        return d_info
-
-
-class RapidFuzzUtils:
-    """Utilities for fuzzy string matching using RapidFuzz."""
-
-    def __init__(self, tar_path="taxdump.tar.gz"):
-        """Loads and parses the NCBI taxonomy data upon initialization."""
-        print(f"Initializing RapidFuzzUtils and loading data from '{tar_path}'...")
-
-        self.ref_name_to_taxid = self._parse_names_dmp_from_taxdump(tar_path)
-        self.ref_names = list(self.ref_name_to_taxid.keys())
-        print(f"Ready. Loaded {len(self.ref_names)} reference names.")
-
-    def _parse_names_dmp_from_taxdump(self, tar_path, f_name="names.dmp") -> dict:
-        """Parses the names.dmp file from the NCBI Taxonomy database dump."""
-        keep_classes = {
-            "scientific name",
-            "synonym",
-            "equivalent name",
-            "genbank synonym",
-            "genbank anamorph",
-        }
-        name2taxid = {}
-        with tarfile.open(tar_path, "r:gz") as tar_f:
-            member = tar_f.getmember(f_name)
-            with tar_f.extractfile(member) as in_f:
-                for line in in_f:
-                    parts = [part.strip().decode("utf-8") for part in line.strip().split(b"|")]
-                    if (
-                        len(parts) >= 4 and parts[3] in keep_classes
-                    ):  # parts[0] == taxid, parts[1] == name
-                        name2taxid[parts[1].lower()] = int(parts[0])
-        return name2taxid
-
-    def fuzzy_match(self, query_names: list, scorer=fuzz.token_sort_ratio, score_cutoff=90) -> dict:
-        """
-        Performs fuzzy matching of query names against the pre-loaded reference names.
-        """
-        matches = {}
-        for name in query_names:
-            match = process.extractOne(
-                name, self.ref_names, scorer=scorer, score_cutoff=score_cutoff
-            )
-            if match:
-                matched_name, score, _ = match
-                matches[name] = {
-                    "matched_name": matched_name,
-                    "score": score,
-                    "mapping_tool": "rapidfuzz",
-                }
-        return matches
-
-    def fuzzy_matched_name2taxid(self, query_names: list) -> dict:
-        """
-        Finds the best fuzzy match for each query name and returns its corresponding taxid.
-        """
-        fuzzy_matches = self.fuzzy_match(query_names)
-
-        for _original_name, match_info in fuzzy_matches.items():
-            matched_name = match_info["matched_name"]
-            taxid = self.ref_name_to_taxid.get(matched_name)
-            if taxid:
-                match_info["taxid"] = taxid
-
-        return fuzzy_matches
-
-
-class Text2TermUtils:
-    def text2term_name2id(
-        self, disease_names, ontology="MONDO", url="http://purl.obolibrary.org/obo/mondo.owl"
-    ):
-        """Maps disease names to ontology identifiers using text2term."""
-        if not text2term.cache_exists(ontology):
-            text2term.cache_ontology(ontology_url=url, ontology_acronym=ontology)
-        df = text2term.map_terms(
-            list(set(disease_names)), ontology, use_cache=True, min_score=0.8, max_mappings=1
-        )
-        if df is None or df.empty:
-            return {}
-        df = df[~df["Mapped Term CURIE"].astype(str).str.contains("NCBITAXON", na=False)]
-
-        text2term_mapped = {}
-        for _, row in df.iterrows():
-            source_term = row["Source Term"]
-            mapped_curie = row["Mapped Term CURIE"]
-
-            text2term_mapped[source_term] = {
-                "id": mapped_curie,
-                "mapping_tool": "text2term",
-            }
-        return text2term_mapped
-
-
-class PubMedService:
-    """Handles interactions with NCBI PubMed service via Entrez."""
-
-    def __init__(self, email):
-        Entrez.email = email
-
-    def query_pubmed_metadata(self, pmids):
-        """Fetches PubMed metadata for a list of PMIDs."""
-        if not pmids:
-            return {}
-        handle = Entrez.efetch(db="pubmed", id=",".join(map(str, set(pmids))), retmode="xml")
-        records = Entrez.read(handle)
-        handle.close()
-        result = {}
-        for article in records.get("PubmedArticle", []):
-            try:
-                pmid = str(article["MedlineCitation"]["PMID"])
-                article_data = article["MedlineCitation"]["Article"]
-                title = article_data.get("ArticleTitle", "")
-                abstract = " ".join(
-                    str(p) for p in article_data.get("Abstract", {}).get("AbstractText", [])
-                )
-                doi = next(
-                    (
-                        str(el)
-                        for el in article.get("PubmedData", {}).get("ArticleIdList", [])
-                        if el.attributes.get("IdType") == "doi"
-                    ),
-                    "",
-                )
-                result[pmid] = {
-                    "pmid": int(pmid),
-                    "name": title,
-                    "summary": f"{abstract} [abstract]" if abstract else "",
-                    "doi": doi,
-                    "type": "biolink:Publication",
-                }
-            except (KeyError, IndexError) as e:
-                print(f"Failed to parse PubMed article: {e}")
-        return result
 
 
 class NCIt2TaxidMapper:
@@ -715,6 +200,17 @@ class NCIt2TaxidMapper:
         },
     }
 
+    def _get_ncit_code(self, ncit_file_path) -> list:
+        """Extracts NCIT codes from NCIT.txt file."""
+        reader = FileReader()
+        return sorted(
+            [
+                line[2].split("_")[1]
+                for line in reader.read_file(ncit_file_path, has_header=False)
+                if "NCIT" in line[2]
+            ]
+        )
+
     def ncits2taxids(self, ncit_path=None):
         """Maps NCIT codes to NCBI Taxonomy IDs.
         Final mapping derived 582 unique NCIT codes to 568 NCBI Taxonomy IDs.
@@ -729,7 +225,7 @@ class NCIt2TaxidMapper:
         """
         if ncit_path is None:
             ncit_path = os.path.join("downloads", "NCIT.txt")
-        ncit_codes = self.ncit_service.get_ncit_code(ncit_path)
+        ncit_codes = self._get_ncit_code(ncit_path)
         ncits2taxids, notfound_ncit = self.ncit_service.async_run_ncit_codes_to_taxids(ncit_codes)
 
         for name, patch_info in self._MANUAL_TAXID_MAPPING_PATCHES.items():
