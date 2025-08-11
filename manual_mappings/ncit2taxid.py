@@ -1,3 +1,7 @@
+"""
+This module contains manual mappings for NCIT to NCBI Taxonomy IDs (taxids).
+"""
+
 # names in notfound_ncit
 MANUAL_TAXID_MAPPING_PATCHES = {
     "human parainfluenza virus": {"taxid": 2905673},

@@ -1,3 +1,7 @@
+"""
+This module contains manual mappings from disease names to their respective IDs, names, descriptions, and types.
+"""
+
 MANUAL_MAP_DISEASE_INFO = {
     "arthritis": {
         "id": "HP:0001369",

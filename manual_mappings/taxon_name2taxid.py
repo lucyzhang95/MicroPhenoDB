@@ -1,3 +1,7 @@
+"""
+This file contains a mapping of taxon names to their corresponding NCBI Taxonomy IDs (taxids).
+"""
+
 MANUAL_MAP_UNMAPPED_TAXON_NAMES = {
     "actinomyces neuii subspecies neuii": 144053,
     "actinomyces radingae": 131110,
