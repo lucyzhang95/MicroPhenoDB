@@ -1,3 +1,4 @@
+import functools
 import os
 import re
 import uuid
@@ -5,8 +6,14 @@ import uuid
 from dotenv import load_dotenv
 
 from manual_annotations.disease_name2id import MANUAL_MAP_DISEASE_INFO
-from manual_annotations.ncit2taxid import MANUAL_TAXID_MAPPING_OVERRIDES, MANUAL_TAXID_MAPPING_PATCHES
-from manual_annotations.taxon_name2taxid import MANUAL_MAP_UNMAPPED_TAXON_NAMES, OVERRIDE_BT_mapped_TAXID
+from manual_annotations.ncit2taxid import (
+    MANUAL_TAXID_MAPPING_OVERRIDES,
+    MANUAL_TAXID_MAPPING_PATCHES,
+)
+from manual_annotations.taxon_name2taxid import (
+    MANUAL_MAP_UNMAPPED_TAXON_NAMES,
+    OVERRIDE_BT_mapped_TAXID,
+)
 from utils.cache_helper import CacheHelper
 from utils.file_reader import FileReader
 from utils.ontology_mapper import RapidFuzzUtils, Text2TermUtils
@@ -149,27 +156,58 @@ class CacheManager(CacheHelper):
         self.bt_service = BioThingsService()
         self.t2t_utils = Text2TermUtils()
         self.pubmed_service = PubMedService(email=os.getenv("EMAIL_ADDRESS"))
+        self.taxon_automated_mapping_sources = [
+            self.get_or_cache_ete3_taxon_name2taxid,
+            self.get_or_cache_entrez_taxon_name2taxid,
+            self.get_or_cache_rapidfuzz_taxon_name2taxid,
+            self.get_or_cache_bt_taxon_name2taxid,
+        ]
+        self.all_taxon_mapping_sources = self.taxon_automated_mapping_sources + [
+            self.get_or_cache_manual_taxon_name2taxid
+        ]
 
-    def get_or_cache_ncits2taxids_mapping(self):
-        """Checks if the NCIT to NCBI Taxonomy ID mapping is cached."""
-        cache_f_name = "ncit2taxid.pkl"
-        cache_f_path = os.path.join(self.cache_dir, cache_f_name)
+    @staticmethod
+    def _cache_decorator(cache_f_name):
+        """Decorator to cache the result of a function call."""
 
-        if os.path.exists(cache_f_path):
-            print("NCIT to NCBI Taxonomy mapping already cached. Loading...")
-            return self.load_pickle(cache_f_name)
-        else:
-            print("Caching NCIT to NCBI Taxonomy ID mapping...")
-            ncits2taxids = self.id_mapper.ncits2taxids()
-            self.save_pickle(ncits2taxids, cache_f_name)
-            print("✅ NCIT to NCBI Taxonomy ID mapping successfully cached.")
-            return ncits2taxids
+        def decorator(func):
+            """Decorator to cache the result of a function call."""
+
+            @functools.wraps(func)
+            def wrapper(self, *args, **kwargs):
+                """Wrapper function to handle caching logic."""
+                cache_f_path = os.path.join(self.cache_dir, cache_f_name)
+                if os.path.exists(cache_f_path):
+                    print(f"✅ {cache_f_name} already cached. Loading...")
+                    return self.load_pickle(cache_f_name)
+                else:
+                    print(f"▶️ Caching {cache_f_name}...")
+                    result = func(self, *args, **kwargs)
+                    self.save_pickle(result, cache_f_name)
+                    print(f"🎉 {cache_f_name} successfully cached.")
+                    return result
+
+            return wrapper
+
+        return decorator
+
+    def _get_unmapped_taxon_names(self, initial_names_set, list_of_mapping_funcs):
+        """Filters an initial set of names against sources of mapped names."""
+        mapped_names = set()
+        for func in list_of_mapping_funcs:
+            mapped_names.update(func().keys())
+        return sorted(list(initial_names_set - mapped_names))
 
     def _get_all_taxon_names(self, file_path=None):
         if file_path is None:
             file_path = os.path.join(self.data_dir, "core_table.txt")
         core_data = self.file_reader.read_file(file_path)
         return sorted(list(set(line[1].lower().strip() for line in core_data if line)))
+
+    @_cache_decorator("ncit2taxid.pkl")
+    def get_or_cache_ncits2taxids_mapping(self):
+        """Checks if the NCIT to NCBI Taxonomy ID mapping is cached."""
+        return self.id_mapper.ncits2taxids()
 
     def _get_taxon_names_for_id_map(self):
         """Gets taxon names that need to be mapped to NCBI Taxonomy IDs.
@@ -179,9 +217,7 @@ class CacheManager(CacheHelper):
         """
         core_taxon_names = self._get_all_taxon_names()
         cached_ncit2taxids = self.get_or_cache_ncits2taxids_mapping()
-        ncit_taxon_names = set(cached_ncit2taxids.keys())
-        taxon_names_to_map = set(core_taxon_names) - ncit_taxon_names
-        return sorted(list(taxon_names_to_map))
+        return sorted(list(set(core_taxon_names) - set(cached_ncit2taxids.keys())))
 
     def _preprocessed_taxon_names_mapping(self) -> dict:
         """Preprocesses taxon names for mapping.
@@ -201,196 +237,98 @@ class CacheManager(CacheHelper):
         taxon_names4ete3 = list(set(processed_taxon_names_mapping.values()))
         return sorted(taxon_names4ete3)
 
+    @_cache_decorator("ete3_taxon_name2taxid.pkl")
     def get_or_cache_ete3_taxon_name2taxid(self):
         """Caches the ETE3 taxon name to NCBI Taxonomy ID mapping."""
-        cache_f_name = "ete3_taxon_name2taxid.pkl"
-        cache_f_path = os.path.join(self.cache_dir, cache_f_name)
-
-        if os.path.exists(cache_f_path):
-            print("ETE3 Taxon Name to TaxID mapping already cached. Loading...")
-            return self.load_pickle(cache_f_name)
-        else:
-            print("Caching ETE3 Taxon Name to TaxID mapping...")
-            taxon_names4ete3 = self._get_taxon_names_for_ete3_mapping()
-            ete3_mapped = self.ete3_service.ete3_taxon_name2taxid(taxon_names4ete3)
-            self.save_pickle(ete3_mapped, cache_f_name)
-            print("✅ ETE3 Taxon Name to TaxID mapping successfully cached.")
-            return ete3_mapped
+        taxon_names4ete3 = self._get_taxon_names_for_ete3_mapping()
+        return self.ete3_service.ete3_taxon_name2taxid(taxon_names4ete3)
 
     def _get_taxon_names_for_entrez_mapping(self):
         """Gets taxon names that need to be mapped to NCBI Taxonomy IDs using Entrez."""
-        taxon_names = self._get_taxon_names_for_ete3_mapping()
-        cached_ete3_taxon_names = self.get_or_cache_ete3_taxon_name2taxid()
-        ete3_taxon_names = set(cached_ete3_taxon_names.keys())
-        taxon_names_to_map = set(taxon_names) - ete3_taxon_names
+        initial_names = set(self._get_taxon_names_for_ete3_mapping())
+        taxon_names_to_map = self._get_unmapped_taxon_names(
+            initial_names, [self.get_or_cache_ete3_taxon_name2taxid]
+        )
         return sorted(list(taxon_names_to_map))
 
+    @_cache_decorator("entrez_taxon_name2taxid.pkl")
     def get_or_cache_entrez_taxon_name2taxid(self):
         """Caches the Entrez taxon name to NCBI Taxonomy ID mapping."""
-        cache_f_name = "entrez_taxon_name2taxid.pkl"
-        cache_f_path = os.path.join(self.cache_dir, cache_f_name)
-
-        if os.path.exists(cache_f_path):
-            print("Entrez Taxon Name to TaxID mapping already cached. Loading...")
-            return self.load_pickle(cache_f_name)
-        else:
-            print("Caching Entrez Taxon Name to TaxID mapping...")
-            taxon_names_to_map = self._get_taxon_names_for_entrez_mapping()
-            entrez_mapped = self.entrez_service.async_run_entrez_taxon_names2taxids(
-                taxon_names_to_map
-            )
-            self.save_pickle(entrez_mapped, cache_f_name)
-            print("✅ Entrez Taxon Name to TaxID mapping successfully cached.")
-            return entrez_mapped
+        taxon_names_to_map = self._get_taxon_names_for_entrez_mapping()
+        return self.entrez_service.async_run_entrez_taxon_names2taxids(taxon_names_to_map)
 
     def _get_taxon_names_for_rapidfuzz_mapping(self):
         """Gets taxon names that need to be mapped to NCBI Taxonomy IDs using Rapidfuzz."""
-        taxon_names = self._get_taxon_names_for_ete3_mapping()
-        cached_ete3_taxon_names = self.get_or_cache_ete3_taxon_name2taxid()
-        ete3_taxon_names = set(cached_ete3_taxon_names.keys())
-        cached_entrez_taxon_names = self.get_or_cache_entrez_taxon_name2taxid()
-        entrez_taxon_names = set(cached_entrez_taxon_names.keys())
-
-        taxon_names_to_map = set(taxon_names) - ete3_taxon_names - entrez_taxon_names
+        initial_names = set(self._get_taxon_names_for_ete3_mapping())
+        taxon_names_to_map = self._get_unmapped_taxon_names(
+            initial_names,
+            [self.get_or_cache_ete3_taxon_name2taxid, self.get_or_cache_entrez_taxon_name2taxid],
+        )
         return sorted(list(taxon_names_to_map))
 
+    @_cache_decorator("rapidfuzz_taxon_name2taxid.pkl")
     def get_or_cache_rapidfuzz_taxon_name2taxid(self):
         """Caches the BioThings taxon name to NCBI Taxonomy ID mapping."""
-        cache_f_name = "rapidfuzz_taxon_name2taxid.pkl"
-        cache_f_path = os.path.join(self.cache_dir, cache_f_name)
-
-        if os.path.exists(cache_f_path):
-            print("RapidFuzz Taxon Name to TaxID mapping already cached. Loading...")
-            return self.load_pickle(cache_f_name)
-        else:
-            print("Caching RapidFuzz Taxon Name to TaxID mapping...")
-            taxon_names_to_map = self._get_taxon_names_for_rapidfuzz_mapping()
-            rapidfuzz_mapped = RapidFuzzUtils().fuzzy_matched_name2taxid(taxon_names_to_map)
-            self.save_pickle(rapidfuzz_mapped, cache_f_name)
-            print("✅ RapidFuzz Taxon Name to TaxID mapping successfully cached.")
-            return rapidfuzz_mapped
+        taxon_names_to_map = self._get_taxon_names_for_rapidfuzz_mapping()
+        return RapidFuzzUtils().fuzzy_matched_name2taxid(taxon_names_to_map)
 
     def _get_taxon_names_for_bt_mapping(self):
         """Gets taxon names that need to be mapped to NCBI Taxonomy IDs using BioThings."""
-        taxon_names = self._get_taxon_names_for_ete3_mapping()
-        cached_ete3_taxon_names = self.get_or_cache_ete3_taxon_name2taxid()
-        ete3_taxon_names = set(cached_ete3_taxon_names.keys())
-        cached_entrez_taxon_names = self.get_or_cache_entrez_taxon_name2taxid()
-        entrez_taxon_names = set(cached_entrez_taxon_names.keys())
-        cached_rapid_fuzz_taxon_names = self.get_or_cache_rapidfuzz_taxon_name2taxid()
-        rapidfuzz_taxon_names = set(cached_rapid_fuzz_taxon_names.keys())
-
-        taxon_names_to_map = (
-            set(taxon_names) - ete3_taxon_names - entrez_taxon_names - rapidfuzz_taxon_names
+        initial_names = set(self._get_taxon_names_for_ete3_mapping())
+        taxon_names_to_map = self._get_unmapped_taxon_names(
+            initial_names,
+            [
+                self.get_or_cache_ete3_taxon_name2taxid,
+                self.get_or_cache_entrez_taxon_name2taxid,
+                self.get_or_cache_rapidfuzz_taxon_name2taxid,
+            ],
         )
         return sorted(list(taxon_names_to_map))
 
+    @_cache_decorator("bt_taxon_name2taxid.pkl")
     def get_or_cache_bt_taxon_name2taxid(self):
         """Caches the BioThings taxon name to NCBI Taxonomy ID mapping."""
-        cache_f_name = "bt_taxon_name2taxid.pkl"
-        cache_f_path = os.path.join(self.cache_dir, cache_f_name)
+        taxon_names_to_map = self._get_taxon_names_for_bt_mapping()
+        bt_mapped = self.bt_service.query_bt_taxon_name2taxid(taxon_names_to_map)
 
-        if os.path.exists(cache_f_path):
-            print("BioThings Taxon Name to TaxID mapping already cached. Loading...")
-            return self.load_pickle(cache_f_name)
-        else:
-            print("Caching BioThings Taxon Name to TaxID mapping...")
-            taxon_names_to_map = self._get_taxon_names_for_bt_mapping()
-            bt_mapped = self.bt_service.query_bt_taxon_name2taxid(taxon_names_to_map)
+        # override some taxids with manual mapping
+        for name, override_info in OVERRIDE_BT_mapped_TAXID.items():
+            if name in bt_mapped:
+                bt_mapped[name].update({"taxid": override_info["taxid"]})
 
-            # override some taxids with manual mapping
-            for name, override_info in OVERRIDE_BT_mapped_TAXID.items():
-                if name in bt_mapped:
-                    bt_mapped[name].update({"taxid": override_info["taxid"]})
+        if "microorganism" in bt_mapped:
+            del bt_mapped["microorganism"]  # remove "microorganism" as it is too generic
+        return bt_mapped
 
-            if "microorganism" in bt_mapped:
-                del bt_mapped["microorganism"]  # remove "microorganism" as it is too generic
-            self.save_pickle(bt_mapped, cache_f_name)
-            print("✅ BioThings Taxon Name to TaxID mapping successfully cached.")
-            return bt_mapped
-
-    def _get_mapped_names(self, exclude=None):
-        """
-        Gathers all unique taxon names from all cached mapping files.
-
-        :param exclude: An optional source to exclude from the set (e.g., 'bt').
-        :return: A single set containing all mapped taxon names.
-        """
-        sources = {
-            "ete3": self.get_or_cache_ete3_taxon_name2taxid,
-            "entrez": self.get_or_cache_entrez_taxon_name2taxid,
-            "rapidfuzz": self.get_or_cache_rapidfuzz_taxon_name2taxid,
-            "bt": self.get_or_cache_bt_taxon_name2taxid,
-        }
-
-        if exclude and exclude in sources:
-            sources.pop(exclude)
-
-        mapped_names = set()
-        for source_func in sources.values():
-            mapped_names.update(source_func().keys())
-
-        return mapped_names
-
-    def _get_unmapped_taxon_names(self):
+    def _get_last_unmapped_taxon_names(self):
         """Gets taxon names that were not mapped by any service."""
-        taxon_names = self._get_taxon_names_for_ete3_mapping()
-        cached_ete3_taxon_names = self.get_or_cache_ete3_taxon_name2taxid()
-        ete3_taxon_names = set(cached_ete3_taxon_names.keys())
-        cached_entrez_taxon_names = self.get_or_cache_entrez_taxon_name2taxid()
-        entrez_taxon_names = set(cached_entrez_taxon_names.keys())
-        cached_rapid_fuzz_taxon_names = self.get_or_cache_rapidfuzz_taxon_name2taxid()
-        rapidfuzz_taxon_names = set(cached_rapid_fuzz_taxon_names.keys())
-        cached_bt_taxon_names = self.get_or_cache_bt_taxon_name2taxid()
-        bt_taxon_names = set(cached_bt_taxon_names.keys())
-
-        unmapped_taxon_names = (
-            set(taxon_names)
-            - set(ete3_taxon_names)
-            - set(entrez_taxon_names)
-            - set(rapidfuzz_taxon_names)
-            - set(bt_taxon_names)
+        initial_names = set(self._get_taxon_names_for_ete3_mapping())
+        unmapped_taxon_names = self._get_unmapped_taxon_names(
+            initial_names, self.taxon_automated_mapping_sources
         )
         return sorted(list(unmapped_taxon_names))
 
+    @_cache_decorator("manual_taxon_name2taxid.pkl")
     def get_or_cache_manual_taxon_name2taxid(self):
         """Caches the manual mapping of taxon names to NCBI Taxonomy IDs."""
-        cache_f_name = "manual_taxon_name2taxid.pkl"
-        cache_f_path = os.path.join(self.cache_dir, cache_f_name)
-
-        if os.path.exists(cache_f_path):
-            print("Manual Taxon Name to TaxID mapping already cached. Loading...")
-            return self.load_pickle(cache_f_name)
-        else:
-            print("Caching Manual Taxon Name to TaxID mapping...")
-            manual_mapping = {
-                name: {"taxid": taxid, "mapping_tool": "manual"}
-                for name, taxid in MANUAL_MAP_UNMAPPED_TAXON_NAMES.items()
-            }
-            self.save_pickle(manual_mapping, cache_f_name)
-            return manual_mapping
+        manual_mapping = {
+            name: {"taxid": taxid, "mapping_tool": "manual"}
+            for name, taxid in MANUAL_MAP_UNMAPPED_TAXON_NAMES.items()
+        }
+        return manual_mapping
 
     def _convert_preprocessed_name2original_name(self) -> dict:
         """Converts preprocessed taxon names to their original names and updates the mapping with taxid."""
         processed_taxon_name_mapping = self._preprocessed_taxon_names_mapping()
-        cached_ete3_taxon_names = self.get_or_cache_ete3_taxon_name2taxid()
-        cached_entrez_taxon_names = self.get_or_cache_entrez_taxon_name2taxid()
-        cached_rapidfuzz_taxon_names = self.get_or_cache_rapidfuzz_taxon_name2taxid()
-        cached_bt_taxon_names = self.get_or_cache_bt_taxon_name2taxid()
-        cached_manual_taxon_names = self.get_or_cache_manual_taxon_name2taxid()
 
-        mapped_names = {
-            **cached_ete3_taxon_names,
-            **cached_entrez_taxon_names,
-            **cached_rapidfuzz_taxon_names,
-            **cached_bt_taxon_names,
-            **cached_manual_taxon_names,
-        }
+        all_mapped_names = {}
+        for source_func in self.all_taxon_mapping_sources:
+            all_mapped_names.update(source_func())
 
         original_name_mapping = {}
         for original_name, preprocessed_name in processed_taxon_name_mapping.items():
-            if preprocessed_name in mapped_names:
-                info = mapped_names[preprocessed_name]
+            if preprocessed_name in all_mapped_names:
+                info = all_mapped_names[preprocessed_name]
                 original_name_mapping[original_name] = {
                     **info,
                     "name": preprocessed_name,
@@ -460,20 +398,10 @@ class CacheManager(CacheHelper):
 
         return final_mapping
 
+    @_cache_decorator("original_taxon_name_and_info.pkl")
     def get_or_cache_taxon_info(self):
         """Caches and retrieves taxon information."""
-        cache_f_name = "original_taxon_name_and_info.pkl"
-        cache_f_path = os.path.join(self.cache_dir, cache_f_name)
-
-        if os.path.exists(cache_f_path):
-            print("Original taxon name and info already cached. Loading...")
-            return self.load_pickle(cache_f_name)
-        else:
-            print("Caching original taxon name and info...")
-            taxon_info = self.map_original_name2taxon_info()
-            self.save_pickle(taxon_info, cache_f_name)
-            print("✅ Original taxon name and info successfully cached.")
-            return taxon_info
+        return self.map_original_name2taxon_info()
 
     def _get_disease_efo_mapping(self, efo_f_path=None):
         """Reads the EFO file and returns a mapping of scientific names to disease information."""
@@ -501,35 +429,15 @@ class CacheManager(CacheHelper):
                 }
         return efo_map
 
+    @_cache_decorator("efo_disease_name2id.pkl")
     def get_or_cache_disease_name2efo(self):
         """Caches and retrieves the disease name to EFO mapping."""
-        cache_f_name = "efo_disease_name2id.pkl"
-        cache_f_path = os.path.join(self.cache_dir, cache_f_name)
+        return self._get_disease_efo_mapping()
 
-        if os.path.exists(cache_f_path):
-            print("Disease name to EFO mapping already cached. Loading...")
-            return self.load_pickle(cache_f_name)
-        else:
-            print("Caching disease name to EFO mapping...")
-            efo_map = self._get_disease_efo_mapping()
-            self.save_pickle(efo_map, cache_f_name)
-            print("✅ Disease name to EFO mapping successfully cached.")
-            return efo_map
-
+    @_cache_decorator("text2term_disease_name2id.pkl")
     def get_or_cache_text2term_disease_name2id(self, disease_names_to_map):
         """Caches the Text2Term disease name to ID mapping."""
-        cache_f_name = "text2term_disease_name2id.pkl"
-        cache_f_path = os.path.join(self.cache_dir, cache_f_name)
-
-        if os.path.exists(cache_f_path):
-            print("Text2Term Disease Name to ID mapping already cached. Loading...")
-            return self.load_pickle(cache_f_name)
-        else:
-            print("Caching Text2Term Disease Name to ID mapping...")
-            text2term_mapped = self.t2t_utils.text2term_name2id(disease_names_to_map)
-            self.save_pickle(text2term_mapped, cache_f_name)
-            print("✅ Text2Term Disease Name to ID mapping successfully cached.")
-            return text2term_mapped
+        return self.t2t_utils.text2term_name2id(disease_names_to_map)
 
     def get_text2term_disease_id_and_bt_info(self) -> dict:
         """Map disease names to disease ontology and info."""
@@ -566,22 +474,13 @@ class CacheManager(CacheHelper):
 
         return final_mapping
 
+    @_cache_decorator("original_disease_name_and_info.pkl")
     def get_or_cache_disease_info(self):
         """Caches total mapped disease with descriptions."""
-        cache_f_name = "original_disease_name_and_info.pkl"
-        cache_f_path = os.path.join(self.cache_dir, cache_f_name)
-
-        if os.path.exists(cache_f_path):
-            print("Disease Info already cached. Loading...")
-            return self.load_pickle(cache_f_name)
-        else:
-            print("Caching Disease Info...")
-            t2t_mapped = self.get_text2term_disease_id_and_bt_info()
-            efo_mapped = self.get_or_cache_disease_name2efo()
-            final_disease_info = {**t2t_mapped, **efo_mapped, **MANUAL_MAP_DISEASE_INFO}
-            self.save_pickle(final_disease_info, cache_f_name)
-            print("✅ Disease Info successfully cached.")
-            return final_disease_info
+        t2t_mapped = self.get_text2term_disease_id_and_bt_info()
+        efo_mapped = self.get_or_cache_disease_name2efo()
+        final_disease_info = {**t2t_mapped, **efo_mapped, **MANUAL_MAP_DISEASE_INFO}
+        return final_disease_info
 
     def _get_pubmed_metadata(self, file_path=None):
         """Reads the PubMed metadata file and returns a mapping of PMIDs to metadata."""
@@ -592,20 +491,10 @@ class CacheManager(CacheHelper):
         pub_metadata = self.pubmed_service.query_pubmed_metadata(pmids)
         return pub_metadata
 
+    @_cache_decorator("pubmed_metadata.pkl")
     def get_or_cache_pubmed_metadata(self):
         """Caches and retrieves PubMed metadata."""
-        cache_f_name = "pubmed_metadata.pkl"
-        cache_f_path = os.path.join(self.cache_dir, cache_f_name)
-
-        if os.path.exists(cache_f_path):
-            print("PubMed metadata already cached. Loading...")
-            return self.load_pickle(cache_f_name)
-        else:
-            print("Caching PubMed metadata...")
-            pub_metadata = self._get_pubmed_metadata()
-            self.save_pickle(pub_metadata, cache_f_name)
-            print("✅ PubMed metadata successfully cached.")
-            return pub_metadata
+        return self._get_pubmed_metadata()
 
 
 class DataCachePipeline:
