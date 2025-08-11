@@ -4,6 +4,9 @@ import uuid
 
 from dotenv import load_dotenv
 
+from manual_annotations.disease_name2id import MANUAL_MAP_DISEASE_INFO
+from manual_annotations.ncit2taxid import MANUAL_TAXID_MAPPING_OVERRIDES, MANUAL_TAXID_MAPPING_PATCHES
+from manual_annotations.taxon_name2taxid import MANUAL_MAP_UNMAPPED_TAXON_NAMES
 from utils.cache_helper import CacheHelper
 from utils.file_reader import FileReader
 from utils.ontology_mapper import RapidFuzzUtils, Text2TermUtils
@@ -72,65 +75,6 @@ class NCIt2TaxidMapper:
     def __init__(self):
         self.ncit_service = EbiTaxonomyService()
 
-    # names in notfound_ncit
-    _MANUAL_TAXID_MAPPING_PATCHES = {
-        "human parainfluenza virus": {"taxid": 2905673},
-        "trichoderma": {"taxid": 5543},
-        "trichomonas vaginalis": {"taxid": 5722},
-        "trypanosoma brucei gambiense": {"taxid": 31285},
-        "malassezia furfur": {"taxid": 55194},
-        "clostridium cluster iv": {"taxid": 1689151},
-        "clostridium cluster xvi": {"taxid": 543347},
-        "powassan virus": {"taxid": 11083},
-        "mycobacterium xenopi": {"taxid": 1789},
-        "clostridiales xi": {"taxid": 186804},
-        "clostridiales xiii": {"taxid": 189325},
-        "alpha-amylase (aspergillus oryzae)": {
-            "taxid": 5062,
-            "description": "A fungus used in East Asia to saccharify rice, sweet potato, and barley in the making of alcoholic beverages such as sake and shochu, and also to ferment soybeans for making soy sauce and miso. It is one of the different koji molds used for food fermentation.[Wikipedia]",
-        },
-        "japanese encephalitis virus strain nakayama-nih antigen (formaldehyde inactivated)": {
-            "taxid": 11076,
-            "description": "A virus from the family Flaviviridae, part of the Japanese encephalitis serocomplex of nine genetically and antigenically related viruses, some of which are particularly severe in horses, and four of which, including West Nile virus, are known to infect humans. The enveloped virus is closely related to the West Nile virus and the St. Louis encephalitis virus. The positive sense single-stranded RNA genome is packaged in the capsid which is formed by the capsid protein.[Wikipedia]",
-        },
-    }
-
-    # existing taxids in ncits2taxids
-    _MANUAL_TAXID_MAPPING_OVERRIDES = {
-        "bacteroides dorei": {"taxid": 357276},  # NCIT mapped 357256 is wrong
-        "ruminococcaceae": {"taxid": 216572},  # NCIT mapped 541000 is obsolete
-        "peptococcus": {"taxid": 2740},  # NCIT mapped 2840 is wrong
-        "mumps virus": {"taxid": 2560602},  # NCIT mapped 11161 is obsolete
-        "lymphocytic choriomeningitis virus": {"taxid": 3052303},  # NCIT mapped 11623 is obsolete
-        "trichosporon": {"taxid": 5552},  # NCIT mapped 599816 is obsolete
-        "bacillus cereus": {"taxid": 1396},  # NCIT mapped 13968 is wrong
-        "bacillaceae": {"taxid": 186817},  # NCIT mapped 18681 is wrong
-        "actinobaculum": {
-            "taxid": 76833,
-            "description": "Actinobaculum is a bacterial genus in the family Actinomycetaceae.[Wikipedia]",
-        },
-        "rikenellaceae": {
-            "taxid": 171550,
-            "description": "Rikenellaceae is a family of Gram-negative bacteria described by Noel R. Krieg in 2015. It contains nine genera, five of which are validly published by the International Code of Nomenclature of Prokaryotes.[2] Bacteria with 16S ribosomal RNA highly similar to the Rikenella genus, as compared to the larger taxonomic order Bacteroidales, are classified in this family. This family consists of non-motile, rod-shaped bacteria that are tolerant of bile. Most Rikenellaceae species have been identified in the gastrointestinal tract microbiomes of various animals. Bacteria of this taxonomic family are elevated in the gut microbiomes of mice that are leptin-resistant obese and diabetic.[4] However, Rikenellaceae bacteria are depleted in the gut microbiomes of obese American adults, leading to reduced synthesis of butyrate and disrupted metabolism. Gut microbiomes with elevated levels of Rikenellaceae bacteria are associated with lupus and Alzheimer's disease in mice and colorectal cancer in humans.[Wikipedia]",
-        },
-        "bacillus coagulans": {
-            "taxid": 1398,
-            "description": "H. coagulans is a Gram-positive, catalase-positive, spore-forming, motile, facultative anaerobe rod that measures approximately 0.9 μm by 3.0 μm to 5.0 μm. It may appear Gram negative when entering the stationary phase of growth. The optimum temperature for growth is 50 °C (122 °F); the range of temperatures tolerated is 30–55 °C (86–131 °F). IMViC tests VP and MR (methyl red) are positive.[Wikipedia]",
-        },
-        "aspergillus clavatus": {
-            "taxid": 5057,
-            "description": "Aspergillus clavatus is a species of fungus in the genus Aspergillus with conidia dimensions 3–4.5 x 2.5–4.5 μm. It is found in soil and animal manure. The fungus was first described scientifically in 1834 by the French mycologist John Baptiste Henri Joseph Desmazières. The fungus can produce the toxin patulin, which may be associated with disease in humans and animals. This species is only occasionally pathogenic. Other sources have identified many species of Aspergillus as producing dry, hydrophobic spores that are easily inhaled by humans and animals. Due to the small size of the spores, about 70% of spores of A. fumigatus are able to penetrate into the trachea and primary bronchi and close to 1% into alveoli. Inhalation of spores of Aspergillus is a health risk. A. clavatus is allergenic, causing the occupational hypersensitivity pneumonitis known as malt-worker's lung.[Wikipedia]",
-        },
-        "alternaria alternata": {
-            "taxid": 5599,
-            "description": "Alternaria alternata is a fungus causing leaf spots, rots, and blights on many plant parts, and other diseases. It is an opportunistic pathogen on over 380 host species of plant. It can also cause upper respiratory tract infections and asthma in humans with compromised immunity.[Wikipedia]",
-        },
-        "sarcina": {
-            "taxid": 1266,
-            "description": "Sarcina is a genus of gram-positive cocci bacteria in the family Clostridiaceae. A synthesizer of microbial cellulose, various members of the genus are human flora and may be found in the skin and large intestine. The genus takes its name from the Latin word 'sarcina,' meaning pack or bundle, after the cuboidal (2x2x2) cellular associations they form during division along three planes. The genus's type species is Sarcina ventriculi, a variety found on the surface of cereal seeds, in soil, mud, and in the stomachs of humans, rabbits, and guinea pigs.[Wikipedia]",
-        },
-    }
-
     def _get_ncit_code(self, ncit_file_path) -> list:
         """Extracts NCIT codes from NCIT.txt file."""
         reader = FileReader()
@@ -159,7 +103,7 @@ class NCIt2TaxidMapper:
         ncit_codes = self._get_ncit_code(ncit_path)
         ncits2taxids, notfound_ncit = self.ncit_service.async_run_ncit_codes_to_taxids(ncit_codes)
 
-        for name, patch_info in self._MANUAL_TAXID_MAPPING_PATCHES.items():
+        for name, patch_info in MANUAL_TAXID_MAPPING_PATCHES.items():
             if name in notfound_ncit:
                 notfound_ncit[name].update(
                     {
@@ -173,7 +117,7 @@ class NCIt2TaxidMapper:
 
         ncits2taxids.update(notfound_ncit)  # add notfound NCIT dicts to the main mapping
 
-        for name, override_taxid in self._MANUAL_TAXID_MAPPING_OVERRIDES.items():
+        for name, override_taxid in MANUAL_TAXID_MAPPING_OVERRIDES.items():
             if name in ncits2taxids:
                 ncits2taxids[name].update(
                     {
@@ -374,6 +318,29 @@ class CacheManager(CacheHelper):
             print("✅ BioThings Taxon Name to TaxID mapping successfully cached.")
             return bt_mapped
 
+    def _get_mapped_names(self, exclude=None):
+        """
+        Gathers all unique taxon names from all cached mapping files.
+
+        :param exclude: An optional source to exclude from the set (e.g., 'bt').
+        :return: A single set containing all mapped taxon names.
+        """
+        sources = {
+            "ete3": self.get_or_cache_ete3_taxon_name2taxid,
+            "entrez": self.get_or_cache_entrez_taxon_name2taxid,
+            "rapidfuzz": self.get_or_cache_rapidfuzz_taxon_name2taxid,
+            "bt": self.get_or_cache_bt_taxon_name2taxid,
+        }
+
+        if exclude and exclude in sources:
+            sources.pop(exclude)
+
+        mapped_names = set()
+        for source_func in sources.values():
+            mapped_names.update(source_func().keys())
+
+        return mapped_names
+
     def _get_unmapped_taxon_names(self):
         """Gets taxon names that were not mapped by any service."""
         taxon_names = self._get_taxon_names_for_ete3_mapping()
@@ -395,38 +362,6 @@ class CacheManager(CacheHelper):
         )
         return sorted(list(unmapped_taxon_names))
 
-    _MANUAL_MAP_UNMAPPED_TAXON_NAMES = {
-        "actinomyces neuii subspecies neuii": 144053,
-        "actinomyces radingae": 131110,
-        "actinomyces turicensis": 131111,
-        "candidate division candidatus saccharimonadota genomosp": 239137,
-        "candidate division candidatus saccharimonadota single cell isolate tm7b": 447455,
-        "candidate division candidatus saccharimonadota single cell isolate tm7c": 447456,
-        "clostridia family i": 31979,
-        "clostridium family xiva": 543317,
-        "clostridium family xviii": 189325,
-        "clostridium lituseburense": 1537,
-        "clostridium xi": 186804,
-        "clostridium xivb": 543317,
-        "coxsackievirus a virus": 12066,
-        "creutzfeldt jakob disease": 36469,
-        "cryptococcus albidus": 100951,
-        "cysticercosis": 6204,
-        "escherichia vulneris": 566,
-        "eubacterium tortuosum": 39494,
-        "hookworms cestodes": 6157,
-        "neisseriagonorrhoeae": 485,
-        "orthorubulavirus 1c4": 2560526,
-        "ovine jaagziekte virus": 11746,
-        "prevotella multisaccharivorax": 310514,
-        "prevotella nanceiensis": 425941,
-        "saccharomyces castellii": 27288,
-        "syphilis": 160,
-        "trophyrema": 2039,
-        "uncultured clostridiales ii": 186801,
-        "vulvovaginal candidiasis": 5476,
-    }
-
     def get_or_cache_manual_taxon_name2taxid(self):
         """Caches the manual mapping of taxon names to NCBI Taxonomy IDs."""
         cache_f_name = "manual_taxon_name2taxid.pkl"
@@ -439,7 +374,7 @@ class CacheManager(CacheHelper):
             print("Caching Manual Taxon Name to TaxID mapping...")
             manual_mapping = {
                 name: {"taxid": taxid, "mapping_tool": "manual"}
-                for name, taxid in self._MANUAL_MAP_UNMAPPED_TAXON_NAMES.items()
+                for name, taxid in MANUAL_MAP_UNMAPPED_TAXON_NAMES.items()
             }
             self.save_pickle(manual_mapping, cache_f_name)
             return manual_mapping
@@ -605,89 +540,6 @@ class CacheManager(CacheHelper):
             print("✅ Text2Term Disease Name to ID mapping successfully cached.")
             return text2term_mapped
 
-    MANUAL_MAP_DISEASE_INFO = {
-        "arthritis": {
-            "id": "HP:0001369",
-            "name": "arthritis",
-            "original_name": "arthritis",
-            "description": "Inflammation of a joint.[HP]",
-            "type": "biolink:Disease",
-            "xrefs": {"hp": "HP:0001369"},
-        },
-        "virus respiratory tract infection": {
-            "id": "HP:0011947",
-            "name": "respiratory tract infection",
-            "original_name": "virus respiratory tract infection",
-            "description": "An infection of the upper or lower respiratory tract.[HP]",
-            "type": "biolink:Disease",
-            "xrefs": {"hp": "HP:0011947"},
-        },
-        "urethritis": {
-            "id": "HP:0500006",
-            "name": "urethritis",
-            "original_name": "urethritis",
-            "description": "Urethritis is characterized by discharge, dysuria and/or urethral discomfort but may be asymptomatic. Common etiologies include gonococcal urethritis as well as infection by chlamydia trachomatis, mycoplasma genitalium, ureaplasma urealyticum, trichomonas vaginalis, anaerobes, herpes simplex virus, and adenovirus.[HP]",
-            "type": "biolink:Disease",
-            "xrefs": {"hp": "HP:0500006"},
-        },
-        "lungsaspergillosis": {
-            "id": "MONDO:0000266",
-            "name": "pulmonary aspergilloma",
-            "original_name": "lungsaspergillosis",
-            "description": "Aspergillosis is an infection, growth, or allergic response caused by the Aspergillus fungus. There are several different kinds of aspergillosis. One kind is allergic bronchopulmonary aspergillosis (also called ABPA), a condition where the fungus causes allergic respiratory symptoms similar to asthma, such as wheezing and coughing, but does not actually invade and destroy tissue. Another kind of aspergillosis is invasive aspergillosis. This infection usually affects people with weakened immune systems due to cancer, AIDS, leukemia, organ transplantation, chemotherapy, or other conditions or events that reduce the number of normal white blood cells. In this condition, the fungus invades and damages tissues in the body. Invasive aspergillosis most commonly affects the lungs, but can also cause infection in many other organs and can spread throughout the body (commonly affecting the kidneys and brain). Aspergilloma, a growth (fungus ball) that develops in an area of previous lung disease such as tuberculosis or lung abscess, is a third kind of aspergillosis. This type of aspergillosis is composed of a tangled mass of fungus fibers, blood clots, and white blood cells. The fungus ball gradually enlarges, destroying lung tissue in the process, but usually does not spread to other areas.[MONDO]",
-            "type": "biolink:Disease",
-            "xrefs": {"mondo": "MONDO:0000266"},
-        },
-        "gastric cancer": {
-            "id": "MONDO:0001056",
-            "name": "gastric cancer",
-            "original_name": "gastric cancer",
-            "description": "A primary or metastatic malignant neoplasm involving the stomach.[MONDO]",
-            "type": "biolink:Disease",
-            "xrefs": {"mondo": "MONDO:0001056"},
-        },
-        "vincent angina bacteria": {
-            "id": "MONDO:0006865",
-            "name": "necrotizing ulcerative gingivitis",
-            "original_name": "vincent angina bacteria",
-            "description": "A bacterial infectious process affecting the gums. It is characterized by the development of necrotic, ulcerated, and painful lesions with creation of pseudomembranes extending along the gingival margins.[MONDO]",
-            "type": "biolink:Disease",
-            "xrefs": {"mondo": "MONDO:0006865"},
-        },
-        "juvenile idiopathic arthritis": {
-            "id": "MONDO:0011429",
-            "name": "juvenile idiopathic arthritis",
-            "original_name": "juvenile idiopathic arthritis",
-            "description": "Juvenile idiopathic arthritis (JIA) is the term used to describe a group of inflammatory articular disorders of unknown cause that begin before the age of 16 and last over 6 weeks. The term juvenile idiopathic arthritis was chosen to signify the absence of any known mechanism underlying the disorder and to highlight the necessity of excluding other types of arthritis occurring in well defined diseases (in particular arthritis occurring in association with infectious, inflammatory and haematooncologic diseases).[MONDO]",
-            "type": "biolink:Disease",
-            "xrefs": {"mondo": "MONDO:0011429"},
-        },
-        "cryptosporidiosis": {
-            "id": "MONDO:0015474",
-            "name": "cryptosporidiosis",
-            "original_name": "cryptosporidiosis",
-            "description": "Intestinal infection with organisms of the genus Cryptosporidium. It occurs in both animals and humans. Symptoms include severe diarrhea.[MONDO]",
-            "type": "biolink:Disease",
-            "xrefs": {"mondo": "MONDO:0015474"},
-        },
-        "hemoglobinopathies": {
-            "id": "MONDO:0019050",
-            "name": "inherited hemoglobinopathy",
-            "original_name": "hemoglobinopathies",
-            "description": "An inherited disorder characterized by structural alterations of a globin chain within the hemoglobin molecule.[MONDO]",
-            "type": "biolink:Disease",
-            "xrefs": {"mondo": "MONDO:0019050"},
-        },
-        "acute hepatitis a virus infection": {
-            "id": "MONDO:0005790",
-            "name": "hepatitis a virus infection",
-            "original_name": "acute hepatitis a virus infection",
-            "description": "Acute inflammation of the liver caused by the hepatitis A virus. It is highly contagious and usually contracted through close contact with an infected individual or their feces, contaminated food or water.[MONDO]",
-            "type": "biolink:Disease",
-            "xrefs": {"mondo": "MONDO:0005790"},
-        },
-    }
-
     def get_text2term_disease_id_and_bt_info(self) -> dict:
         """Map disease names to disease ontology and info."""
         core_data = self.file_reader.read_file(os.path.join(self.data_dir, "core_table.txt"))
@@ -735,7 +587,7 @@ class CacheManager(CacheHelper):
             print("Caching Disease Info...")
             t2t_mapped = self.get_text2term_disease_id_and_bt_info()
             efo_mapped = self.get_or_cache_disease_name2efo()
-            final_disease_info = {**t2t_mapped, **efo_mapped, **self.MANUAL_MAP_DISEASE_INFO}
+            final_disease_info = {**t2t_mapped, **efo_mapped, **MANUAL_MAP_DISEASE_INFO}
             self.save_pickle(final_disease_info, cache_f_name)
             print("✅ Disease Info successfully cached.")
             return final_disease_info
