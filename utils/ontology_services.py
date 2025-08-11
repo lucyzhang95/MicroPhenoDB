@@ -88,17 +88,31 @@ class EbiTaxonomyService:
 class ETE3TaxonomyService:
     """Handles interactions with local NCBI Taxonomy database file0s via ETE3."""
 
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super(ETE3TaxonomyService, cls).__new__(cls)
+        return cls._instance
+
     def __init__(self):
+        if hasattr(self, "_initialized") and self._initialized:
+            return
+
+        print("⚙️ Initializing ETE3TaxonomyService for the first time...")
+        self.ncbi_taxa = NCBITaxa()
+
         if not os.path.exists("taxdump.tar.gz"):
-            print("Taxonomy database not found. Downloading and updating...")
+            print("✅ Taxonomy database not found. Downloading and updating...")
             ssl._create_default_https_context = ssl._create_unverified_context
-            self.ncbi_taxa = NCBITaxa()
             self.ncbi_taxa.update_taxonomy_database()
-            print("NCBI Taxonomy Database update complete.")
+            print("🎉 NCBI Taxonomy Database update complete.")
         else:
-            print("NCBI Taxonomy database found. Loading into memory...")
-            self.ncbi_taxa = NCBITaxa()
-        print("ETE3TaxonomyService is initialized and ready.")
+            print("✅ NCBI Taxonomy database found and loaded.")
+
+        print("---------- ETE3TaxonomyService is now ready ----------")
+
+        self._initialized = True
 
     def ete3_taxon_name2taxid(self, taxon_names: list) -> dict:
         """Maps taxon names to NCBI Taxonomy IDs using ETE3."""
