@@ -679,7 +679,7 @@ class RecordCacheManager:
 
         self.cache_helper.save_pickle(records, pickle_filename)
         self.cache_helper.save_json(records, json_filename)
-        print("✅ Final records cached successfully.")
+        print("🎉 Final records cached successfully.")
 
     @staticmethod
     def run_data_pipeline():
