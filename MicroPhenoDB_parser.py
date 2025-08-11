@@ -1430,7 +1430,7 @@ class MicroPhenoDBParser:
             "anatomical_entity": position.lower(),
             "aggregator_knowledge_source": "infores:MicroPhenoDB",
             "evidence_type": "ECO:0000305",  # manual assertion
-            "publication": pub_map.get(pmid)
+            "publication": pub_map.get(pmid),
         }
         if qualifier and qualifier.lower() != "tendency":
             assoc["qualifier"] = qualifier.lower()
@@ -1445,14 +1445,10 @@ class MicroPhenoDBParser:
             return {
                 k: self._remove_empty_values(v)
                 for k, v in obj.items()
-                if v not in (None, {}, [], '')
+                if v not in (None, {}, [], "")
             }
         if isinstance(obj, list):
-            return [
-                self._remove_empty_values(v)
-                for v in obj
-                if v not in (None, {}, [], '')
-            ]
+            return [self._remove_empty_values(v) for v in obj if v not in (None, {}, [], "")]
         return obj
 
     def load_microphenodb_data(self):
