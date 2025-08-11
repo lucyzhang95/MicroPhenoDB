@@ -81,7 +81,7 @@ class EbiTaxonomyService:
         ncit2taxids, notfound_ncit = asyncio.run(
             self.async_query_ebi_ncit_codes_to_taxids(ncit_codes)
         )
-        print("✅ EBI NCIT Codes to TaxID mapping completed!")
+        print("🎉 EBI NCIT Codes to TaxID mapping completed!")
         return ncit2taxids, notfound_ncit
 
 
@@ -103,7 +103,7 @@ class ETE3TaxonomyService:
     def ete3_taxon_name2taxid(self, taxon_names: list) -> dict:
         """Maps taxon names to NCBI Taxonomy IDs using ETE3."""
         name2taxid = self.ncbi_taxa.get_name_translator(sorted(list(set(taxon_names))))
-        print("✅ ETE3 Taxonomy Name to TaxID mapping completed!")
+        print("🎉 ETE3 Taxonomy Name to TaxID mapping completed!")
         return {
             name: {"taxid": int(taxid_list[0]), "mapping_tool": "ete3"}
             for name, taxid_list in name2taxid.items()
@@ -157,7 +157,7 @@ class EntrezTaxonomyService:
                 print(f"Retrying in {backoff_time} seconds...")
                 await asyncio.sleep(backoff_time)
 
-        print(f"All retries failed for '{taxon_name}'.")
+        print(f"‼️ All retries failed for '{taxon_name}'.")
         return None
 
     async def async_query_entrez_taxon_names2taxids(self, taxon_names: list) -> list:
@@ -168,7 +168,7 @@ class EntrezTaxonomyService:
 
     def async_run_entrez_taxon_names2taxids(self, taxon_names: list) -> dict:
         results = asyncio.run(self.async_query_entrez_taxon_names2taxids(taxon_names))
-        print("✅ Entrez Taxonomy Name to TaxID mapping completed!")
+        print("🎉 Entrez Taxonomy Name to TaxID mapping completed!")
         return results
 
 
