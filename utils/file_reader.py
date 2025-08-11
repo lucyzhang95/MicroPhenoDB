@@ -29,6 +29,6 @@ class FileReader:
                 for line in reader:
                     yield line
         except UnicodeDecodeError as e:
-            print(f"Unicode error with {encoding} on file {in_file_path}: {e}")
+            print(f"❗️ Unicode error with {encoding} on file {in_file_path}: {e}")
         except FileNotFoundError:
-            print(f"Error: File not found at {in_file_path}")
+            print(f"‼️ Error: File not found at {in_file_path}")
