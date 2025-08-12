@@ -1,7 +1,6 @@
 import functools
 import os
 import re
-import uuid
 
 from dotenv import load_dotenv
 
@@ -609,6 +608,42 @@ class MicroPhenoDBParser:
             return [self._remove_empty_values(v) for v in obj if v not in (None, {}, [], "")]
         return obj
 
+    def _remove_duplicate_records(self, records):
+        """
+        Removes duplicate records based on the '_id' field.
+        If a record with the same '_id' exists with the same pmid but different scores,
+        take the one with the highest score.
+        """
+        unique_records = {}
+        for record in records:
+            _id = record.get("_id")
+            if not _id:
+                continue
+
+            if _id not in unique_records:
+                unique_records[_id] = record
+            else:
+                new_assoc = record.get("association", {})
+                new_pub = new_assoc.get("publication", {})
+                new_pmid = new_pub.get("pmid")
+                new_score = new_assoc.get("score")
+
+                existing_record = unique_records[_id]
+                existing_assoc = existing_record.get("association", {})
+                existing_pub = existing_assoc.get("publication", {})
+                existing_pmid = existing_pub.get("pmid")
+                existing_score = existing_assoc.get("score")
+
+                if (
+                    new_pmid is not None
+                    and new_score is not None
+                    and new_pmid == existing_pmid
+                    and new_score > existing_score
+                ):
+                    unique_records[_id] = record
+
+        return list(unique_records.values())
+
     def load_microphenodb_data(self):
         """Loads and yields the final processed data records."""
         self.cache_pipeline.run()
@@ -616,8 +651,9 @@ class MicroPhenoDBParser:
         taxon_data = self.cache_manager.get_or_cache_taxon_info()
         disease_data = self.cache_manager.get_or_cache_disease_info()
         pubmed_data = self.cache_manager.get_or_cache_pubmed_metadata()
-
         core_f_path = self._get_file_path("core_table.txt")
+
+        records = []
         for line in self.file_reader.read_file(core_f_path):
             _, organism_name, disease_name, score, pmid, _, position, qualifier = (
                 part.strip() for part in line
@@ -641,12 +677,24 @@ class MicroPhenoDBParser:
             )
             association_node = self._remove_empty_values(association_node)
 
-            yield {
-                "_id": str(uuid.uuid4()),
-                "association": association_node,
-                "object": object_node,
-                "subject": subject_node,
-            }
+            _id = (
+                f"{subject_node.get('id', '').split(':', 1)[1]}"
+                f"_{association_node.get('type', '').split(':', 1)[1]}"
+                f"_{object_node.get('id', '').split(':', 1)[1]}"
+            )
+
+            records.append(
+                {
+                    "_id": _id,
+                    "association": association_node,
+                    "object": object_node,
+                    "subject": subject_node,
+                }
+            )
+
+        unique_records = self._remove_duplicate_records(records)
+        for record in unique_records:
+            yield record
 
 
 class RecordCacheManager:
