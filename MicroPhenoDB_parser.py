@@ -372,7 +372,7 @@ class CacheManager(CacheHelper):
         'rank': 'species'},
 
         ncit2taxid:
-        'clostridiales xiii': {'description': 'A bacterial family of uncertain placement in the phylum Firmicutes and the order Clostridiales that is used to classify the genus Mogibacterium.[NCIT]',
+        'clostridiales xiii': {'description': 'A bacterial family of uncertain Firmicutes...[NCIT]',
         'xrefs': {'ncit': 'C85925'},
         'id': 'NCBITaxon:189325',
         'taxid': 189325},
