@@ -506,39 +506,37 @@ class DataCachePipeline:
         self.ncit_path = os.path.join(self.downloads_dir, "NCIT.txt")
         self.cache_manager = CacheManager(cache_dir)
 
-    def run_cache_taxon_names2taxids(self):
-        """Caches the NCIT to NCBI Taxonomy ID mappings.
-        1700 taxids in total combined from all sources. 1615 unique taxids.
-        2 has no taxids
-        """
-        # taxon preprocessing and mapping
-        ncit2taxid_mapping = self.cache_manager.get_or_cache_ncits2taxids_mapping()
-        ete3_taxon_name2taxid = self.cache_manager.get_or_cache_ete3_taxon_name2taxid()
-        entrez_taxon_name2taxid = self.cache_manager.get_or_cache_entrez_taxon_name2taxid()
-        rapidfuzz_taxon_name2taxid = self.cache_manager.get_or_cache_rapidfuzz_taxon_name2taxid()
-        bt_taxon_name2taxid = self.cache_manager.get_or_cache_bt_taxon_name2taxid()
-        manual_taxon_name2taxid = self.cache_manager.get_or_cache_manual_taxon_name2taxid()
-        taxon_info = self.cache_manager.get_or_cache_taxon_info()
+    def run(self):
+        """Runs the full data caching pipeline."""
+        print("▶️ Caching taxon data...")
+        self._cache_taxon_data()
 
-        # disease mapping
-        efo_disease_name2id = self.cache_manager.get_or_cache_disease_name2efo()
-        disease_info = self.cache_manager.get_or_cache_disease_info()
+        print("\n▶️ Caching disease data...")
+        self._cache_disease_data()
 
-        # pubmed metadata
-        pubmed_metadata = self.cache_manager.get_or_cache_pubmed_metadata()
+        print("\n▶️ Caching publication data...")
+        self._cache_pubmed_data()
 
-        return (
-            ncit2taxid_mapping,
-            ete3_taxon_name2taxid,
-            entrez_taxon_name2taxid,
-            rapidfuzz_taxon_name2taxid,
-            bt_taxon_name2taxid,
-            manual_taxon_name2taxid,
-            taxon_info,
-            efo_disease_name2id,
-            disease_info,
-            pubmed_metadata,
-        )
+        print("\n🎉 All pre-data successfully cached.\n")
+
+    def _cache_taxon_data(self):
+        """Caches all taxon-related mappings and information."""
+        self.cache_manager.get_or_cache_ncits2taxids_mapping()
+        self.cache_manager.get_or_cache_ete3_taxon_name2taxid()
+        self.cache_manager.get_or_cache_entrez_taxon_name2taxid()
+        self.cache_manager.get_or_cache_rapidfuzz_taxon_name2taxid()
+        self.cache_manager.get_or_cache_bt_taxon_name2taxid()
+        self.cache_manager.get_or_cache_manual_taxon_name2taxid()
+        self.cache_manager.get_or_cache_taxon_info()
+
+    def _cache_disease_data(self):
+        """Caches all disease-related mappings and information."""
+        self.cache_manager.get_or_cache_disease_name2efo()
+        self.cache_manager.get_or_cache_disease_info()
+
+    def _cache_pubmed_data(self):
+        """Caches publication metadata from PubMed."""
+        self.cache_manager.get_or_cache_pubmed_metadata()
 
 
 class MicroPhenoDBParser:
@@ -614,18 +612,11 @@ class MicroPhenoDBParser:
 
     def load_microphenodb_data(self):
         """Loads and yields the final processed data records."""
-        (
-            _,
-            _,
-            _,
-            _,
-            _,
-            _,
-            taxon_map,
-            _,
-            disease_map,
-            pub_map,
-        ) = self.cache_pipeline.run_cache_taxon_names2taxids()
+        self.cache_pipeline.run()
+
+        taxon_data = self.cache_manager.get_or_cache_taxon_info()
+        disease_data = self.cache_manager.get_or_cache_disease_info()
+        pubmed_data = self.cache_manager.get_or_cache_pubmed_metadata()
 
         core_f_path = self._get_file_path("core_table.txt")
         for line in self.file_reader.read_file(core_f_path):
@@ -633,10 +624,10 @@ class MicroPhenoDBParser:
                 part.strip() for part in line
             )
 
-            subject_node = self._get_microbe_node(organism_name, taxon_map)
+            subject_node = self._get_microbe_node(organism_name, taxon_data)
             subject_node = self._remove_empty_values(subject_node)
 
-            object_node = self._get_disease_node(disease_name, disease_map)
+            object_node = self._get_disease_node(disease_name, disease_data)
             object_node = self._remove_empty_values(object_node)
             if object_node:
                 description = object_node.get("description")
@@ -646,7 +637,9 @@ class MicroPhenoDBParser:
             if not subject_node or not object_node:
                 continue
 
-            association_node = self._get_association_node(score, position, qualifier, pmid, pub_map)
+            association_node = self._get_association_node(
+                score, position, qualifier, pmid, pubmed_data
+            )
             association_node = self._remove_empty_values(association_node)
 
             yield {

@@ -110,7 +110,7 @@ class ETE3TaxonomyService:
         else:
             print("✅ NCBI Taxonomy database found and loaded.")
 
-        print("---------- ETE3TaxonomyService is now ready ----------")
+        print("---------- ETE3TaxonomyService is now ready ----------\n")
 
         self._initialized = True
 
