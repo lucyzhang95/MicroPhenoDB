@@ -98,7 +98,7 @@ class NCIt2TaxidMapper:
         Final mapping derived 582 unique NCIT codes to 568 NCBI Taxonomy IDs.
         :param ncit_path: Path to the NCIT.txt file.
         :return: A dictionary mapping NCIT codes to NCBI Taxonomy IDs.
-        e.g.,
+        E.g.,
         'clostridiales xiii': {'description': 'A bacterial family of uncertain placement in the phylum...[NCIT]',
         'xrefs': {'ncit': 'C85925'},
         'id': 'NCBITaxon:189325',
@@ -211,7 +211,7 @@ class CacheManager(CacheHelper):
 
     def _get_taxon_names_for_id_map(self):
         """Gets taxon names that need to be mapped to NCBI Taxonomy IDs.
-        1767 names in core table
+        1767 names in core_table.txt
         515 names in NCIT.txt
         1252 names left
         """
@@ -301,7 +301,7 @@ class CacheManager(CacheHelper):
         return bt_mapped
 
     def _get_last_unmapped_taxon_names(self):
-        """Gets taxon names that were not mapped by any service."""
+        """Gets taxon names not mapped by any service."""
         initial_names = set(self._get_taxon_names_for_ete3_mapping())
         unmapped_taxon_names = self._get_unmapped_taxon_names(
             initial_names, self.taxon_automated_mapping_sources
@@ -357,8 +357,7 @@ class CacheManager(CacheHelper):
         'taxid': 42862,
         'name': 'rickettsia felis',
         'parent_taxid': 114277,
-        'lineage': [42862,
-                    114277,
+        'lineage': [42862,114277,
                     780,
                     33988,
                     775,
