@@ -639,10 +639,10 @@ class MicroPhenoDBParser:
                 existing_score = existing_assoc.get("score")
 
                 if (
-                    new_pmid is not None
-                    and new_score is not None
-                    and new_pmid == existing_pmid
-                    and new_score > existing_score
+                        new_pmid is not None
+                        and new_score is not None
+                        and new_pmid == existing_pmid
+                        and new_score > existing_score
                 ):
                     unique_records[_id] = record
 
