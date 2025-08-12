@@ -5,7 +5,9 @@
     "description": "MicroPhenoDB database",
     "license": "CC BY 4.0",
     "source_last_modified": "01/06/2021",
-    "source_download_date": "01/08/2025"
+    "source_download_date": "01/08/2025",
+    "source_format": "txt",
+    "source_last_ingested": "08/11/2025"
   },
   "display_name": "MicroPhenoDB",
   "biothing_type": "association",
@@ -30,7 +32,7 @@
     "release": "version:get_release"
   },
   "uploader": {
-    "parser": "MicroPhenoDB_parser:load_microphenodb_data",
+    "parser": "MicroPhenoDB_parser:MicroPhenoDBParser.load_microphenodb_data",
     "on_duplicates": "error"
   }
 }
