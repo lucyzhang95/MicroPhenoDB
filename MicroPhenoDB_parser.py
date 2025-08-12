@@ -1,3 +1,7 @@
+"""MicroPhenoDB Parser
+This module provides functionality to parse and cache data from the MicroPhenoDB database.
+"""
+
 import functools
 import os
 import re
