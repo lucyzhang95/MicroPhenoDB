@@ -666,7 +666,7 @@ class RecordCacheManager:
             print("❗️Warning: No records provided to cache.")
             return
 
-        print(f"▶️ Caching {len(records)} records...")
+        print(f"\n▶️ Caching {len(records)} records...")
         pickle_filename = f"{filename_base}.pkl"
         json_filename = f"{filename_base}.json"
 
