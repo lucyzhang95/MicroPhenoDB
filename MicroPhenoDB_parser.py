@@ -26,6 +26,7 @@ from utils.ontology_services import (
     EntrezTaxonomyService,
     ETE3TaxonomyService,
     PubMedService,
+    UberonService,
 )
 from utils.text_preprocessors import TextSemanticPreprocessor, TextStructurePreprocessor
 
@@ -159,6 +160,7 @@ class CacheManager(CacheHelper):
         self.bt_service = BioThingsService()
         self.t2t_utils = Text2TermUtils()
         self.pubmed_service = PubMedService(email=os.getenv("EMAIL_ADDRESS"))
+        self.uberon_service = UberonService()
         self.taxon_automated_mapping_sources = [
             self.get_or_cache_ete3_taxon_name2taxid,
             self.get_or_cache_entrez_taxon_name2taxid,
@@ -498,6 +500,29 @@ class CacheManager(CacheHelper):
         """Caches and retrieves PubMed metadata."""
         return self._get_pubmed_metadata()
 
+    def _map_anatomical_entity2uberon(self, file_path=None) -> list:
+        if file_path is None:
+            file_path = os.path.join(self.data_dir, "core_table.txt")
+        core_data = self.file_reader.read_file(file_path)
+        anatomical_entities = sorted(
+            list(
+                set(
+                    line[6].lower().strip()
+                    for line in core_data
+                    if line[6] and line[6].lower().strip() not in ("other", "unknown")
+                )
+            )
+        )
+        uberon_mapped = self.uberon_service.async_run_anatomical_entities_to_uberon_ids(
+            anatomical_entities
+        )
+        return uberon_mapped
+
+    @_cache_decorator("uberon_anatomical_entity2uberon.pkl")
+    def get_or_cache_anatomical_entity2uberon(self):
+        """Caches and retrieves the anatomical entity to Uberon ID mapping."""
+        return self._map_anatomical_entity2uberon()
+
 
 class DataCachePipeline:
     """Pipeline for caching data for the parser."""
@@ -519,6 +544,9 @@ class DataCachePipeline:
         print("\n▶️ Caching publication data...")
         self._cache_pubmed_data()
 
+        print("\n▶️ Caching anatomical entity to Uberon mapping...")
+        self._cache_anatomical_data()
+
         print("\n🎉 All pre-data successfully cached.\n")
 
     def _cache_taxon_data(self):
@@ -530,6 +558,7 @@ class DataCachePipeline:
         self.cache_manager.get_or_cache_bt_taxon_name2taxid()
         self.cache_manager.get_or_cache_manual_taxon_name2taxid()
         self.cache_manager.get_or_cache_taxon_info()
+        self.cache_manager.get_or_cache_anatomical_entity2uberon()
 
     def _cache_disease_data(self):
         """Caches all disease-related mappings and information."""
@@ -539,6 +568,10 @@ class DataCachePipeline:
     def _cache_pubmed_data(self):
         """Caches publication metadata from PubMed."""
         self.cache_manager.get_or_cache_pubmed_metadata()
+
+    def _cache_anatomical_data(self):
+        """Caches anatomical entity to Uberon ID mapping."""
+        self.cache_manager.get_or_cache_anatomical_entity2uberon()
 
 
 class MicroPhenoDBParser:
@@ -583,12 +616,15 @@ class MicroPhenoDBParser:
             else None
         )
 
-    def _get_association_node(self, score, position, qualifier, pmid, pub_map):
+    def _get_association_node(self, score, position, qualifier, pmid, pub_map, anatomical_map):
         assoc = {
             "predicate": "biolink:OrganismalEntityAsAModelOfDiseaseAssociation",
             "type": "biolink:associated_with",
             "score": float(score),
-            "anatomical_entity": position.lower(),
+            "anatomical_entity": anatomical_map.get(
+                position.lower(),
+                {"original_name": position.lower(), "type": "biolink:AnatomicalEntity"},
+            ),
             "aggregator_knowledge_source": "infores:MicroPhenoDB",
             "evidence_type": "ECO:0000305",  # manual assertion
             "publication": pub_map.get(pmid),
@@ -639,10 +675,10 @@ class MicroPhenoDBParser:
                 existing_score = existing_assoc.get("score")
 
                 if (
-                        new_pmid is not None
-                        and new_score is not None
-                        and new_pmid == existing_pmid
-                        and abs(new_score) > abs(existing_score)
+                    new_pmid is not None
+                    and new_score is not None
+                    and new_pmid == existing_pmid
+                    and abs(new_score) > abs(existing_score)
                 ):
                     unique_records[_id] = record
 
@@ -655,6 +691,7 @@ class MicroPhenoDBParser:
         taxon_data = self.cache_manager.get_or_cache_taxon_info()
         disease_data = self.cache_manager.get_or_cache_disease_info()
         pubmed_data = self.cache_manager.get_or_cache_pubmed_metadata()
+        anatomical_data = self.cache_manager.get_or_cache_anatomical_entity2uberon()
         core_f_path = self._get_file_path("core_table.txt")
 
         records = []
@@ -677,7 +714,7 @@ class MicroPhenoDBParser:
                 continue
 
             association_node = self._get_association_node(
-                score, position, qualifier, pmid, pubmed_data
+                score, position, qualifier, pmid, pubmed_data, anatomical_data
             )
             association_node = self._remove_empty_values(association_node)
 
