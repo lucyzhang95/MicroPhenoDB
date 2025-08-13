@@ -285,3 +285,72 @@ class PubMedService:
             except (KeyError, IndexError) as e:
                 print(f"Failed to parse PubMed article: {e}")
         return result
+
+
+class UberonService:
+    """Handles anatomy EBI OLS service."""
+
+    async def async_query_anatomical_entity_to_uberon_id(
+        self, session, term, url, match_type="exact", ontology="uberon", rows=1
+    ):
+        """Async helper function that now accepts a URL."""
+        params = {"q": term, "ontology": ontology, "rows": rows, "start": 0}
+
+        if match_type == "exact":
+            params["exact"] = "true"
+        elif match_type == "partial":
+            params["exact"] = "false"
+            params["queryFields"] = "label"
+        elif match_type == "fuzzy":
+            params["q"] = term + "~"
+            params["exact"] = "false"
+        else:
+            raise ValueError("match_type must be 'exact', 'partial', or 'fuzzy'.")
+
+        try:
+            async with session.get(url, params=params) as resp:
+                resp.raise_for_status()
+                data = await resp.json()
+
+                for doc in data.get("response", {}).get("docs", []):
+                    iri = doc.get("iri")
+                    if iri and "UBERON_" in iri:
+                        uberon_id = iri.split("/")[-1].replace("_", ":")
+
+                        return term, {
+                            "id": uberon_id,
+                            "name": doc.get("label"),
+                            "original_name": term,
+                            "type": "biolink:AnatomicalEntity",
+                        }
+        except aiohttp.ClientError as e:
+            print(f"❗️Error fetching term '{term}': {e}")
+        return term, None
+
+    async def async_anatomical_entities_to_uberon_ids(
+        self, terms, match_type="exact", base_url="https://www.ebi.ac.uk/ols4/api/search"
+    ):
+        """
+        Query OLS for a list of terms, using the provided base_url.
+        """
+        async with aiohttp.ClientSession() as session:
+            tasks = [
+                self.async_query_anatomical_entity_to_uberon_id(
+                    session, term, url=base_url, match_type=match_type
+                )
+                for term in terms
+            ]
+
+            all_results = await tqdm.gather(*tasks, desc="Querying UBERON IDs...")
+
+            return {term: info for term, info in all_results if info is not None}
+
+    def async_run_anatomical_entities_to_uberon_ids(self, terms, match_type="exact"):
+        base_url = "https://www.ebi.ac.uk/ols4/api/search"
+        results = asyncio.run(
+            self.async_anatomical_entities_to_uberon_ids(
+                terms, match_type=match_type, base_url=base_url
+            )
+        )
+        print("🎉 UBERON ID mapping completed!")
+        return results
