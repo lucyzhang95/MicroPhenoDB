@@ -642,7 +642,7 @@ class MicroPhenoDBParser:
                         new_pmid is not None
                         and new_score is not None
                         and new_pmid == existing_pmid
-                        and new_score > existing_score
+                        and abs(new_score) > abs(existing_score)
                 ):
                     unique_records[_id] = record
 
