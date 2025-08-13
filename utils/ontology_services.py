@@ -276,7 +276,7 @@ class PubMedService:
                     "",
                 )
                 result[pmid] = {
-                    "pmid": int(pmid),
+                    "pmid": f"PMID:{int(pmid)}",
                     "name": title,
                     "summary": f"{abstract} [abstract]" if abstract else "",
                     "doi": doi,
