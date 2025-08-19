@@ -8,6 +8,7 @@ import re
 
 from dotenv import load_dotenv
 
+from manual_annotations.anatomy2uberon import MANUAL_ANATOMICAL_ENTITY_MAPPING_OVERRIDE
 from manual_annotations.disease_name2id import MANUAL_MAP_DISEASE_INFO
 from manual_annotations.ncit2taxid import (
     MANUAL_TAXID_MAPPING_OVERRIDES,
@@ -516,6 +517,18 @@ class CacheManager(CacheHelper):
         uberon_mapped = self.uberon_service.async_run_anatomical_entities_to_uberon_ids(
             anatomical_entities
         )
+
+        for entity, _ in uberon_mapped.items():
+            if entity in MANUAL_ANATOMICAL_ENTITY_MAPPING_OVERRIDE:
+                manual_info = MANUAL_ANATOMICAL_ENTITY_MAPPING_OVERRIDE[entity]
+                uberon_mapped[entity].update(
+                    {
+                        "id": manual_info["id"],
+                        "name": manual_info["name"],
+                        "original_name": manual_info["original_name"],
+                        "type": manual_info["type"],
+                    }
+                )
         return uberon_mapped
 
     @_cache_decorator("uberon_anatomical_entity2uberon.pkl")
