@@ -587,7 +587,8 @@ class MicroPhenoDBParser:
     def _get_file_path(self, filename):
         return os.path.join(self.data_dir, filename)
 
-    def _get_organism_type(self, node) -> str:
+    @staticmethod
+    def _get_organism_type(node) -> str:
         type_map = {
             2: "biolink:Bacterium",
             2157: "Archaea",
@@ -609,14 +610,16 @@ class MicroPhenoDBParser:
             return node
         return None
 
-    def _get_disease_node(self, name, disease_map):
+    @staticmethod
+    def _get_disease_node(name, disease_map):
         return (
             disease_map.get(name.lower())
             if name.lower() != "null" and name.lower() != "not foundthogenic"
             else None
         )
 
-    def _get_association_node(self, score, position, qualifier, pmid, pub_map, anatomical_map):
+    @staticmethod
+    def _get_association_node(score, position, qualifier, pmid, pub_map, anatomical_map):
         assoc = {
             "predicate": "biolink:OrganismalEntityAsAModelOfDiseaseAssociation",
             "type": "biolink:associated_with",
@@ -648,7 +651,22 @@ class MicroPhenoDBParser:
             return [self._remove_empty_values(v) for v in obj if v not in (None, {}, [], "")]
         return obj
 
-    def _remove_duplicate_records(self, records):
+    def _remove_trailing_spaces(self, data):
+        """
+        Recursively traverses a data structure and removes leading/trailing
+        whitespace from all string values.
+        """
+        if isinstance(data, dict):
+            return {key: self._remove_trailing_spaces(value) for key, value in data.items()}
+        elif isinstance(data, list):
+            return [self._remove_trailing_spaces(item) for item in data]
+        elif isinstance(data, str):
+            return data.strip()
+        else:
+            return data
+
+    @staticmethod
+    def _remove_duplicate_records(records):
         """
         Removes duplicate records based on the '_id' field.
         If a record with the same '_id' exists with the same pmid but different scores,
@@ -735,7 +753,8 @@ class MicroPhenoDBParser:
 
         unique_records = self._remove_duplicate_records(records)
         for record in unique_records:
-            yield record
+            cleaned_record = self._remove_trailing_spaces(record)
+            yield cleaned_record
 
 
 class RecordCacheManager:
