@@ -91,5 +91,6 @@ class Text2TermUtils:
             text2term_mapped[source_term] = {
                 "id": mapped_curie,
                 "mapping_tool": "text2term",
+                "xrefs": {mapped_curie.split(':')[0].lower(): mapped_curie},
             }
         return text2term_mapped
