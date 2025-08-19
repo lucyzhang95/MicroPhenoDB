@@ -279,7 +279,7 @@ class PubMedService:
                     "pmid": f"PMID:{int(pmid)}",
                     "name": title,
                     "summary": f"{abstract} [abstract]" if abstract else "",
-                    "doi": doi,
+                    "doi": f"doi:{doi}",
                     "type": "biolink:Publication",
                 }
             except (KeyError, IndexError) as e:
