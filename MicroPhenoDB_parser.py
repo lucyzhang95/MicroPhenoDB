@@ -3,8 +3,10 @@ This module provides functionality to parse and cache data from the MicroPhenoDB
 """
 
 import functools
+import logging
 import os
 import re
+from collections import defaultdict
 
 from dotenv import load_dotenv
 
@@ -30,6 +32,8 @@ from utils.ontology_services import (
     UberonService,
 )
 from utils.text_preprocessors import TextSemanticPreprocessor, TextStructurePreprocessor
+
+log = logging.getLogger(__name__)
 
 
 class OntologyNameProcessor(TextStructurePreprocessor, TextSemanticPreprocessor):
@@ -464,109 +468,109 @@ class CacheManager(CacheHelper):
             prefix = record_id.split(":", 1)[0].upper()
             record["xrefs"] = {prefix: record_id.upper()}
 
+    def _resolve_new_disease_names(self, names_to_resolve: set[str]) -> tuple[dict, dict]:
+        """
+        Identify and preprocess unresolved disease names, and queries
+        biothings services to get their IDs and descriptions.
+        """
+        if not names_to_resolve:
+            return {}, {}
+
+        preprocess = self.name_processor.preprocess_disease_name
+        original_to_preprocessed = {name: preprocess(name) for name in names_to_resolve}
+        unique_preprocessed_names = sorted(set(original_to_preprocessed.values()))
+
+        preprocessed_to_id_map = self.get_or_cache_text2term_disease_name2id(
+            unique_preprocessed_names
+        )
+        disease_ids = sorted(
+            list({v["id"] for v in preprocessed_to_id_map.values() if v and v.get("id")})
+        )
+        id_to_info_map = self.bt_service.query_bt_disease_info(disease_ids)
+
+        return preprocessed_to_id_map, id_to_info_map
+
     def get_text2term_disease_id_and_bt_info(self) -> dict:
-        """Map disease names to disease ontology and info."""
+        """Maps a list of disease names to their corresponding ontology IDs and metadata.
+
+        This method orchestrates a multi-step process:
+        1.  Loads original disease names from a core data file.
+        2.  Tries to find them in a pre-existing EFO mapping.
+        3.  For names not found, it resolves them using a text-to-term service.
+        4.  It then enriches the resolved data with information from another service (bt_service).
+        5.  Finally, it reports any names that could not be fully resolved.
+        """
         core_path = os.path.join(self.data_dir, "core_table.txt")
         core_data = self.file_reader.read_file(core_path)
-        originals = [
+        original_names = {
             line[2].lower().strip()
             for line in core_data
-            if line[2].lower() != "null" and line[2].lower() != "not foundthogenic"
-        ]
-
-        efo_mapped = self.get_or_cache_disease_name2efo()
-        # efo mapped has two different disease names for the same EFO ID
-        efo_by_key = efo_mapped
-        efo_by_original = {
-            v.get("original_name"): v for v in efo_mapped.values() if v.get("original_name")
+            if line[2].lower() not in ("null", "not foundthogenic")
         }
 
-        originals_already_mapped = []
-        originals_to_resolve = []
-        for orig in originals:
-            if orig in efo_by_key or orig in efo_by_original:
-                originals_already_mapped.append(orig)
-            else:
-                originals_to_resolve.append(orig)
-
-        pp = self.name_processor.preprocess_disease_name
-        orig2pp = {orig: pp(orig) for orig in originals_to_resolve}
-        unique_pp = sorted(set(orig2pp.values()))
-        pp2id = self.get_or_cache_text2term_disease_name2id(unique_pp)
-
-        t2t_ids = [v.get("id") for v in pp2id.values() if v and v.get("id")]
-        bt_info = self.bt_service.query_bt_disease_info(t2t_ids)
+        efo_mapped = self.get_or_cache_disease_name2efo()
+        efo_lookup = {**efo_mapped}
+        for record in efo_mapped.values():
+            if original_name := record.get("original_name"):
+                efo_lookup.setdefault(original_name, record)
 
         final_mapping = {}
-        missing_reasons = {}
-        for orig in originals_already_mapped:
-            rec = efo_by_key.get(orig) or efo_by_original.get(orig)
-            if rec:
-                out = rec.copy()
-                out["original_name"] = orig
-                final_mapping[orig] = out
+        names_to_resolve = set()
+        for name in original_names:
+            if name in efo_lookup:
+                record = efo_lookup[name].copy()
+                record["original_name"] = name
+                final_mapping[name] = record
             else:
-                missing_reasons[orig] = {"reason": "in_efo_mapped_but_missing_record"}
+                names_to_resolve.add(name)
 
-        for orig in originals_to_resolve:
-            p = orig2pp[orig]
-            id_info = pp2id.get(p) or {}
-            did = id_info.get("id")
-            if not did:
-                missing_reasons[orig] = {"reason": "no_text2term_id", "pp": p}
+        preprocessed_to_id_map, id_to_info_map = self._resolve_new_disease_names(names_to_resolve)
+
+        preprocess = self.name_processor.preprocess_disease_name
+        missing_reasons = defaultdict(dict)
+
+        for original_name in names_to_resolve:
+            preprocessed_name = preprocess(original_name)
+            id_info = preprocessed_to_id_map.get(preprocessed_name) or {}
+            disease_id = id_info.get("id")
+            if not disease_id:
+                missing_reasons[original_name] = {
+                    "reason": "no_text2term_id",
+                    "preprocessed_name": preprocessed_name,
+                }
                 continue
 
-            info = bt_info.get(did)
+            info = id_to_info_map.get(disease_id)
             if info:
-                out = info.copy()
-                out["id"] = did
-                out["original_name"] = orig
-                self._merge_xrefs(out, id_info)
-                out = self._ensure_xrefs_from_id(out)
-                final_mapping[orig] = out
+                final_record = info.copy()
+                final_record["id"] = disease_id
+                final_record["original_name"] = original_name
+                self._merge_xrefs(final_record, id_info)
+                self._ensure_xref_from_id(final_record)
+                final_mapping[original_name] = final_record
             else:
-                final_mapping[orig] = {
-                    "id": did,
-                    "original_name": orig,
+                final_mapping[original_name] = {
+                    "id": disease_id,
+                    "original_name": original_name,
                 }
-                missing_reasons[orig] = {"reason": "no_bt_info_for_t2t_id", "id": did, "pp": p}
-        print(
-            f"❗️Missing disease names after text2term: "
-            f"{set(key for key in missing_reasons.keys() if missing_reasons[key]['reason'] == 'no_text2term_id')}"
-        )
-        print(
-            f"❗️Missing disease names after bt_info: "
-            f"{set(key for key in missing_reasons.keys() if missing_reasons[key]['reason'] == 'no_bt_info_for_t2t_id')}"
-        )
+                missing_reasons[original_name] = {
+                    "reason": "no_bt_info_for_t2t_id",
+                    "id": disease_id,
+                    "preprocessed_name": preprocessed_name,
+                }
+
+        # no_id = {k for k, v in missing_reasons.items() if v["reason"] == "no_text2term_id"}
+        # no_info = {k for k, v in missing_reasons.items() if v["reason"] == "no_bt_info_for_t2t_id"}
+        # if no_id:
+        #     log.warning(f"Could not find a text2term ID for {len(no_id)} disease names: {no_id}")
+        # if no_info:
+        #     log.warning(f"Found an ID but no BT info for {len(no_info)} disease names: {no_info}")
 
         assert set(final_mapping).issubset(
-            set(originals)
-        ), f"Unexpected names in final_mapping: {sorted(set(final_mapping) - set(originals))[:10]}"
-        return final_mapping
+            original_names
+        ), f"‼️ Unexpected names in final_mapping: {sorted(set(final_mapping) - original_names)[:10]}"
 
-        # original_to_preprocessed_map = self.name_processor.convert_preprocessed_name2dict(
-        #     initial_disease_names, self.name_processor.preprocess_disease_name
-        # )
-        # preprocessed_names_to_map = sorted(list(set(original_to_preprocessed_map.values())))
-        #
-        # preprocessed_name_to_id_map = self.get_or_cache_text2term_disease_name2id(
-        #     preprocessed_names_to_map
-        # )
-        # unique_disease_ids = sorted(
-        #     list(set(v["id"] for v in preprocessed_name_to_id_map.values() if v.get("id")))
-        # )
-        # disease_info = self.bt_service.query_bt_disease_info(unique_disease_ids)
-        #
-        # final_mapping = {}
-        # for original_name, preprocessed_name in original_to_preprocessed_map.items():
-        #     id_info = preprocessed_name_to_id_map.get(preprocessed_name)
-        #     disease_id = id_info.get("id") if id_info else None
-        #     if disease_id and disease_id in disease_info:
-        #         info = disease_info[disease_id].copy()
-        #         info["original_name"] = original_name
-        #         final_mapping[original_name] = info
-        #
-        # return final_mapping
+        return final_mapping
 
     @_cache_decorator("original_disease_name_and_info.pkl")
     def get_or_cache_disease_info(self):
