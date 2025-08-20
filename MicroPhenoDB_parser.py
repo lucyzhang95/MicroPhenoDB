@@ -857,6 +857,8 @@ class MicroPhenoDBParser:
                 }
             )
 
+        print(f"Loaded a total of {len(records)} records with duplicated _id from {core_f_path}.")
+
         unique_records = self._remove_duplicate_records(records)
         for record in unique_records:
             cleaned_record = self._remove_trailing_spaces(record)
