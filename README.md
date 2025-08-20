@@ -2,9 +2,9 @@
 A manually collected and curated database includes **Microbe-Disease** associations (5529 from downloads) from HMDAD and Disbiome databases. 
 
 ## Statistics Summary
-Last Modified: 08/04/2025 <br>
-**Number of records: 5335, 194 records fewer than the full data (5529). <br>
-~96.5% of the entire records** <br>
+Last Modified: 08/19/2025 <br>
+**Number of records: 5357, 172 records fewer than the full data (5529). <br>
+~96.9% of the entire records** <br>
 Some of the taxon and disease preprocessing workflow can refer to
 
 <details>
