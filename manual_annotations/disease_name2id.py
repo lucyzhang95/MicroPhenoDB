@@ -8,7 +8,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "arthritis",
         "original_name": "arthritis",
         "description": "Inflammation of a joint.[HP]",
-        "type": "biolink:Disease",
+        "type": "biolink:DiseaseOrPhenotypicFeature",
         "xrefs": {"hp": "HP:0001369"},
     },
     "virus respiratory tract infection": {
@@ -116,12 +116,12 @@ MANUAL_MAP_DISEASE_INFO = {
         "xrefs": {"mondo": "MONDO:0043544"},
     },
     "fungemia": {
-        "id": "MONDO:0001867",
-        "name": "phaeohyphomycosis",
+        "id": "MONDO:0002041",
+        "name": "fungal infectious disease",
         "original_name": "fungemia",
-        "description": "An opportunistic fungal infection caused by any of a variety of normally saprophytic fungi with hyaline hyphal elements. For example, Fusarium spp. infect neutropenic patients to cause pneumonia, fungemia, and disseminated infection with cutaneous lesions.[MONDO]",
+        "description": "An infection caused by a fungus.[MONDO]",
         "type": "biolink:Disease",
-        "xrefs": {"mondo": "MONDO:0001867"},
+        "xrefs": {"mondo": "MONDO:0002041"},
     },
     "polyomas": {
         "id": "MONDO:0005927",
@@ -132,12 +132,12 @@ MANUAL_MAP_DISEASE_INFO = {
         "xrefs": {"mondo": "MONDO:0005927"},
     },
     "systematic fungemia": {
-        "id": "MONDO:0001867",
-        "name": "phaeohyphomycosis",
+        "id": "MONDO:0002041",
+        "name": "fungal infectious disease",
         "original_name": "systematic fungemia",
-        "description": "An opportunistic fungal infection caused by any of a variety of normally saprophytic fungi with hyaline hyphal elements. For example, Fusarium spp. infect neutropenic patients to cause pneumonia, fungemia, and disseminated infection with cutaneous lesions.[MONDO]",
+        "description": "An infection caused by a fungus.[MONDO]",
         "type": "biolink:Disease",
-        "xrefs": {"mondo": "MONDO:0001867"},
+        "xrefs": {"mondo": "MONDO:0002041"},
     },
     "cutaneous burn": {
         "id": "MONDO:0043519",
@@ -228,13 +228,13 @@ MANUAL_MAP_DISEASE_INFO = {
         "xrefs": {"mondo": "MONDO:0020776"},
     },
     "pig-bel syndrome": {
-        "id": "MONDO:0005313",
-        "name": "necrotizing enterocolitis",
+        "id": "MONDO:0023149",
+        "name": "infection due to clostridium perfringens",
         "original_name": "pig-bel syndrome",
-        "description": "Necrotizing enterocolitis (NEC) is a devastating disease that affects mostly the intestine of premature infants. The wall of the intestine is invaded by bacteria, which cause local infection and inflammation that can ultimately destroy the wall of the bowel (intestine). Such bowel wall destruction can lead to perforation of the intestine and spillage of stool into the infant's abdomen, which can result in an overwhelming infection and death.[MONDO]",
+        "description": "Clostridial necrotizing enteritis (CNE) is a severe and potentially fatal type of food poisoning caused by a β-toxin of Clostridium perfringens, Type C. It occurs in some developing regions, particularly in New Guinea, where it is known as pig-bel.CNE is a necrotizing inflammation of the small bowel (especially the jejunum but also the ileum). Clinical results may vary from mild diarrhea to a life-threatening sequence of severe abdominal pain, vomiting (often bloody), bloody stool, ulceration of the small intestine with leakage (perforation) into the peritoneal cavity and possible death within a single day due to peritonitis.[WIKIPEDIA]",
         "type": "biolink:Disease",
-        "xrefs": {"mondo": "MONDO:0005313"},
-    },
+        "xrefs": {"mondo": "MONDO:0023149"},
+    },  # specifically caused by Clostridium perfringens type C, the causative agent of pig-bel syndrome
     "urosepsis": {
         "id": "MONDO:0005229",
         "name": "bacterial infectious disease with sepsis",
@@ -280,7 +280,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "myalgia",
         "original_name": "muscle aches",
         "description": "Pain in muscle.[MONDO]",
-        "type": "biolink:Disease",
+        "type": "biolink:DiseaseOrPhenotypicFeature",
         "xrefs": {"hp": "HP:0003326"},
     },
     "chlamydia": {
@@ -316,21 +316,13 @@ MANUAL_MAP_DISEASE_INFO = {
         "xrefs": {"mondo": "MONDO:0001461"},
     },
     "extraoral abscesses": {
-        "id": "MONDO:0021245",
-        "name": "oral cavity neoplasm",
+        "id": "MONDO:0005227",
+        "name": "abscess",
         "original_name": "extraoral abscesses",
-        "description": "A neoplasm (disease) that involves the oral cavity.[MONDO]",
+        "description": "An inflammatory process characterized by the accumulation of pus within a newly formed tissue cavity which is the result of a bacterial, fungal, or parasitic infection or the presence of a foreign body.[MONDO]",
         "type": "biolink:Disease",
-        "xrefs": {"mondo": "MONDO:0021245"},
+        "xrefs": {"mondo": "MONDO:0005227"},
     },
-    "red water disease": {
-        "id": "MONDO:0000758",
-        "name": "bacillary angiomatosis",
-        "original_name": "red water disease",
-        "description": "A condition that is caused by infection with Bartonella, and which is characterized by vascular proliferation, usually in immunocompromised individuals.[MONDO]",
-        "type": "biolink:Disease",
-        "xrefs": {"mondo": "MONDO:0000758"},
-    },  # in this case, it is a condition affecting cattle, causing dark red or brown urine due to the destruction of red blood cells.
     "seminal hyperviscosity": {
         "id": "NCIT:C38698",
         "name": "hyperviscosity",
