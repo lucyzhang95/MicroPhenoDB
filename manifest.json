@@ -29,10 +29,11 @@
       "http://lilab2.sysu.edu.cn/Microbe/download/EFO.txt",
       "http://lilab2.sysu.edu.cn/Microbe/download/NCIT.txt"
     ],
+    "uncompress": false,
     "release": "version:get_release"
   },
   "uploader": {
-    "parser": "MicroPhenoDB_parser:MicroPhenoDBParser.load_microphenodb_data",
+    "parser": "MicroPhenoDB_parser:MicroPhenoDBParser().load_microphenodb_data",
     "on_duplicates": "error"
   }
 }
