@@ -21,7 +21,7 @@ from manual_annotations.taxon_name2taxid import (
     OVERRIDE_BT_mapped_TAXID,
 )
 from utils.cache_helper import CacheHelper
-from utils.file_reader import FileReader
+from utils.reader import FileReader
 from utils.ontology_mapper import RapidFuzzUtils, Text2TermUtils
 from utils.ontology_services import (
     BioThingsService,
