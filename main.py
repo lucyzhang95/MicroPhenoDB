@@ -9,7 +9,6 @@ def main():
     """Main execution function."""
     print("Starting MicroPhenoDB data pipeline...")
 
-    # run the pipeline
     records = RecordCacheManager.run_data_pipeline()
 
     print("🎉 Pipeline completed successfully!")
