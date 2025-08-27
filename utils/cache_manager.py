@@ -378,16 +378,16 @@ class CacheManager(CacheHelper):
                 line[2],
                 line[3].strip(),
             )
-            _id = _id.replace("_", ":")
+            _id = _id.replace("_", ":").lower()
             if ":" in _id:
                 prefix = _id.split(":")[0].strip().lower()
                 efo_map[sci_d_name] = {
-                    "id": _id.upper(),
+                    "id": _id.upper() if "orphanet" not in _id else _id,
                     "name": sci_d_name,
                     "original_name": d_name,
                     "description": f"{desc}[{prefix.upper()}]",
                     "type": "biolink:Disease",
-                    "xrefs": {prefix: _id.upper()},
+                    "xrefs": {prefix: _id.upper() if "orphanet" not in _id else _id},
                 }
         return efo_map
 
