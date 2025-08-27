@@ -264,18 +264,18 @@ class RecordStatsReporter:
         """Generate comprehensive statistics report."""
         print("▶️ Generating comprehensive record statistics...")
 
-        self.generate_basic_stats()
-        self.generate_id_duplication_analysis()
-        self.generate_subject_stats()
-        self.generate_object_stats()
-        self.generate_association_stats()
-
         # add metadata
         self.stats["metadata"] = {
             "report_version": "1.0",
             "analysis_date": datetime.now().isoformat(),
             "total_records_analyzed": len(self.records),
         }
+
+        self.generate_basic_stats()
+        self.generate_id_duplication_analysis()
+        self.generate_subject_stats()
+        self.generate_object_stats()
+        self.generate_association_stats()
 
         return self.stats
 
