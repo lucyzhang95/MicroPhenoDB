@@ -1,7 +1,7 @@
 {
   "metadata": {
     "report_version": "1.0",
-    "analysis_date": "2025-08-27T13:58:58.256608",
+    "analysis_date": "2025-08-27T14:31:15.062357",
     "total_records_analyzed": 5357
   },
   "basic_stats": {
@@ -92,7 +92,7 @@
       "counts": {
         "MONDO": 363,
         "EFO": 4606,
-        "ORPHANET": 247,
+        "orphanet": 247,
         "HP": 125,
         "NCIT": 12,
         "DOID": 4
@@ -136,13 +136,13 @@
         }
       },
       {
-        "id": "ORPHANET:586",
+        "id": "orphanet:586",
         "name": "cystic fibrosis",
         "original_name": "cystic fibrosis",
         "description": "Cystic fibrosis (CF) is a genetic disorder characterized by the production of sweat with a high salt content and mucus secretions with an abnormal viscosity.[ORPHANET]",
         "type": "biolink:Disease",
         "xrefs": {
-          "orphanet": "ORPHANET:586"
+          "orphanet": "orphanet:586"
         }
       },
       {
