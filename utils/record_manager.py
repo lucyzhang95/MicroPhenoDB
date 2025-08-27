@@ -1,6 +1,8 @@
 """Record Manager for MicroPhenoDB Parser
 Manages caching and processing of the final parsed records.
 """
+import os
+import sys
 
 from MicroPhenoDB_parser import MicroPhenoDBParser
 from utils.cache_helper import CacheHelper
@@ -18,7 +20,7 @@ class RecordCacheManager:
         This method is responsible for SAVING, not generating.
         """
         if not records:
-            print("⚠️Warning: No records provided to cache.")
+            print("‼️ Warning: No records provided to cache.")
             return
 
         print(f"\n▶️ Caching {len(records)} records...")
@@ -47,10 +49,7 @@ class RecordCacheManager:
         """
         Orchestrates the entire process of parsing and caching data.
         """
-        import os
-        import sys
 
-        # Add the parent directory to sys.path to import microphenodb_parser
         current_dir = os.path.dirname(os.path.abspath(__file__))
         parent_dir = os.path.dirname(current_dir)
         if parent_dir not in sys.path:
