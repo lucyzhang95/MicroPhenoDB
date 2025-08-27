@@ -5,6 +5,7 @@ Generates comprehensive statistics for MicroPhenoDB parsed records.
 import json
 import os
 from collections import Counter, defaultdict
+from datetime import datetime
 from typing import Any, Dict, List
 
 from utils.cache_helper import CacheHelper
@@ -54,13 +55,11 @@ class RecordStatsReporter:
             ),
         }
 
-        # Sample duplicate records for investigation
+        # sample duplicate records for investigation
         if duplicated_ids:
             sample_duplicate_id = list(duplicated_ids.keys())[0]
             sample_records = [r for r in self.records if r.get("_id") == sample_duplicate_id]
-            duplication_analysis["sample_duplicate_records"] = sample_records[
-                :3
-            ]  # First 3 for brevity
+            duplication_analysis["sample_duplicate_records"] = sample_records[:3]  # only first 3
 
         self.stats["id_duplication_analysis"] = duplication_analysis
 
@@ -73,23 +72,23 @@ class RecordStatsReporter:
         curie_prefixes = [self._extract_curie_prefix(sid) for sid in subject_ids]
         curie_counts = Counter(curie_prefixes)
 
-        # Organism type analysis
+        # organism type analysis
         organism_types = [
             self._safe_get_nested(r, ["subject", "organism_type"]) for r in self.records
         ]
         organism_types = [ot for ot in organism_types if ot]
         organism_type_counts = Counter(organism_types)
 
-        # Rank analysis
+        # rank analysis
         ranks = [self._safe_get_nested(r, ["subject", "rank"]) for r in self.records]
         ranks = [rank for rank in ranks if rank]
         rank_counts = Counter(ranks)
 
-        # Description analysis
+        # description analysis
         descriptions = [self._safe_get_nested(r, ["subject", "description"]) for r in self.records]
         descriptions = [desc for desc in descriptions if desc]
 
-        # Xrefs analysis
+        # xrefs analysis
         xrefs_analysis = defaultdict(int)
         for record in self.records:
             subject_xrefs = self._safe_get_nested(record, ["subject", "xrefs"], {})
@@ -97,7 +96,7 @@ class RecordStatsReporter:
                 for key in subject_xrefs.keys():
                     xrefs_analysis[key] += 1
 
-        # Sample subject records
+        # sample subject records
         sample_subjects = []
         seen_curie_prefixes = set()
         for record in self.records:
@@ -145,11 +144,11 @@ class RecordStatsReporter:
         curie_prefixes = [self._extract_curie_prefix(oid) for oid in object_ids]
         curie_counts = Counter(curie_prefixes)
 
-        # Description analysis
+        # description analysis
         descriptions = [self._safe_get_nested(r, ["object", "description"]) for r in self.records]
         descriptions = [desc for desc in descriptions if desc]
 
-        # Xrefs analysis
+        # xrefs analysis
         xrefs_analysis = defaultdict(int)
         for record in self.records:
             object_xrefs = self._safe_get_nested(record, ["object", "xrefs"], {})
@@ -157,7 +156,7 @@ class RecordStatsReporter:
                 for key in object_xrefs.keys():
                     xrefs_analysis[key] += 1
 
-        # Sample object records
+        # sample object records
         sample_objects = []
         seen_curie_prefixes = set()
         for record in self.records:
@@ -190,7 +189,7 @@ class RecordStatsReporter:
 
     def generate_association_stats(self):
         """Generate association-related statistics."""
-        # Anatomical entity analysis
+        # anatomical entity analysis
         anatomical_entities = []
         for record in self.records:
             anat_entity = self._safe_get_nested(record, ["association", "anatomical_entity"])
@@ -202,7 +201,7 @@ class RecordStatsReporter:
         ]
         anatomical_counts = Counter(anatomical_original_names)
 
-        # Publication (PMID) analysis
+        # publication (PMID) analysis
         pmids = []
         publications = []
         for record in self.records:
@@ -215,7 +214,7 @@ class RecordStatsReporter:
 
         pmid_counts = Counter(pmids)
 
-        # Score analysis
+        # score analysis
         scores = [self._safe_get_nested(r, ["association", "score"]) for r in self.records]
         scores = [s for s in scores if s is not None]
 
@@ -225,7 +224,7 @@ class RecordStatsReporter:
             "positive": len([s for s in scores if s > 0]),
         }
 
-        # Qualifier analysis
+        # qualifier analysis
         qualifiers = [self._safe_get_nested(r, ["association", "qualifier"]) for r in self.records]
         qualifiers = [q for q in qualifiers if q]
         qualifier_counts = Counter(qualifiers)
@@ -271,10 +270,10 @@ class RecordStatsReporter:
         self.generate_object_stats()
         self.generate_association_stats()
 
-        # Add metadata
+        # add metadata
         self.stats["metadata"] = {
             "report_version": "1.0",
-            "analysis_date": None,  # This would typically be datetime.now().isoformat()
+            "analysis_date": datetime.now().isoformat(),
             "total_records_analyzed": len(self.records),
         }
 
@@ -282,7 +281,6 @@ class RecordStatsReporter:
 
     def save_report(self, output_path: str = "reports/record_stats.json"):
         """Save the statistics report to a JSON file."""
-        # Ensure reports directory exists
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
         with open(output_path, "w", encoding="utf-8") as f:
@@ -292,8 +290,7 @@ class RecordStatsReporter:
 
 
 def generate_record_statistics_report():
-    """Main function to generate and save record statistics report."""
-    # Load cached records
+    """Main function to generate and save a record statistics report."""
     cache_helper = CacheHelper(cache_dir="cache")
     record_manager = RecordCacheManager(cache_helper)
 
@@ -302,14 +299,11 @@ def generate_record_statistics_report():
         print("❌ No cached records found. Please run the data pipeline first.")
         return
 
-    # Generate statistics
     reporter = RecordStatsReporter(records)
     stats = reporter.generate_comprehensive_report()
 
-    # Save report
     reporter.save_report()
 
-    # Print summary
     print("\n📋 RECORD STATISTICS SUMMARY:")
     print(f"Total Records: {stats['basic_stats']['total_record_count']}")
     print(f"Unique IDs: {stats['basic_stats']['total_unique_ids']}")
