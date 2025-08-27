@@ -125,10 +125,10 @@ class MicroPhenoDBParser:
                 existing_score = existing_assoc.get("score")
 
                 if (
-                    new_pmid is not None
-                    and new_score is not None
-                    and new_pmid == existing_pmid
-                    and abs(new_score) > abs(existing_score)
+                        new_pmid is not None
+                        and new_score is not None
+                        and new_pmid == existing_pmid
+                        and abs(new_score) > abs(existing_score)
                 ):
                     unique_records[_id] = record
 
@@ -136,16 +136,13 @@ class MicroPhenoDBParser:
 
     def load_microphenodb_data(self):
         """Loads and yields the final processed data records."""
-        # Run cache pipeline to ensure all data is available
         self.cache_pipeline.run()
 
-        # Load all cached data
         taxon_data = self.cache_manager.get_or_cache_taxon_info()
         disease_data = self.cache_manager.get_or_cache_disease_info()
         pubmed_data = self.cache_manager.get_or_cache_pubmed_metadata()
         anatomical_data = self.cache_manager.get_or_cache_anatomical_entity2uberon()
 
-        # Process core data file
         core_f_path = self._get_file_path("core_table.txt")
 
         records = []
@@ -154,11 +151,11 @@ class MicroPhenoDBParser:
                 part.strip() for part in line
             )
 
-            # Create subject node (microbe/taxon)
+            # subject node (microbe/taxon)
             subject_node = self._get_microbe_node(organism_name, taxon_data)
             subject_node = self._remove_empty_values(subject_node)
 
-            # Create object node (disease)
+            # object node (disease)
             object_node = self._get_disease_node(disease_name, disease_data)
             object_node = self._remove_empty_values(object_node)
             if object_node:
@@ -166,17 +163,16 @@ class MicroPhenoDBParser:
                 if description and "null" in str(description).lower():
                     del object_node["description"]
 
-            # Skip records without valid subject or object
+            # skip records without valid subject or object
             if not subject_node or not object_node:
                 continue
 
-            # Create association node
+            # association node
             association_node = self._get_association_node(
                 score, position, qualifier, pmid, pubmed_data, anatomical_data
             )
             association_node = self._remove_empty_values(association_node)
 
-            # Generate unique ID for the record
             _id = (
                 f"{subject_node.get('id', '').split(':', 1)[1]}"
                 f"_{association_node.get('type', '').split(':', 1)[1]}"
@@ -194,7 +190,7 @@ class MicroPhenoDBParser:
 
         print(f"Loaded a total of {len(records)} records with duplicated _id from {core_f_path}.")
 
-        # Remove duplicates and clean data
+        # remove duplicates and clean data
         unique_records = self._remove_duplicate_records(records)
         for record in unique_records:
             cleaned_record = self._remove_trailing_spaces(record)
