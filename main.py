@@ -12,7 +12,7 @@ def main():
     records = RecordCacheManager.run_data_pipeline()
 
     print("🎉 Pipeline completed successfully!")
-    print(f"-> Processed {len(records)} unique records")
+    print(f"✅ Processed {len(records)} unique records")
 
     try:
         from utils.record_stats_report import generate_record_statistics_report
