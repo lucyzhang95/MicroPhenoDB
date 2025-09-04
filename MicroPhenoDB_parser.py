@@ -177,7 +177,7 @@ class MicroPhenoDBParser:
 
             _id = (
                 f"{subject_node.get('id', '').split(':', 1)[1]}"
-                f"_{association_node.get('type', '').split(':', 1)[1]}"
+                f"_{association_node.get('predicate', '').split(':', 1)[1]}"
                 f"_{object_node.get('id', '').split(':', 1)[1]}"
             )
 
