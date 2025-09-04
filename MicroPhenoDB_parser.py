@@ -23,7 +23,7 @@ class MicroPhenoDBParser:
 
     @staticmethod
     def _get_organism_type(node) -> str:
-        """Determine organism type based on taxonomic lineage."""
+        """Determine an organism type based on taxonomic lineage."""
         type_map = {
             2: "biolink:Bacterium",
             2157: "Archaea",
@@ -48,7 +48,7 @@ class MicroPhenoDBParser:
 
     @staticmethod
     def _get_disease_node(name, disease_map):
-        """Get disease node from disease mapping."""
+        """Get the disease node from disease mapping."""
         return (
             disease_map.get(name.lower())
             if name.lower() != "null" and name.lower() != "not foundthogenic"
@@ -165,7 +165,7 @@ class MicroPhenoDBParser:
                 if description and "null" in str(description).lower():
                     del object_node["description"]
 
-            # skip records without valid subject or object
+            # skip records without a valid subject or object
             if not subject_node or not object_node:
                 continue
 
