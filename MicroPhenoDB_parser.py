@@ -3,6 +3,7 @@ Contains the main parser class for processing MicroPhenoDB data.
 """
 
 import os
+import uuid
 
 from utils.cache_manager import CacheManager
 from utils.cache_pipeline import DataCachePipeline
@@ -60,7 +61,7 @@ class MicroPhenoDBParser:
         """Create an association node with all relevant metadata."""
         assoc = {
             "category": "biolink:OrganismalEntityAsAModelOfDiseaseAssociation",
-            "predicate": "biolink:associated_with",
+            "predicate": "biolink:affects",
             "primary_knowledge_source": ["infores:Disbiome", "infores:HMDAD"],
             "aggregator_knowledge_source": "infores:MicroPhenoDB",
             "has_evidence": "ECO:0000305",  # manual assertion
@@ -176,9 +177,11 @@ class MicroPhenoDBParser:
             association_node = self._remove_empty_values(association_node)
 
             _id = (
-                f"{subject_node.get('id', '').split(':', 1)[1]}"
-                f"_{association_node.get('predicate', '').split(':', 1)[1]}"
-                f"_{object_node.get('id', '').split(':', 1)[1]}"
+                f"{subject_node['id'].split(':')[1]}"
+                f"_{association_node['predicate'].split(':')[1]}"
+                f"_{object_node['id'].split(':')[1]}"
+                if subject_node and object_node
+                else str(uuid.uuid4())
             )
 
             records.append(
