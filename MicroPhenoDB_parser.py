@@ -59,16 +59,18 @@ class MicroPhenoDBParser:
     def _get_association_node(score, position, qualifier, pmid, pub_map, anatomical_map):
         """Create an association node with all relevant metadata."""
         assoc = {
-            "predicate": "biolink:OrganismalEntityAsAModelOfDiseaseAssociation",
-            "type": "biolink:associated_with",
+            "category": "biolink:OrganismalEntityAsAModelOfDiseaseAssociation",
+            "predicate": "biolink:associated_with",
+            "primary_knowledge_source": ["infores:Disbiome", "infores:HMDAD"],
+            "aggregator_knowledge_source": "infores:MicroPhenoDB",
+            "has_evidence": "ECO:0000305",  # manual assertion
+            "agent_type": "biolink:manual_agent",
             "score": float(score),
+            "publication": pub_map.get(pmid),
             "anatomical_entity": anatomical_map.get(
                 position.lower(),
                 {"original_name": position.lower(), "type": "biolink:AnatomicalEntity"},
             ),
-            "aggregator_knowledge_source": "infores:MicroPhenoDB",
-            "evidence_type": "ECO:0000305",  # manual assertion
-            "publication": pub_map.get(pmid),
         }
         if qualifier and qualifier.lower() != "tendency":
             assoc["qualifier"] = qualifier.lower()
