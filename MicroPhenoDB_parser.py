@@ -74,7 +74,10 @@ class MicroPhenoDBParser:
             "publication": pub_map.get(pmid),
             "anatomical_entity": anatomical_map.get(
                 position.lower(),
-                {"original_name": position.lower(), "type": "biolink:AnatomicalEntity"},
+                {
+                    "original_name": position.lower(),
+                    "category": "biolink:AnatomicalEntity"
+                },
             ),
         }
         if qualifier and qualifier.lower() != "tendency":
