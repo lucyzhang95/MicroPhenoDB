@@ -90,10 +90,11 @@ class RecordStatsReporter:
         # xrefs analysis
         xrefs_analysis = defaultdict(int)
         for record in self.records:
-            subject_xrefs = self._safe_get_nested(record, ["subject", "xrefs"], {})
-            if isinstance(subject_xrefs, dict):
-                for key in subject_xrefs.keys():
-                    xrefs_analysis[key] += 1
+            subject_xrefs = self._safe_get_nested(record, ["subject", "xrefs"], [])
+            if isinstance(subject_xrefs, list):
+                for curie in subject_xrefs:
+                    prefix = self._extract_curie_prefix(curie)
+                    xrefs_analysis[prefix] += 1
 
         # sample subject records
         sample_subjects = []
@@ -150,10 +151,11 @@ class RecordStatsReporter:
         # xrefs analysis
         xrefs_analysis = defaultdict(int)
         for record in self.records:
-            object_xrefs = self._safe_get_nested(record, ["object", "xrefs"], {})
-            if isinstance(object_xrefs, dict):
-                for key in object_xrefs.keys():
-                    xrefs_analysis[key] += 1
+            subject_xrefs = self._safe_get_nested(record, ["object", "xrefs"], [])
+            if isinstance(subject_xrefs, list):
+                for curie in subject_xrefs:
+                    prefix = self._extract_curie_prefix(curie)
+                    xrefs_analysis[prefix] += 1
 
         # sample object records
         sample_objects = []
