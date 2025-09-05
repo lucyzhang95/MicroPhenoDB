@@ -11,13 +11,13 @@ class CacheHelper:
 
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
     CACHE_DIR = os.path.join(SCRIPT_DIR, "cache")
-    DATA_DIR = os.path.join(SCRIPT_DIR, "parsed_records")
+    RECORD_DIR = os.path.join(SCRIPT_DIR, "records")
 
-    def __init__(self, data_dir=DATA_DIR, cache_dir=CACHE_DIR):
+    def __init__(self, rec_dir=RECORD_DIR, cache_dir=CACHE_DIR):
         self.cache_dir = os.path.join(os.getcwd(), cache_dir)
         os.makedirs(self.cache_dir, exist_ok=True)
-        self.data_dir = os.path.join(os.getcwd(), data_dir)
-        os.makedirs(self.data_dir, exist_ok=True)
+        self.rec_dir = os.path.join(os.getcwd(), rec_dir)
+        os.makedirs(self.rec_dir, exist_ok=True)
 
     def save_pickle(self, obj, f_name):
         """Saves an object to a pickle file."""
@@ -34,12 +34,12 @@ class CacheHelper:
 
     def save_json(self, obj, f_name):
         """Saves an object to a JSON file."""
-        with open(os.path.join(self.data_dir, f_name), "w") as out_f:
+        with open(os.path.join(self.rec_dir, f_name), "w") as out_f:
             json.dump(obj, out_f, indent=4)
 
     def load_json(self, f_name):
         """Loads an object from a JSON file."""
-        path = os.path.join(self.data_dir, f_name)
+        path = os.path.join(self.rec_dir, f_name)
         if os.path.exists(path):
             with open(path, "r") as in_f:
                 return json.load(in_f)
@@ -54,7 +54,7 @@ class CacheHelper:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         base_name = f_name.replace(".jsonl", "") if f_name.endswith(".jsonl") else f_name
         jsonl_filename = f"{base_name}_{timestamp}.jsonl"
-        jsonl_path = os.path.join(self.data_dir, jsonl_filename)
+        jsonl_path = os.path.join(self.rec_dir, jsonl_filename)
 
         exported_count = 0
         with open(jsonl_path, "w", encoding="utf-8") as f:
@@ -69,7 +69,7 @@ class CacheHelper:
 
     def load_jsonl(self, f_name: str) -> List[Dict[str, Any]]:
         """Load records from JSONL file."""
-        path = os.path.join(self.data_dir, f_name)
+        path = os.path.join(self.rec_dir, f_name)
 
         if not os.path.exists(path):
             return []
