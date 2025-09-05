@@ -98,7 +98,7 @@ class RecordHelper:
             if entity_key in clean_record and isinstance(clean_record[entity_key], dict):
                 entity = clean_record[entity_key].copy()
                 if "xrefs" in entity and isinstance(entity["xrefs"], dict):
-                    entity["xrefs"] = [f"{k}:{v}" for k, v in entity["xrefs"].items() if v]
+                    entity["xrefs"] = [v for k, v in entity["xrefs"].items() if v]
                 clean_record[entity_key] = entity
 
         return clean_record
