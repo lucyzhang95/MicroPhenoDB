@@ -1,12 +1,12 @@
 {
   "metadata": {
     "report_version": "1.0",
-    "analysis_date": "2025-09-05T12:41:54.699361",
-    "total_records_analyzed": 5357
+    "analysis_date": "2025-09-05T13:51:16.829933",
+    "total_records_analyzed": 5358
   },
   "basic_stats": {
-    "total_record_count": 5357,
-    "total_unique_ids": 5357
+    "total_record_count": 5358,
+    "total_unique_ids": 5358
   },
   "id_duplication_analysis": {
     "total_duplicate_id_groups": 0,
@@ -14,11 +14,11 @@
     "duplicated_ids_detail": {}
   },
   "subject_stats": {
-    "total_subjects_with_id": 5357,
-    "unique_subject_ids": 1538,
+    "total_subjects_with_id": 5358,
+    "unique_subject_ids": 1539,
     "curie_prefixes": {
       "counts": {
-        "NCBITaxon": 5357
+        "NCBITaxon": 5358
       },
       "total_unique_prefixes": 1
     },
@@ -26,7 +26,7 @@
       "counts": {
         "biolink:Bacterium": 4662,
         "Eukaryote": 398,
-        "biolink:Virus": 280,
+        "biolink:Virus": 281,
         "Archaea": 16,
         "Other": 1
       },
@@ -34,12 +34,12 @@
     },
     "taxonomic_ranks": {
       "counts": {
-        "species": 2302,
-        "genus": 2368,
-        "no rank": 113,
+        "species": 2285,
+        "genus": 2369,
+        "no rank": 133,
         "serogroup": 9,
         "family": 329,
-        "serotype": 40,
+        "serotype": 37,
         "phylum": 119,
         "subspecies": 11,
         "class": 19,
@@ -52,11 +52,13 @@
     },
     "descriptions": {
       "total_with_description": 2993,
-      "description_coverage_percentage": 55.870823221952584
+      "description_coverage_percentage": 55.86039567002613
     },
     "xrefs": {
-      "xref_sources": {},
-      "total_unique_xref_sources": 0
+      "xref_sources": {
+        "NCIT": 3010
+      },
+      "total_unique_xref_sources": 1
     },
     "sample_subjects": [
       {
@@ -84,12 +86,12 @@
     ]
   },
   "object_stats": {
-    "total_objects_with_id": 5357,
+    "total_objects_with_id": 5358,
     "unique_object_ids": 478,
     "curie_prefixes": {
       "counts": {
         "MONDO": 363,
-        "EFO": 4606,
+        "EFO": 4607,
         "orphanet": 247,
         "HP": 125,
         "NCIT": 12,
@@ -98,12 +100,19 @@
       "total_unique_prefixes": 6
     },
     "descriptions": {
-      "total_with_description": 5327,
-      "description_coverage_percentage": 99.43998506626843
+      "total_with_description": 5328,
+      "description_coverage_percentage": 99.44008958566629
     },
     "xrefs": {
-      "xref_sources": {},
-      "total_unique_xref_sources": 0
+      "xref_sources": {
+        "MONDO": 363,
+        "EFO": 4607,
+        "orphanet": 247,
+        "HP": 125,
+        "NCIT": 12,
+        "DOID": 4
+      },
+      "total_unique_xref_sources": 6
     },
     "sample_objects": [
       {
@@ -113,7 +122,7 @@
         "type": "biolink:Disease",
         "original_name": "type 1 diabetes",
         "xrefs": [
-          "mondo:MONDO:0005147"
+          "MONDO:0005147"
         ]
       },
       {
@@ -123,7 +132,7 @@
         "description": "A hypoperfusion of the BLOOD through an organ or tissue caused by a PATHOLOGIC CONSTRICTION or obstruction of its BLOOD VESSELS, or an absence of BLOOD CIRCULATION.[EFO]",
         "type": "biolink:Disease",
         "xrefs": [
-          "efo:EFO:0000556"
+          "EFO:0000556"
         ]
       },
       {
@@ -133,7 +142,7 @@
         "description": "Cystic fibrosis (CF) is a genetic disorder characterized by the production of sweat with a high salt content and mucus secretions with an abnormal viscosity.[ORPHANET]",
         "type": "biolink:Disease",
         "xrefs": [
-          "orphanet:orphanet:586"
+          "orphanet:586"
         ]
       },
       {
@@ -143,7 +152,7 @@
         "description": "A disease of infectious agent resulting from the presence of pathogenic microbial agents, including pathogenic viruses, pathogenic bacteria, fungi, protozoa, multicellular parasites, and aberrant proteins known as prions. These pathogens are able to cause disease in animals and/or plants. Infectious pathologies are usually qualified as contagious disease (also called communicable disease) due to their potentiality of transmission from one person or species to another.;Sepsis associated with organ dysfunction distant from the site of infection.;Septicemia caused by pyogenic microorganisms (e.g., STAPHYLOCOCCUS; BACILLUS), resulting in the formation of secondary foci of SUPPURATION and multiple ABSCESSES.;Systemic disease associated with the presence of pathogenic microorganisms or their toxins in the blood.;Systemic inflammatory response syndrome with a proven or suspected infectious etiology. When sepsis is associated with organ dysfunction distant from the site of infection, it is called severe sepsis. When sepsis is accompanied by HYPOTENSION despite adequate fluid infusion, it is called SEPTIC SHOCK.;The presence of pathogenic microorganisms in the blood stream causing a rapidly progressing systemic reaction that may lead to shock. Symptoms include fever, chills, tachycardia, and increased respiratory rate. It is a medical emergency that requires urgent medical attention.[HP]",
         "type": "biolink:Disease",
         "xrefs": [
-          "hp:HP:0100806"
+          "HP:0100806"
         ]
       },
       {
@@ -153,17 +162,17 @@
         "description": "A localized pathological or traumatic structural change, damage, deformity, or discontinuity of tissue, organ, or body part.[NCIt]",
         "type": "biolink:Disease",
         "xrefs": [
-          "ncit:NCIT:C3824"
+          "NCIT:C3824"
         ]
       }
     ]
   },
   "association_stats": {
     "anatomical_entities": {
-      "total_with_anatomical_entity": 5357,
+      "total_with_anatomical_entity": 5358,
       "unique_anatomical_entities": 23,
       "anatomical_entity_counts": {
-        "gastrointestinal tract": 2073,
+        "gastrointestinal tract": 2074,
         "other": 1372,
         "oral cavity": 530,
         "respiratory tract": 263,
@@ -218,11 +227,11 @@
       ]
     },
     "publications": {
-      "total_with_publication": 4520,
+      "total_with_publication": 4521,
       "total_unique_pmids": 510,
       "pmid_frequency_distribution": {
         "top_10_most_cited_pmids": {
-          "PMID:29955859": 703,
+          "PMID:29955859": 704,
           "PMID:22043294": 146,
           "PMID:24130822": 83,
           "PMID:28852861": 69,
@@ -259,24 +268,24 @@
       ]
     },
     "scores": {
-      "total_with_score": 5357,
+      "total_with_score": 5358,
       "score_ranges": {
         "negative": 1819,
         "zero": 109,
-        "positive": 3429
+        "positive": 3430
       },
       "score_statistics": {
         "min": -3.629784145,
         "max": 4.001735443,
-        "mean": 0.4692410540535717
+        "mean": 0.46965736548917203
       }
     },
     "qualifiers": {
-      "total_with_qualifier": 5347,
+      "total_with_qualifier": 5348,
       "unique_qualifiers": 2,
       "qualifier_counts": {
         "decrease": 1780,
-        "increase": 3567
+        "increase": 3568
       }
     }
   }
