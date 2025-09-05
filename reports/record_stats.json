@@ -1,12 +1,12 @@
 {
   "metadata": {
     "report_version": "1.0",
-    "analysis_date": "2025-09-05T13:51:16.829933",
-    "total_records_analyzed": 5358
+    "analysis_date": "2025-09-05T14:53:58.163241",
+    "total_records_analyzed": 5379
   },
   "basic_stats": {
-    "total_record_count": 5358,
-    "total_unique_ids": 5358
+    "total_record_count": 5379,
+    "total_unique_ids": 5379
   },
   "id_duplication_analysis": {
     "total_duplicate_id_groups": 0,
@@ -14,31 +14,31 @@
     "duplicated_ids_detail": {}
   },
   "subject_stats": {
-    "total_subjects_with_id": 5358,
-    "unique_subject_ids": 1539,
+    "total_subjects_with_id": 5379,
+    "unique_subject_ids": 1544,
     "curie_prefixes": {
       "counts": {
-        "NCBITaxon": 5358
+        "NCBITaxon": 5379
       },
       "total_unique_prefixes": 1
     },
     "organism_types": {
       "counts": {
-        "biolink:Bacterium": 4662,
+        "biolink:Bacterium": 4679,
         "Eukaryote": 398,
-        "biolink:Virus": 281,
+        "biolink:Virus": 284,
         "Archaea": 16,
-        "Other": 1
+        "Other": 2
       },
       "total_unique_types": 5
     },
     "taxonomic_ranks": {
       "counts": {
-        "species": 2285,
+        "species": 2292,
         "genus": 2369,
-        "no rank": 133,
+        "no rank": 135,
         "serogroup": 9,
-        "family": 329,
+        "family": 341,
         "serotype": 37,
         "phylum": 119,
         "subspecies": 11,
@@ -51,12 +51,12 @@
       "total_unique_ranks": 13
     },
     "descriptions": {
-      "total_with_description": 2993,
-      "description_coverage_percentage": 55.86039567002613
+      "total_with_description": 2991,
+      "description_coverage_percentage": 55.605131065253765
     },
     "xrefs": {
       "xref_sources": {
-        "NCIT": 3010
+        "NCIT": 3008
       },
       "total_unique_xref_sources": 1
     },
@@ -80,19 +80,19 @@
         ],
         "rank": "species",
         "original_name": "clostridium xylanovorans",
-        "type": "biolink:OrganismTaxon",
+        "category": "biolink:OrganismTaxon",
         "organism_type": "biolink:Bacterium"
       }
     ]
   },
   "object_stats": {
-    "total_objects_with_id": 5358,
-    "unique_object_ids": 478,
+    "total_objects_with_id": 5379,
+    "unique_object_ids": 480,
     "curie_prefixes": {
       "counts": {
-        "MONDO": 363,
-        "EFO": 4607,
-        "orphanet": 247,
+        "MONDO": 367,
+        "EFO": 4621,
+        "orphanet": 250,
         "HP": 125,
         "NCIT": 12,
         "DOID": 4
@@ -100,14 +100,14 @@
       "total_unique_prefixes": 6
     },
     "descriptions": {
-      "total_with_description": 5328,
-      "description_coverage_percentage": 99.44008958566629
+      "total_with_description": 5348,
+      "description_coverage_percentage": 99.42368469975833
     },
     "xrefs": {
       "xref_sources": {
-        "MONDO": 363,
-        "EFO": 4607,
-        "orphanet": 247,
+        "MONDO": 367,
+        "EFO": 4621,
+        "orphanet": 250,
         "HP": 125,
         "NCIT": 12,
         "DOID": 4
@@ -119,18 +119,18 @@
         "id": "MONDO:0005147",
         "name": "type 1 diabetes mellitus",
         "description": "A chronic condition characterized by minimal or absent production of insulin by the pancreas. [NCIT:C2986]",
-        "type": "biolink:Disease",
         "original_name": "type 1 diabetes",
         "xrefs": [
           "MONDO:0005147"
-        ]
+        ],
+        "category": "biolink:Disease"
       },
       {
         "id": "EFO:0000556",
         "name": "ischemia",
         "original_name": "irritable bowel syndrome(ibs)",
         "description": "A hypoperfusion of the BLOOD through an organ or tissue caused by a PATHOLOGIC CONSTRICTION or obstruction of its BLOOD VESSELS, or an absence of BLOOD CIRCULATION.[EFO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": [
           "EFO:0000556"
         ]
@@ -140,7 +140,7 @@
         "name": "cystic fibrosis",
         "original_name": "cystic fibrosis",
         "description": "Cystic fibrosis (CF) is a genetic disorder characterized by the production of sweat with a high salt content and mucus secretions with an abnormal viscosity.[ORPHANET]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": [
           "orphanet:586"
         ]
@@ -150,7 +150,7 @@
         "name": "sepsis",
         "original_name": "sepsis",
         "description": "A disease of infectious agent resulting from the presence of pathogenic microbial agents, including pathogenic viruses, pathogenic bacteria, fungi, protozoa, multicellular parasites, and aberrant proteins known as prions. These pathogens are able to cause disease in animals and/or plants. Infectious pathologies are usually qualified as contagious disease (also called communicable disease) due to their potentiality of transmission from one person or species to another.;Sepsis associated with organ dysfunction distant from the site of infection.;Septicemia caused by pyogenic microorganisms (e.g., STAPHYLOCOCCUS; BACILLUS), resulting in the formation of secondary foci of SUPPURATION and multiple ABSCESSES.;Systemic disease associated with the presence of pathogenic microorganisms or their toxins in the blood.;Systemic inflammatory response syndrome with a proven or suspected infectious etiology. When sepsis is associated with organ dysfunction distant from the site of infection, it is called severe sepsis. When sepsis is accompanied by HYPOTENSION despite adequate fluid infusion, it is called SEPTIC SHOCK.;The presence of pathogenic microorganisms in the blood stream causing a rapidly progressing systemic reaction that may lead to shock. Symptoms include fever, chills, tachycardia, and increased respiratory rate. It is a medical emergency that requires urgent medical attention.[HP]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": [
           "HP:0100806"
         ]
@@ -160,7 +160,7 @@
         "name": "lesion",
         "original_name": "dermal and genital lesions",
         "description": "A localized pathological or traumatic structural change, damage, deformity, or discontinuity of tissue, organ, or body part.[NCIt]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": [
           "NCIT:C3824"
         ]
@@ -169,19 +169,19 @@
   },
   "association_stats": {
     "anatomical_entities": {
-      "total_with_anatomical_entity": 5358,
+      "total_with_anatomical_entity": 5379,
       "unique_anatomical_entities": 23,
       "anatomical_entity_counts": {
-        "gastrointestinal tract": 2074,
-        "other": 1372,
+        "gastrointestinal tract": 2087,
+        "other": 1373,
         "oral cavity": 530,
-        "respiratory tract": 263,
+        "respiratory tract": 264,
         "skin and soft tissue": 226,
         "urinary tract": 189,
-        "vagina": 127,
-        "central nervous system": 113,
+        "vagina": 130,
+        "central nervous system": 114,
         "nasal cavity": 85,
-        "bloodstream": 77,
+        "bloodstream": 79,
         "eye": 62,
         "throat": 56,
         "genitals": 55,
@@ -198,44 +198,44 @@
           "id": "UBERON:0011565",
           "name": "lumen of gastrointestinal system",
           "original_name": "gastrointestinal tract",
-          "type": "biolink:AnatomicalEntity"
+          "category": "biolink:AnatomicalEntity"
         },
         {
           "id": "UBERON:0011565",
           "name": "lumen of gastrointestinal system",
           "original_name": "gastrointestinal tract",
-          "type": "biolink:AnatomicalEntity"
+          "category": "biolink:AnatomicalEntity"
         },
         {
           "id": "UBERON:0000996",
           "name": "vagina",
           "original_name": "vagina",
-          "type": "biolink:AnatomicalEntity"
+          "category": "biolink:AnatomicalEntity"
         },
         {
           "id": "UBERON:0011565",
           "name": "lumen of gastrointestinal system",
           "original_name": "gastrointestinal tract",
-          "type": "biolink:AnatomicalEntity"
+          "category": "biolink:AnatomicalEntity"
         },
         {
           "id": "UBERON:0011565",
           "name": "lumen of gastrointestinal system",
           "original_name": "gastrointestinal tract",
-          "type": "biolink:AnatomicalEntity"
+          "category": "biolink:AnatomicalEntity"
         }
       ]
     },
     "publications": {
-      "total_with_publication": 4521,
-      "total_unique_pmids": 510,
+      "total_with_publication": 4541,
+      "total_unique_pmids": 512,
       "pmid_frequency_distribution": {
         "top_10_most_cited_pmids": {
-          "PMID:29955859": 704,
+          "PMID:29955859": 707,
           "PMID:22043294": 146,
           "PMID:24130822": 83,
           "PMID:28852861": 69,
-          "PMID:27812181": 46,
+          "PMID:27812181": 47,
           "PMID:29555983": 45,
           "PMID:23071781": 41,
           "PMID:30054809": 40,
@@ -249,43 +249,43 @@
           "name": "Fecal microbiota composition differs between children with β-cell autoimmunity and those without.",
           "summary": "The role of the intestinal microbiota as a regulator of autoimmune diabetes in animal models is well-established, but data on human type 1 diabetes are tentative and based on studies including only a few study subjects. To exclude secondary effects of diabetes and HLA risk genotype on gut microbiota, we compared the intestinal microbiota composition in children with at least two diabetes-associated autoantibodies (n = 18) with autoantibody-negative children matched for age, sex, early feeding history, and HLA risk genotype using pyrosequencing. Principal component analysis indicated that a low abundance of lactate-producing and butyrate-producing species was associated with β-cell autoimmunity. In addition, a dearth of the two most dominant Bifidobacterium species, Bifidobacterium adolescentis and Bifidobacterium pseudocatenulatum, and an increased abundance of the Bacteroides genus were observed in the children with β-cell autoimmunity. We did not find increased fecal calprotectin or IgA as marker of inflammation in children with β-cell autoimmunity. Functional studies related to the observed alterations in the gut microbiome are warranted because the low abundance of bifidobacteria and butyrate-producing species could adversely affect the intestinal epithelial barrier function and inflammation, whereas the apparent importance of the Bacteroides genus in development of type 1 diabetes is insufficiently understood. [abstract]",
           "doi": "doi:10.2337/db12-0526",
-          "type": "biolink:Publication"
+          "category": "biolink:Publication"
         },
         {
           "pmid": "PMID:22180058",
           "name": "An irritable bowel syndrome subtype defined by species-specific alterations in faecal microbiota.",
           "summary": "Irritable bowel syndrome (IBS) is a common functional gastrointestinal disorder that may be triggered by enteric pathogens and has also been linked to alterations in the microbiota and the host immune response. The authors performed a detailed analysis of the faecal microbiota in IBS and control subjects and correlated the findings with key clinical and physiological parameters. The authors used pyrosequencing to determine faecal microbiota composition in 37 IBS patients (mean age 37 years; 26 female subjects; 15 diarrhoea-predominant IBS, 10 constipation-predominant IBS and 12 alternating-type IBS) and 20 age- and gender-matched controls. Gastrointestinal and psychological symptom severity and quality of life were evaluated with validated questionnaires and colonic transit time and rectal sensitivity were measured. Associations detected between microbiota composition and clinical or physiological phenotypes included microbial signatures associated with colonic transit and levels of clinically significant depression in the disease. Clustering by microbiota composition revealed subgroups of IBS patients, one of which (n=15) showed normal-like microbiota composition compared with healthy controls. The other IBS samples (n=22) were defined by large microbiota-wide changes characterised by an increase of Firmicutes-associated taxa and a depletion of Bacteroidetes-related taxa. Detailed microbiota analysis of a well-characterised cohort of IBS patients identified several clear associations with clinical data and a distinct subset of IBS patients with alterations in their microbiota that did not correspond to IBS subtypes, as defined by the Rome II criteria. [abstract]",
           "doi": "doi:10.1136/gutjnl-2011-301501",
-          "type": "biolink:Publication"
+          "category": "biolink:Publication"
         },
         {
           "pmid": "PMID:20819230",
           "name": "Molecular analysis of the diversity of vaginal microbiota associated with bacterial vaginosis.",
           "summary": "Bacterial vaginosis (BV) is an ecological disorder of the vaginal microbiota that affects millions of women annually, and is associated with numerous adverse health outcomes including pre-term birth and the acquisition of sexually transmitted infections. However, little is known about the overall structure and composition of vaginal microbial communities; most of the earlier studies focused on predominant vaginal bacteria in the process of BV. In the present study, the diversity and richness of vaginal microbiota in 50 BV positive and 50 healthy women from China were investigated using culture-independent PCR-denaturing gradient gel electrophoresis (DGGE) and barcoded 454 pyrosequencing methods, and validated by quantitative PCR. Our data demonstrated that there was a profound shift in the absolute and relative abundances of bacterial species present in the vagina when comparing populations associated with healthy and diseased conditions. In spite of significant interpersonal variations, the diversity of vaginal microbiota in the two groups could be clearly divided into two clusters. A total of 246,359 high quality pyrosequencing reads was obtained for evaluating bacterial diversity and 24,298 unique sequences represented all phylotypes. The most predominant phyla of bacteria identified in the vagina belonged to Firmicutes, Bacteroidetes, Actinobacteria and Fusobacteria. The higher number of phylotypes in BV positive women over healthy is consistent with the results of previous studies and a large number of low-abundance taxa which were missed in previous studies were revealed. Although no single bacterium could be identified as a specific marker for healthy over diseased conditions, three phyla - Bacteroidetes, Actinobacteria and Fusobacteria, and eight genera including Gardnerella, Atopobium, Megasphaera, Eggerthella, Aerococcus, Leptotrichia/Sneathia, Prevotella and Papillibacter were strongly associated with BV (p < 0.05). These genera are potentially excellent markers and could be used as targets for clinical BV diagnosis by molecular approaches. The data presented here have clearly profiled the overall structure of vaginal communities and clearly demonstrated that BV is associated with a dramatic increase in the taxonomic richness and diversity of vaginal microbiota. The study also provides the most comprehensive picture of the vaginal community structure and the bacterial ecosystem, and significantly contributes to the current understanding of the etiology of BV. [abstract]",
           "doi": "doi:10.1186/1471-2164-11-488",
-          "type": "biolink:Publication"
+          "category": "biolink:Publication"
         }
       ]
     },
     "scores": {
-      "total_with_score": 5358,
+      "total_with_score": 5379,
       "score_ranges": {
-        "negative": 1819,
+        "negative": 1827,
         "zero": 109,
-        "positive": 3430
+        "positive": 3443
       },
       "score_statistics": {
         "min": -3.629784145,
         "max": 4.001735443,
-        "mean": 0.46965736548917203
+        "mean": 0.4695200481189782
       }
     },
     "qualifiers": {
-      "total_with_qualifier": 5348,
+      "total_with_qualifier": 5369,
       "unique_qualifiers": 2,
       "qualifier_counts": {
-        "decrease": 1780,
-        "increase": 3568
+        "decrease": 1788,
+        "increase": 3581
       }
     }
   }
