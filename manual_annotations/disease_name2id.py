@@ -8,7 +8,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "arthritis",
         "original_name": "arthritis",
         "description": "Inflammation of a joint.[HP]",
-        "type": "biolink:DiseaseOrPhenotypicFeature",
+        "category": "biolink:DiseaseOrPhenotypicFeature",
         "xrefs": {"hp": "HP:0001369"},
     },
     "virus respiratory tract infection": {
@@ -16,7 +16,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "respiratory tract infection",
         "original_name": "virus respiratory tract infection",
         "description": "An infection of the upper or lower respiratory tract.[HP]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"hp": "HP:0011947"},
     },
     "nonchlamydial nongonococcal urethritis in males": {
@@ -24,7 +24,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "urethritis",
         "original_name": "nonchlamydial nongonococcal urethritis in males",
         "description": "Urethritis is characterized by discharge, dysuria and/or urethral discomfort but may be asymptomatic. Common etiologies include gonococcal urethritis as well as infection by chlamydia trachomatis, mycoplasma genitalium, ureaplasma urealyticum, trichomonas vaginalis, anaerobes, herpes simplex virus, and adenovirus.[HP]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"hp": "HP:0500006"},
     },
     "nongonococcal urethritis in males": {
@@ -32,7 +32,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "urethritis",
         "original_name": "nongonococcal urethritis in males",
         "description": "Urethritis is characterized by discharge, dysuria and/or urethral discomfort but may be asymptomatic. Common etiologies include gonococcal urethritis as well as infection by chlamydia trachomatis, mycoplasma genitalium, ureaplasma urealyticum, trichomonas vaginalis, anaerobes, herpes simplex virus, and adenovirus.[HP]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"hp": "HP:0500006"},
     },
     "lungsaspergillosis": {
@@ -40,7 +40,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "pulmonary aspergilloma",
         "original_name": "lungsaspergillosis",
         "description": "Aspergillosis is an infection, growth, or allergic response caused by the Aspergillus fungus. There are several different kinds of aspergillosis. One kind is allergic bronchopulmonary aspergillosis (also called ABPA), a condition where the fungus causes allergic respiratory symptoms similar to asthma, such as wheezing and coughing, but does not actually invade and destroy tissue. Another kind of aspergillosis is invasive aspergillosis. This infection usually affects people with weakened immune systems due to cancer, AIDS, leukemia, organ transplantation, chemotherapy, or other conditions or events that reduce the number of normal white blood cells. In this condition, the fungus invades and damages tissues in the body. Invasive aspergillosis most commonly affects the lungs, but can also cause infection in many other organs and can spread throughout the body (commonly affecting the kidneys and brain). Aspergilloma, a growth (fungus ball) that develops in an area of previous lung disease such as tuberculosis or lung abscess, is a third kind of aspergillosis. This type of aspergillosis is composed of a tangled mass of fungus fibers, blood clots, and white blood cells. The fungus ball gradually enlarges, destroying lung tissue in the process, but usually does not spread to other areas.[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0000266"},
     },
     "gastric cancer": {
@@ -48,7 +48,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "gastric cancer",
         "original_name": "gastric cancer",
         "description": "A primary or metastatic malignant neoplasm involving the stomach.[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0001056"},
     },
     "vincent angina bacteria": {
@@ -56,7 +56,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "necrotizing ulcerative gingivitis",
         "original_name": "vincent angina bacteria",
         "description": "A bacterial infectious process affecting the gums. It is characterized by the development of necrotic, ulcerated, and painful lesions with creation of pseudomembranes extending along the gingival margins.[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0006865"},
     },
     "juvenile idiopathic arthritis": {
@@ -64,7 +64,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "juvenile idiopathic arthritis",
         "original_name": "juvenile idiopathic arthritis",
         "description": "Juvenile idiopathic arthritis (JIA) is the term used to describe a group of inflammatory articular disorders of unknown cause that begin before the age of 16 and last over 6 weeks. The term juvenile idiopathic arthritis was chosen to signify the absence of any known mechanism underlying the disorder and to highlight the necessity of excluding other types of arthritis occurring in well defined diseases (in particular arthritis occurring in association with infectious, inflammatory and haematooncologic diseases).[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0011429"},
     },
     "cryptosporidiosis": {
@@ -72,7 +72,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "cryptosporidiosis",
         "original_name": "cryptosporidiosis",
         "description": "Intestinal infection with organisms of the genus Cryptosporidium. It occurs in both animals and humans. Symptoms include severe diarrhea.[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0015474"},
     },
     "transient aplastic crisis in patients with hemoglobinopathies": {
@@ -80,7 +80,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "inherited hemoglobinopathy",
         "original_name": "transient aplastic crisis in patients with hemoglobinopathies",
         "description": "An inherited disorder characterized by structural alterations of a globin chain within the hemoglobin molecule.[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0019050"},
     },
     "acute hepatitis a virus (hav) infection": {
@@ -88,7 +88,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "hepatitis a virus infection",
         "original_name": "acute hepatitis a virus (hav) infection",
         "description": "Acute inflammation of the liver caused by the hepatitis A virus. It is highly contagious and usually contracted through close contact with an infected individual or their feces, contaminated food or water.[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0005790"},
     },
     "postmenopausal": {
@@ -96,7 +96,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "postmenopausal",
         "original_name": "postmenopausal",
         "description": "The period of time after menopause; Having to do with the time after menopause. Menopause ('change of life') is the time in a woman's life when menstrual periods stop permanently.[NCIt]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"efo": "EFO:0002721"},
     },
     "complications during parturition": {
@@ -104,7 +104,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "labor and delivery complications",
         "original_name": "complications during parturition",
         "description": "The occurrence of a pregnancy complication during childbirth, which includes both labor (the process of childbirth) and delivery (the birth itself).[EFO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"efo": "EFO:0022939"},
     },
     "causing nosocomial": {
@@ -112,7 +112,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "nosocomial infection",
         "original_name": "causing nosocomial",
         "description": "An infection acquired in a hospital or other healthcare setting.[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0043544"},
     },
     "fungemia": {
@@ -120,7 +120,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "fungal infectious disease",
         "original_name": "fungemia",
         "description": "An infection caused by a fungus.[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0002041"},
     },
     "polyomas": {
@@ -128,7 +128,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "polyomavirus infectious disease",
         "original_name": "polyomas",
         "description": "Infections with polyomavirus, which are often cultured from the urine of kidney transplant patients. Excretion of bk virus is associated with ureteral strictures and cystitis, and that of jc virus with progressive multifocal leukoencephalopathy (leukoencephalopathy, progressive multifocal).[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0005927"},
     },
     "systematic fungemia": {
@@ -136,7 +136,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "fungal infectious disease",
         "original_name": "systematic fungemia",
         "description": "An infection caused by a fungus.[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0002041"},
     },
     "cutaneous burn": {
@@ -144,7 +144,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "burn",
         "original_name": "cutaneous burn",
         "description": "A traumatic injury involving interruption of tissue cohesiveness that results from exposure to caustic chemicals, extreme heat, extreme cold or excessive radiation.[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0043519"},
     },
     "protracted bacteria bronchitis": {
@@ -152,7 +152,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "bronchitis",
         "original_name": "protracted bacteria bronchitis",
         "description": "An acute or chronic inflammatory process affecting the bronchi.[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0003781"},
     },
     "dandruff": {
@@ -160,7 +160,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "pityriasis simplex",
         "original_name": "dandruff",
         "description": "Excessive shedding of dry scaly material from the scalp in humans.[MESH]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0024343"},
     },
     "chikungunya encephalitis": {
@@ -168,7 +168,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "chikungunya",
         "original_name": "chikungunya encephalitis",
         "description": "An infection that is caused by the Chikungunya virus, which is transmitted by mosquitoes; it is characterized by fever and severe arthralgia.[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0017941"},
     },
     "black scour disease": {
@@ -176,7 +176,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "trichostrongylus colubriformis",
         "original_name": "black scour disease",
         "description": "A species of parasitic roundworms in the family Trichostrongylidae that causes black scour disease in sheep, cattle, and goats.[NCIt]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"ncit": "NCIT:C125969"},
     },
     "european foulbrood": {
@@ -184,7 +184,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "bacillus alvei",
         "original_name": "european foulbrood",
         "description": "A species of aerobic or facultatively anaerobic, Gram-positive, rod shaped bacteria assigned to the phylum Firmicutes. This species is motile, spore forming, catalase positive, oxidase positive, does not reduce nitrate, indole positive, and hydrolyzes casein, esculin, gelatin, and starch. B. alvei, also known as Paenibacillus alvei, is found in soil and honeybee colonies, and is one of the causes of European foulbrood disease.[NCIt]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"ncit": "NCIT:C86159"},
     },
     "ocarditis": {
@@ -192,7 +192,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "myocarditis",
         "original_name": "ocarditis",
         "description": "Myocarditis is a condition that is characterized by inflammation of the heart muscle (myocardium). Some affected people have no noticeable symptoms of the condition. When present, signs and symptoms may include chest pain, abnormal heartbeat, shortness of breath, fatigue, signs of infection (i.e. fever, headache, sore throat, diarrhea), and leg swelling. Myocarditis can be caused by a variety of factors including infections (viral, bacterial, parasitic, and fungal), allergic reactions to certain medications, and exposure to certain chemicals. It can also be associated with other inflammatory conditions such as lupus, Wegener's granulomatosis, giant cell arteritis and Takayasu's arteritis. Most cases occur sporadically in people with no family history of the condition. Treatment aims to address the underlying cause of the condition. Medications and rarely, a heart transplant may be needed if the heart muscle becomes weak.[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0004496"},
     },
     "lesions in humans": {
@@ -200,7 +200,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "lesion",
         "original_name": "lesions in humans",
         "description": "A localized pathological or traumatic structural change, damage, deformity, or discontinuity of tissue, organ, or body part.[NCIt]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"ncit": "NCIT:C3824"},
     },
     "cutaneous fungus infections": {
@@ -208,7 +208,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "fungal infectious disease",
         "original_name": "cutaneous fungus infections",
         "description": "An infection caused by a fungus.[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0002041"},
     },
     "pelvic in铿俛mmatory disease": {
@@ -216,7 +216,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "pelvic inflammatory disease",
         "original_name": "pelvic in铿俛mmatory disease",
         "description": "Pelvic inflammatory disease (PID) is an acute or chronic inflammation in the pelvic cavity. It is most commonly caused by sexually transmitted diseases, including chlamydia and gonorrhea that have ascended into the uterus, fallopian tubes, or ovaries as a result of intercourse or childbirth, or of surgical procedures, including insertion of IUDs or abortion. PID may be either symptomatic or asymptomatic. It may cause infertility and it may raise the risk of ectopic pregnancy. PID is a disease associated with HIV infection.[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0000922"},
     },
     "chlamydiosis": {
@@ -224,7 +224,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "chlamydiaceae infections",
         "original_name": "chlamydiosis",
         "description": "Infections with bacteria of the family CHLAMYDIACEAE.[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0020776"},
     },
     "pig-bel syndrome": {
@@ -232,7 +232,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "infection due to clostridium perfringens",
         "original_name": "pig-bel syndrome",
         "description": "Clostridial necrotizing enteritis (CNE) is a severe and potentially fatal type of food poisoning caused by a β-toxin of Clostridium perfringens, Type C. It occurs in some developing regions, particularly in New Guinea, where it is known as pig-bel.CNE is a necrotizing inflammation of the small bowel (especially the jejunum but also the ileum). Clinical results may vary from mild diarrhea to a life-threatening sequence of severe abdominal pain, vomiting (often bloody), bloody stool, ulceration of the small intestine with leakage (perforation) into the peritoneal cavity and possible death within a single day due to peritonitis.[WIKIPEDIA]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0023149"},
     },  # specifically caused by Clostridium perfringens type C, the causative agent of pig-bel syndrome
     "urosepsis": {
@@ -240,7 +240,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "bacterial infectious disease with sepsis",
         "original_name": "urosepsis",
         "description": "An infectious disease caused by bacteria causing sepsis.[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0005229"},
     },
     "dermal and genital lesions": {
@@ -248,7 +248,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "lesion",
         "original_name": "dermal and genital lesions",
         "description": "A localized pathological or traumatic structural change, damage, deformity, or discontinuity of tissue, organ, or body part.[NCIt]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"ncit": "NCIT:C3824"},
     },
     "new-onset untreated rheumatoid arthrits": {
@@ -256,7 +256,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "rheumatoid arthritis",
         "original_name": "new-onset untreated rheumatoid arthrits",
         "description": "A chronic, systemic autoimmune disorder characterized by inflammation in the synovial membranes and articular surfaces. It manifests primarily as a symmetric, erosive polyarthritis that spares the axial skeleton and is typically associated with the presence in the serum of rheumatoid factor.[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0008383"},
     },
     "suppuration of wounds": {
@@ -264,7 +264,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "periostitis",
         "original_name": "suppuration of wounds",
         "description": "Inflammation of the periosteum. The condition is generally chronic, and is marked by tenderness and swelling of the bone and an aching pain. Acute periostitis is due to infection, is characterized by diffuse suppuration, severe pain, and constitutional symptoms, and usually results in necrosis. (Dorland, 27th ed)[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0004934"},
     },
     "rhinovirus infection": {
@@ -272,7 +272,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "common cold",
         "original_name": "rhinovirus infection",
         "description": "An inflammatory process affecting the nasal mucosa, usually caused by viruses (e.g., rhinovirus, adenovirus, parainfluenza virus, and coronavirus). It is characterized by chills, headaches, mucopurulent nasal discharge, coughing, and facial pain.[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0005709"},
     },
     "muscle aches": {
@@ -280,7 +280,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "myalgia",
         "original_name": "muscle aches",
         "description": "Pain in muscle.[MONDO]",
-        "type": "biolink:DiseaseOrPhenotypicFeature",
+        "category": "biolink:DiseaseOrPhenotypicFeature",
         "xrefs": {"hp": "HP:0003326"},
     },
     "chlamydia": {
@@ -288,7 +288,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "chlamydiaceae infections",
         "original_name": "chlamydia",
         "description": "Infections with bacteria of the family CHLAMYDIACEAE.[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0020776"},
     },
     "ostomyelitis": {
@@ -296,7 +296,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "osteomyelitis",
         "original_name": "ostomyelitis",
         "description": "An acute or chronic inflammation of the bone and its structures due to infection with pyogenic bacteria.[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0005246"},
     },
     "anorexia": {
@@ -304,7 +304,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "anorexia nervosa",
         "original_name": "anorexia",
         "description": "A disorder most often seen in adolescent females characterized by a refusal to maintain a minimally normal body weight, an intense fear of gaining weight, a disturbance in body image, and, in postmenarcheal females, the development of amenorrhea.[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0005351"},
     },
     "corporis": {
@@ -312,7 +312,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "tinea corporis",
         "original_name": "corporis",
         "description": "A dermatophyte disease of the glabrous skin, excluding the scalp, beard, face, hands, feet, and groin.[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0001461"},
     },
     "extraoral abscesses": {
@@ -320,7 +320,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "abscess",
         "original_name": "extraoral abscesses",
         "description": "An inflammatory process characterized by the accumulation of pus within a newly formed tissue cavity which is the result of a bacterial, fungal, or parasitic infection or the presence of a foreign body.[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0005227"},
     },
     "seminal hyperviscosity": {
@@ -328,7 +328,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "hyperviscosity",
         "original_name": "seminal hyperviscosity",
         "description": "An increase in the viscosity of blood resulting from an increase in the proportion of cellular elements of the blood, a change in the mechanical properties of the cellular elements of the blood, and/or an alteration in plasma viscosity.[NCIt]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"ncit": "NCIT:C38698"},
     },
     "spondylodiscitis": {
@@ -336,7 +336,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "central nervous system infectious disorder",
         "original_name": "spondylodiscitis",
         "description": "An infectious process that affects the brain and/or spinal cord. Representative examples include encephalitis, poliomyelitis, arachnoiditis, and meningitis.[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0024619"},
     },
     "acute bacteria prostatitis": {
@@ -344,7 +344,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "prostatitis",
         "original_name": "acute bacteria prostatitis",
         "description": "An infectious or non-infectious inflammatory process affecting the prostate gland.[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0005280"},
     },  # according to core_table.txt, it is caused by Coccidioides immitis, a fungus. MONDO does not have the term
     "tumorous abscesses": {
@@ -352,7 +352,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "abscess",
         "original_name": "tumorous abscesses",
         "description": "An inflammatory process characterized by the accumulation of pus within a newly formed tissue cavity which is the result of a bacterial, fungal, or parasitic infection or the presence of a foreign body.[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0005227"},
     },
     "in children with genital lesions": {
@@ -360,7 +360,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "lesion",
         "original_name": "in children with genital lesions",
         "description": "A localized pathological or traumatic structural change, damage, deformity, or discontinuity of tissue, organ, or body part.[NCIt]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"ncit": "NCIT:C3824"},
     },
     "cutaneous acanthamebiasis": {
@@ -368,7 +368,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "acanthamoeba infectious disease",
         "original_name": "cutaneous acanthamebiasis",
         "description": "An infectious disease involving the Acanthamoeba.[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0021747"},
     },
     "urogenital infections": {
@@ -376,7 +376,7 @@ MANUAL_MAP_DISEASE_INFO = {
         "name": "ureaplasma urethritis",
         "original_name": "urogenital infections",
         "description": "Infections with bacteria of the genus ureaplasma.[MONDO]",
-        "type": "biolink:Disease",
+        "category": "biolink:Disease",
         "xrefs": {"mondo": "MONDO:0007007"},
     },
 }
