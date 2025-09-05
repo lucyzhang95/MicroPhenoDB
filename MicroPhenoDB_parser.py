@@ -41,7 +41,7 @@ class MicroPhenoDBParser:
         node = taxon_map.get(name.lower())
         if node:
             node = node.copy()
-            node["type"] = "biolink:OrganismTaxon"
+            node["category"] = "biolink:OrganismTaxon"
             node["organism_type"] = self._get_organism_type(node)
             node.pop("mapping_tool", None)
             return node
@@ -50,11 +50,15 @@ class MicroPhenoDBParser:
     @staticmethod
     def _get_disease_node(name, disease_map):
         """Get the disease node from disease mapping."""
-        return (
-            disease_map.get(name.lower())
-            if name.lower() != "null" and name.lower() != "not foundthogenic"
-            else None
+        node = disease_map.get(
+            name.lower() if name.lower() != "null" and name.lower() != "not foundthogenic" else None
         )
+        if node:
+            node = node.copy()
+            node["category"] = "biolink:Disease"
+            return node
+
+        return node
 
     @staticmethod
     def _get_association_node(score, position, qualifier, pmid, pub_map, anatomical_map):

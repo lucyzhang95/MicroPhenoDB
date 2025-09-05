@@ -279,7 +279,7 @@ class PubMedService:
                     "name": title,
                     "summary": f"{abstract} [abstract]" if abstract else "",
                     "doi": f"doi:{doi}" if doi else "",
-                    "type": "biolink:Publication",
+                    "category": "biolink:Publication",
                 }
             except (KeyError, IndexError) as e:
                 print(f"!! Failed to parse PubMed article: {e}")
@@ -320,7 +320,7 @@ class UberonService:
                             "id": uberon_id,
                             "name": doc.get("label"),
                             "original_name": term,
-                            "type": "biolink:AnatomicalEntity",
+                            "category": "biolink:AnatomicalEntity",
                         }
         except aiohttp.ClientError as e:
             print(f"!! Error fetching term '{term}': {e}")
