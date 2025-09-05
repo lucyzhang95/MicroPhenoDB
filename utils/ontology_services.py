@@ -240,7 +240,6 @@ class BioThingsService:
                     "id": info["_id"],
                     "name": mondo.get("label"),
                     "description": mondo.get("definition"),
-                    "type": "biolink:Disease",
                 }
         return d_info
 
