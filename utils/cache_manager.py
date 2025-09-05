@@ -386,7 +386,7 @@ class CacheManager(CacheHelper):
                     "name": sci_d_name,
                     "original_name": d_name,
                     "description": f"{desc}[{prefix.upper()}]",
-                    "type": "biolink:Disease",
+                    "category": "biolink:Disease",
                     "xrefs": {prefix: _id.upper() if "orphanet" not in _id else _id},
                 }
         return efo_map
