@@ -8,7 +8,6 @@ from collections import Counter, defaultdict
 from datetime import datetime
 from typing import Any, Dict, List
 
-from utils.cache_helper import CacheHelper
 from utils.record_manager import RecordCacheManager
 
 
@@ -262,7 +261,7 @@ class RecordStatsReporter:
 
     def generate_comprehensive_report(self) -> Dict[str, Any]:
         """Generate comprehensive statistics report."""
-        print("▶️ Generating comprehensive record statistics...")
+        print("\nGenerating comprehensive record statistics...")
 
         # add metadata
         self.stats["metadata"] = {
@@ -286,25 +285,23 @@ class RecordStatsReporter:
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(self.stats, f, indent=2, ensure_ascii=False)
 
-        print(f"💾 Statistics report saved to: {output_path}")
+        print(f"-> Statistics report saved to: {output_path}")
 
 
 def generate_record_statistics_report():
     """Main function to generate and save a record statistics report."""
-    cache_helper = CacheHelper(cache_dir="cache")
-    record_manager = RecordCacheManager(cache_helper)
+    record_manager = RecordCacheManager()
 
     records = record_manager.load_cached_records()
     if not records:
-        print("❌ No cached records found. Please run the data pipeline first.")
-        return
+        print("!!! No cached records found.")
 
     reporter = RecordStatsReporter(records)
     stats = reporter.generate_comprehensive_report()
 
     reporter.save_report()
 
-    print("\n📋 RECORD STATISTICS SUMMARY:")
+    print("\nRECORD STATISTICS SUMMARY:")
     print(f"Total Records: {stats['basic_stats']['total_record_count']}")
     print(f"Unique IDs: {stats['basic_stats']['total_unique_ids']}")
     print(f"Duplicate ID Groups: {stats['id_duplication_analysis']['total_duplicate_id_groups']}")
