@@ -1,7 +1,7 @@
 {
   "metadata": {
     "report_version": "1.0",
-    "analysis_date": "2025-09-04T00:52:48.574712",
+    "analysis_date": "2025-09-05T12:41:54.699361",
     "total_records_analyzed": 5357
   },
   "basic_stats": {
@@ -55,10 +55,8 @@
       "description_coverage_percentage": 55.870823221952584
     },
     "xrefs": {
-      "xref_sources": {
-        "ncit": 3010
-      },
-      "total_unique_xref_sources": 1
+      "xref_sources": {},
+      "total_unique_xref_sources": 0
     },
     "sample_subjects": [
       {
@@ -104,15 +102,8 @@
       "description_coverage_percentage": 99.43998506626843
     },
     "xrefs": {
-      "xref_sources": {
-        "mondo": 363,
-        "efo": 4606,
-        "orphanet": 247,
-        "hp": 125,
-        "ncit": 12,
-        "doid": 4
-      },
-      "total_unique_xref_sources": 6
+      "xref_sources": {},
+      "total_unique_xref_sources": 0
     },
     "sample_objects": [
       {
@@ -121,9 +112,9 @@
         "description": "A chronic condition characterized by minimal or absent production of insulin by the pancreas. [NCIT:C2986]",
         "type": "biolink:Disease",
         "original_name": "type 1 diabetes",
-        "xrefs": {
-          "mondo": "MONDO:0005147"
-        }
+        "xrefs": [
+          "mondo:MONDO:0005147"
+        ]
       },
       {
         "id": "EFO:0000556",
@@ -131,9 +122,9 @@
         "original_name": "irritable bowel syndrome(ibs)",
         "description": "A hypoperfusion of the BLOOD through an organ or tissue caused by a PATHOLOGIC CONSTRICTION or obstruction of its BLOOD VESSELS, or an absence of BLOOD CIRCULATION.[EFO]",
         "type": "biolink:Disease",
-        "xrefs": {
-          "efo": "EFO:0000556"
-        }
+        "xrefs": [
+          "efo:EFO:0000556"
+        ]
       },
       {
         "id": "orphanet:586",
@@ -141,9 +132,9 @@
         "original_name": "cystic fibrosis",
         "description": "Cystic fibrosis (CF) is a genetic disorder characterized by the production of sweat with a high salt content and mucus secretions with an abnormal viscosity.[ORPHANET]",
         "type": "biolink:Disease",
-        "xrefs": {
-          "orphanet": "orphanet:586"
-        }
+        "xrefs": [
+          "orphanet:orphanet:586"
+        ]
       },
       {
         "id": "HP:0100806",
@@ -151,9 +142,9 @@
         "original_name": "sepsis",
         "description": "A disease of infectious agent resulting from the presence of pathogenic microbial agents, including pathogenic viruses, pathogenic bacteria, fungi, protozoa, multicellular parasites, and aberrant proteins known as prions. These pathogens are able to cause disease in animals and/or plants. Infectious pathologies are usually qualified as contagious disease (also called communicable disease) due to their potentiality of transmission from one person or species to another.;Sepsis associated with organ dysfunction distant from the site of infection.;Septicemia caused by pyogenic microorganisms (e.g., STAPHYLOCOCCUS; BACILLUS), resulting in the formation of secondary foci of SUPPURATION and multiple ABSCESSES.;Systemic disease associated with the presence of pathogenic microorganisms or their toxins in the blood.;Systemic inflammatory response syndrome with a proven or suspected infectious etiology. When sepsis is associated with organ dysfunction distant from the site of infection, it is called severe sepsis. When sepsis is accompanied by HYPOTENSION despite adequate fluid infusion, it is called SEPTIC SHOCK.;The presence of pathogenic microorganisms in the blood stream causing a rapidly progressing systemic reaction that may lead to shock. Symptoms include fever, chills, tachycardia, and increased respiratory rate. It is a medical emergency that requires urgent medical attention.[HP]",
         "type": "biolink:Disease",
-        "xrefs": {
-          "hp": "HP:0100806"
-        }
+        "xrefs": [
+          "hp:HP:0100806"
+        ]
       },
       {
         "id": "NCIT:C3824",
@@ -161,9 +152,9 @@
         "original_name": "dermal and genital lesions",
         "description": "A localized pathological or traumatic structural change, damage, deformity, or discontinuity of tissue, organ, or body part.[NCIt]",
         "type": "biolink:Disease",
-        "xrefs": {
-          "ncit": "NCIT:C3824"
-        }
+        "xrefs": [
+          "ncit:NCIT:C3824"
+        ]
       }
     ]
   },
