@@ -6,18 +6,12 @@ from typing import Any, Dict, List
 
 
 class CacheHelper:
-    """Handles low-level saving and loading of data to/from the filesystem.
-    pkl is only used for intermediate data storage."""
+    """Handles saving and loading of objects to/from pickle files."""
+    CACHE_DIR = os.path.join("cache")
 
-    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-    CACHE_DIR = os.path.join(SCRIPT_DIR, "cache")
-    RECORD_DIR = os.path.join(SCRIPT_DIR, "records")
-
-    def __init__(self, rec_dir=RECORD_DIR, cache_dir=CACHE_DIR):
+    def __init__(self, cache_dir=CACHE_DIR):
         self.cache_dir = os.path.join(os.getcwd(), cache_dir)
         os.makedirs(self.cache_dir, exist_ok=True)
-        self.rec_dir = os.path.join(os.getcwd(), rec_dir)
-        os.makedirs(self.rec_dir, exist_ok=True)
 
     def save_pickle(self, obj, f_name):
         """Saves an object to a pickle file."""
@@ -31,6 +25,15 @@ class CacheHelper:
             with open(path, "rb") as in_f:
                 return pickle.load(in_f)
         return None
+
+
+class RecordHelper:
+    """Handles saving and loading of records to/from JSON and JSONL files."""
+    RECORD_DIR = os.path.join("records")
+
+    def __init__(self, rec_dir=RECORD_DIR):
+        self.rec_dir = os.path.join(os.getcwd(), rec_dir)
+        os.makedirs(self.rec_dir, exist_ok=True)
 
     def save_json(self, obj, f_name):
         """Saves an object to a JSON file."""
@@ -48,7 +51,7 @@ class CacheHelper:
     def save_jsonl(self, records: List[Dict[str, Any]], f_name: str):
         """Saves records to a JSONL file with standardized formatting."""
         if not records:
-            print("‼️ Warning: No records provided for JSONL export.")
+            print("!!! Warning: No records provided for JSONL export.")
             return None
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -64,7 +67,7 @@ class CacheHelper:
                 f.write("\n")
                 exported_count += 1
 
-        print(f"✅ Exported {exported_count} records to {jsonl_path}")
+        print(f"-> Exported {exported_count} records to {jsonl_path}")
         return jsonl_path
 
     def load_jsonl(self, f_name: str) -> List[Dict[str, Any]]:
@@ -84,14 +87,11 @@ class CacheHelper:
                     except json.JSONDecodeError:
                         continue
 
-        print(f"✅ Loaded {len(records)} records from {f_name}")
+        print(f"-> Loaded {len(records)} records from {f_name}")
         return records
 
     def _standardize_record(self, record: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        SIMPLIFIED: Only essential transformations.
-        Main goal: Convert xrefs from dict to list (your key requirement).
-        """
+        """Standardizes a record by cleaning up empty values and formatting xrefs into list."""
         clean_record = record.copy()
 
         for entity_key in ["subject", "object"]:
