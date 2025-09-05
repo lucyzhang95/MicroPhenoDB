@@ -28,7 +28,7 @@ class EbiTaxonomyService:
         try:
             async with session.get(url, timeout=10) as resp:
                 if resp.status != 200:
-                    print(f"Failed to connect ebi API: status {resp.status}")
+                    print(f"!!! Failed to connect ebi API: status {resp.status}")
                     return None
                 data = await resp.json()
                 terms = data.get("_embedded", {}).get("terms", [{}])[0]
@@ -41,14 +41,14 @@ class EbiTaxonomyService:
                         "id": f"NCBITaxon:{int(taxid)}",
                         "taxid": int(taxid),
                         "description": f"{description}[NCIT]" if description else "",
-                        "xrefs": {"ncit": ncit_code},
+                        "xrefs": {"ncit": f"NCIT:{ncit_code}"},
                     }
                 return name, {
                     "description": f"{description}[NCIT]" if description else "",
-                    "xrefs": {"ncit": ncit_code},
+                    "xrefs": {"ncit": f"NCIT:{ncit_code}"},
                 }
         except aiohttp.ClientError as e:
-            print(f"EBI API request failed for NCIT_{ncit_code}: {e}")
+            print(f"!!! EBI API request failed for NCIT_{ncit_code}: {e}")
             return None
 
     async def async_query_ebi_ncit_codes_to_taxids(self, ncit_codes: list):
@@ -81,7 +81,7 @@ class EbiTaxonomyService:
         ncit2taxids, notfound_ncit = asyncio.run(
             self.async_query_ebi_ncit_codes_to_taxids(ncit_codes)
         )
-        print("🎉 EBI NCIT Codes to TaxID mapping completed!")
+        print("[DONE] EBI NCIT Codes to TaxID mapping completed!")
         return ncit2taxids, notfound_ncit
 
 
@@ -99,16 +99,16 @@ class ETE3TaxonomyService:
         if hasattr(self, "_initialized") and self._initialized:
             return
 
-        print("⚙️ Initializing ETE3TaxonomyService for the first time...")
+        print("-> Initializing ETE3TaxonomyService for the first time...")
         self.ncbi_taxa = NCBITaxa()
 
         if not os.path.exists("taxdump.tar.gz"):
-            print("✅ Taxonomy database not found. Downloading and updating...")
+            print("Taxonomy database not found. Downloading and updating...")
             ssl._create_default_https_context = ssl._create_unverified_context
             self.ncbi_taxa.update_taxonomy_database()
-            print("🎉 NCBI Taxonomy Database update complete.")
+            print("[DONE] NCBI Taxonomy Database update complete.")
         else:
-            print("✅ NCBI Taxonomy database found and loaded.")
+            print(">>> NCBI Taxonomy database found and loaded.")
 
         print("---------- ETE3TaxonomyService is now ready ----------\n")
 
@@ -117,7 +117,7 @@ class ETE3TaxonomyService:
     def ete3_taxon_name2taxid(self, taxon_names: list) -> dict:
         """Maps taxon names to NCBI Taxonomy IDs using ETE3."""
         name2taxid = self.ncbi_taxa.get_name_translator(sorted(list(set(taxon_names))))
-        print("🎉 ETE3 Taxonomy Name to TaxID mapping completed!")
+        print("[DONE] ETE3 Taxonomy Name to TaxID mapping completed!")
         return {
             name: {"taxid": int(taxid_list[0]), "mapping_tool": "ete3"}
             for name, taxid_list in name2taxid.items()
@@ -135,7 +135,7 @@ class EntrezTaxonomyService:
         self.semaphore = asyncio.Semaphore(3)
 
     async def async_query_entrez_taxon_name2taxid(
-        self, taxon_name: str, max_retries=3, initial_backoff=1
+            self, taxon_name: str, max_retries=3, initial_backoff=1
     ):
         """Asynchronously queries NCBI Entrez for a taxon name."""
         for attempt in range(max_retries):
@@ -167,11 +167,11 @@ class EntrezTaxonomyService:
                 if attempt + 1 == max_retries:
                     break
 
-                backoff_time = initial_backoff * (2**attempt)
+                backoff_time = initial_backoff * (2 ** attempt)
                 print(f"Retrying in {backoff_time} seconds...")
                 await asyncio.sleep(backoff_time)
 
-        print(f"‼️ All retries failed for '{taxon_name}'.")
+        print(f"!!! All retries failed for '{taxon_name}'.")
         return None
 
     async def async_query_entrez_taxon_names2taxids(self, taxon_names: list) -> list:
@@ -182,7 +182,7 @@ class EntrezTaxonomyService:
 
     def async_run_entrez_taxon_names2taxids(self, taxon_names: list) -> dict:
         results = asyncio.run(self.async_query_entrez_taxon_names2taxids(taxon_names))
-        print("🎉 Entrez Taxonomy Name to TaxID mapping completed!")
+        print("[DONE] Entrez Taxonomy Name to TaxID mapping completed!")
         return results
 
 
@@ -283,7 +283,7 @@ class PubMedService:
                     "type": "biolink:Publication",
                 }
             except (KeyError, IndexError) as e:
-                print(f"Failed to parse PubMed article: {e}")
+                print(f"!! Failed to parse PubMed article: {e}")
         return result
 
 
@@ -291,7 +291,7 @@ class UberonService:
     """Handles anatomy EBI OLS service."""
 
     async def async_query_anatomical_entity_to_uberon_id(
-        self, session, term, url, match_type="exact", ontology="uberon", rows=1
+            self, session, term, url, match_type="exact", ontology="uberon", rows=1
     ):
         """Async helper function that now accepts a URL."""
         params = {"q": term, "ontology": ontology, "rows": rows, "start": 0}
@@ -324,11 +324,11 @@ class UberonService:
                             "type": "biolink:AnatomicalEntity",
                         }
         except aiohttp.ClientError as e:
-            print(f"❗️Error fetching term '{term}': {e}")
+            print(f"!! Error fetching term '{term}': {e}")
         return term, None
 
     async def async_anatomical_entities_to_uberon_ids(
-        self, terms, match_type="exact", base_url="https://www.ebi.ac.uk/ols4/api/search"
+            self, terms, match_type="exact", base_url="https://www.ebi.ac.uk/ols4/api/search"
     ):
         """
         Query OLS for a list of terms, using the provided base_url.
@@ -352,5 +352,5 @@ class UberonService:
                 terms, match_type=match_type, base_url=base_url
             )
         )
-        print("🎉 UBERON ID mapping completed!")
+        print("[DONE] UBERON ID mapping completed!")
         return results

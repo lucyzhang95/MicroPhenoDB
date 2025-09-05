@@ -9,11 +9,11 @@ class RapidFuzzUtils:
 
     def __init__(self, tar_path="taxdump.tar.gz"):
         """Loads and parses the NCBI taxonomy data upon initialization."""
-        print(f"Initializing RapidFuzzUtils and loading data from '{tar_path}'...")
+        print(f">>> Initializing RapidFuzzUtils and loading data from '{tar_path}'...")
 
         self.ref_name_to_taxid = self._parse_names_dmp_from_taxdump(tar_path)
         self.ref_names = list(self.ref_name_to_taxid.keys())
-        print(f"Ready. Loaded {len(self.ref_names)} reference names.")
+        print(f"-> Ready. Loaded {len(self.ref_names)} reference names.")
 
     def _parse_names_dmp_from_taxdump(self, tar_path, f_name="names.dmp") -> dict:
         """Parses the names.dmp file from the NCBI Taxonomy database dump."""
@@ -31,7 +31,7 @@ class RapidFuzzUtils:
                 for line in in_f:
                     parts = [part.strip().decode("utf-8") for part in line.strip().split(b"|")]
                     if (
-                        len(parts) >= 4 and parts[3] in keep_classes
+                            len(parts) >= 4 and parts[3] in keep_classes
                     ):  # parts[0] == taxid, parts[1] == name
                         name2taxid[parts[1].lower()] = int(parts[0])
         return name2taxid
@@ -42,9 +42,7 @@ class RapidFuzzUtils:
         """
         matches = {}
         for name in query_names:
-            match = process.extractOne(
-                name, self.ref_names, scorer=scorer, score_cutoff=score_cutoff
-            )
+            match = process.extractOne(name, self.ref_names, scorer=scorer, score_cutoff=score_cutoff)
             if match:
                 matched_name, score, _ = match
                 matches[name] = {
@@ -71,7 +69,7 @@ class RapidFuzzUtils:
 
 class Text2TermUtils:
     def text2term_name2id(
-        self, disease_names, ontology="MONDO", url="http://purl.obolibrary.org/obo/mondo.owl"
+            self, disease_names, ontology="MONDO", url="http://purl.obolibrary.org/obo/mondo.owl"
     ):
         """Maps disease names to ontology identifiers using text2term."""
         if not text2term.cache_exists(ontology):

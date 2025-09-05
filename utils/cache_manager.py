@@ -177,13 +177,13 @@ class CacheManager(CacheHelper):
                 """Wrapper function to handle caching logic."""
                 cache_f_path = os.path.join(self.cache_dir, cache_f_name)
                 if os.path.exists(cache_f_path):
-                    print(f"✅ {cache_f_name} already cached. Loading...")
+                    print(f"[DONE] {cache_f_name} already cached. Loading...")
                     return self.load_pickle(cache_f_name)
                 else:
-                    print(f"▶️ Caching {cache_f_name}...")
+                    print(f">>> Caching {cache_f_name}...")
                     result = func(self, *args, **kwargs)
                     self.save_pickle(result, cache_f_name)
-                    print(f"🎉 {cache_f_name} successfully cached.")
+                    print(f"[DONE] {cache_f_name} successfully cached.")
                     return result
 
             return wrapper

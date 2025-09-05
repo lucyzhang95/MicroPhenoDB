@@ -18,19 +18,19 @@ class DataCachePipeline:
 
     def run(self):
         """Runs the full data caching pipeline."""
-        print("▶️ Caching taxon data...")
+        print("\n>>> Caching taxon data...")
         self._cache_taxon_data()
 
-        print("\n▶️ Caching disease data...")
+        print("\n>>> Caching disease data...")
         self._cache_disease_data()
 
-        print("\n▶️ Caching publication data...")
+        print("\n>>> Caching publication data...")
         self._cache_pubmed_data()
 
-        print("\n▶️ Caching anatomical entity to Uberon mapping...")
+        print("\n>>>️ Caching anatomical entity to Uberon mapping...")
         self._cache_anatomical_data()
 
-        print("\n🎉 All pre-data successfully cached.\n")
+        print("\n[DONE] All pre-data successfully cached.\n")
 
     def _cache_taxon_data(self):
         """Caches all taxon-related mappings and information."""
