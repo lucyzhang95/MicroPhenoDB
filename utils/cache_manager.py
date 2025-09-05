@@ -550,7 +550,7 @@ class CacheManager(CacheHelper):
                         "id": manual_info["id"],
                         "name": manual_info["name"],
                         "original_name": manual_info["original_name"],
-                        "type": manual_info["type"],
+                        "category": manual_info["category"],
                     }
                 )
         return uberon_mapped
