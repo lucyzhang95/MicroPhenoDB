@@ -44,6 +44,10 @@ class MicroPhenoDBParser:
             node["category"] = "biolink:OrganismTaxon"
             node["organism_type"] = self._get_organism_type(node)
             node.pop("mapping_tool", None)
+            if "matched_name" in node:
+                del node["matched_name"]
+            if "score" in node:
+                del node["score"]
             return node
         return None
 
